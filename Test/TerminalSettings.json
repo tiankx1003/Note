@@ -1,0 +1,78 @@
+{
+    "alwaysShowTabs": true,
+    "defaultProfile": "{81d66518-899b-471f-a02e-de60a762bf41}",
+    "experimental_showTabsInTitlebar": true,
+    "initialCols": 120,
+    "initialRows": 30,
+    "profiles": [
+      {
+        "guid": "{81d66518-899b-471f-a02e-de60a762bf41}",
+        "name": "cmd",
+        "colorscheme": "Campbell",
+        "historySize": 9001,
+        "snapOnInput": true,
+        "cursorColor": "#FFFFFF",
+        "cursorShape": "filledBox",
+        "commandline": "cmd.exe",
+        "fontFace": "Consolas",
+        "fontSize": 12,
+        "acrylicOpacity": 0.75,
+        "useAcrylic": true,
+        "closeOnExit": false,
+        "padding": "0, 0, 0, 0"
+      },
+      {
+        "guid": "{f5a53144-ba97-4c0d-9848-9fe4728837ed}",
+        "name": "PowerShell",
+        "colorscheme": "Campbell",
+        "historySize": 9001,
+        "snapOnInput": true,
+        "cursorColor": "#FFFFFF",
+        "cursorShape": "filledBox",
+        "commandline": "powershell.exe",
+        "fontFace": "Courier New",
+        "fontSize": 12,
+        "acrylicOpacity": 0.5,
+        "useAcrylic": true,
+        "closeOnExit": false,
+        "padding": "0, 0, 0, 0"
+      },
+      {
+        "guid": "{09dc5eef-6840-4050-ae69-21e55e6a2e62}",
+        "name": "Ubuntu",
+        "colorscheme": "Campbell",
+        "historySize": 9001,
+        "snapOnInput": true,
+        "cursorColor": "#FFFFFF",
+        "cursorShape": "filledBox",
+        "commandline": "wsl.exe",
+        "fontFace": "Consolas",
+        "fontSize": 12,
+        "acrylicOpacity": 0.75,
+        "useAcrylic": true,
+        "closeOnExit": false,
+        "padding": "0, 0, 0, 0"
+      }
+    ],
+    "schemes": [
+      {
+        "name": "Campbell",
+        "foreground": "#F2F2F2",
+        "background": "#0C0C0C",
+        "colors": [ "#0C0C0C", "#C50F1F", "#13A10E", "#C19C00", "#0037DA", "#881798", "#3A96DD", "#CCCCCC", "#767676", "#E74856", "#16C60C", "#F9F1A5", "#3B78FF", "#B4009E", "#61D6D6", "#F2F2F2" ]
+      },
+      {
+        "name": "Solarized Dark",
+        "foreground": "#FDF6E3",
+        "background": "#073642",
+        "colors": [ "#073642", "#D30102", "#859900", "#B58900", "#268BD2", "#D33682", "#2AA198", "#EEE8D5", "#002B36", "#CB4B16", "#586E75", "#657B83", "#839496", "#6C71C4", "#93A1A1", "#FDF6E3" ]
+      },
+      {
+        "name": "Solarized Light",
+        "foreground": "#073642",
+        "background": "#FDF6E3",
+        "colors": [ "#073642", "#D30102", "#859900", "#B58900", "#268BD2", "#D33682", "#2AA198", "#EEE8D5", "#002B36", "#CB4B16", "#586E75", "#657B83", "#839496", "#6C71C4", "#93A1A1", "#FDF6E3" ]
+      }
+    ],
+    "showTerminalTitleInTitlebar": false
+  }
