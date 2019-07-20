@@ -1,4 +1,5 @@
 ### 安装虚拟机
+最小安装版yum安装vim tar rsync openssh openssh-client
 设置vimrc
 ```
 colorscheme murphy
@@ -130,13 +131,11 @@ vim mapred-env.sh
 
 ```xml
 <!-- core-site.xml -->
-<!-- 指定HDFS中NameNode的地址 -->
 <property>
 		<name>fs.defaultFS</name>
       <value>hdfs://hadoop101:9000</value>
 </property>
 
-<!-- 指定Hadoop运行时产生文件的存储目录 -->
 <property>
 		<name>hadoop.tmp.dir</name>
 		<value>/opt/module/hadoop-2.7.2/data/tmp</value>
@@ -149,7 +148,6 @@ vim mapred-env.sh
 		<value>6</value>
 </property>
 
-<!-- 指定Hadoop辅助名称节点主机配置 -->
 <property>
       <name>dfs.namenode.secondary.http-address</name>
       <value>hadoop103:50090</value>
@@ -157,13 +155,11 @@ vim mapred-env.sh
 ```
 ```xml
 <!-- yarn-site.xml  -->
-<!-- Reducer获取数据的方式 -->
 <property>
 		<name>yarn.nodemanager.aux-services</name>
 		<value>mapreduce_shuffle</value>
 </property>
 
-<!-- 指定YARN的ResourceManager的地址 -->
 <property>
 		<name>yarn.resourcemanager.hostname</name>
 		<value>hadoop102</value>
@@ -171,7 +167,6 @@ vim mapred-env.sh
 ```
 ```xml
 <!-- mapred-site.xml -->
-<!-- 指定MR运行在Yarn上 -->
 <property>
 		<name>mapreduce.framework.name</name>
 		<value>yarn</value>
@@ -186,25 +181,21 @@ sbin/mr-jobhistory-daemon.sh start historyserver
 vim yarn-site.xml
 ```
 ```xml
-<!-- 历史服务器端地址 -->
 <property>
 <name>mapreduce.jobhistory.address</name>
 <value>hadoop101:10020</value>
 </property>
-<!-- 历史服务器web端地址 -->
 <property>
     <name>mapreduce.jobhistory.webapp.address</name>
     <value>hadoop101:19888</value>
 </property>
 ```
 ```xml
-<!-- 日志聚集功能 -->
 <property>
 <name>yarn.log-aggregation-enable</name>
 <value>true</value>
 </property>
 
-<!-- 日志保留时间设置7天 -->
 <property>
 <name>yarn.log-aggregation.retain-seconds</name>
 <value>604800</value>
