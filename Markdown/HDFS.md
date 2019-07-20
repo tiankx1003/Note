@@ -1068,6 +1068,9 @@ hadoop fs -lsr har:///user/tian/output/input.har
 hadoop fs -cp har:///user/tian/output/input.har/* /user/tian
 ```
 
+***手绘写数据流程和读数据流程***
+
+
 ### 3.其他(略)
 
 # 八、HDFS-HA高可用
