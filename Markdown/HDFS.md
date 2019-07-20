@@ -474,9 +474,12 @@ public void testListStatus() throws IOException, InterruptedException, URISyntax
 7）客户端开始往dn1上传第一个Block（先从磁盘读取数据放到一个本地内存缓存），以Packet为单位，dn1收到一个Packet就会传给dn2，dn2传给dn3；**dn1每传一个packet会放入一个应答队列等待应答**。
 8）当一个Block传输完成之后，客户端再次请求NameNode上传第二个Block的服务器。（重复执行3-7步）。
 
+*节点间先存数据再传数据，应答成功用于确定成功传输文件。*
+
 ### 1.2网络拓扑-节点距离计算
 
 **节点距离**：两个节点到达最近的共同祖先的距离总和。
+NameNode会选择距离待上传数据最近距离的DataNode接收数据
 
 ![](img/node-dist.png)
 
