@@ -455,6 +455,10 @@ public void testListStatus() throws IOException, InterruptedException, URISyntax
 }
 ```
 
+## 3.HDFS IO
+
+
+
 # 四、HDFS的数据流（面试重点）
 
 
@@ -839,6 +843,11 @@ bin/hdfs dfsadmin -safemode leave
 hdfs dfsadmin -safemode wait
 hdfs dfs -put /opt/module/hadoop-2.7.2/README.txt /
 ```
+
+## 6.NameNode多目录配置
+
+***视频12*** 	
+
 # 六、DataNode（面试开发重点）
 
 ## 1.DataNode工作机制
@@ -857,7 +866,7 @@ hdfs dfs -put /opt/module/hadoop-2.7.2/README.txt /
 1）当DataNode读取Block的时候，它会计算CheckSum。
 2）如果计算后的CheckSum，与Block创建时值不一样，说明Block已经损坏。
 3）Client读取其他DataNode上的Block。
-4）DataNode在其文件创建后周期验证CheckSum，如图3-16所示。
+4）DataNode在其文件创建后周期验证CheckSum
 
 ![](\img/data-comp.png)
 
@@ -871,6 +880,7 @@ hdfs dfs -put /opt/module/hadoop-2.7.2/README.txt /
 $TimeOut = 2 * dfs.namenode.heartbeat.recheck-interval + 10 * dfs.heartbeat.interval$
 
 而默认的`dfs.namenode.heartbeat.checheck-interval`大小为5分钟`dfs.heartbeat.interval`默认为3秒
+`TimeOut`时间则为10分30秒
 
 **hdfs-site.xml**
 `heartbeat.recheck.interval`的单位为**毫秒**
@@ -900,6 +910,8 @@ source一下配置文件
 ```bash
 source /etc/profile
 ```
+
+***视频15***
 
 **4.2服役新节点具体**
 
@@ -953,7 +965,8 @@ yarn rmadmin -refreshNodes
 yarn rmadmin -refreshNodes
 #17/06/24 14:17:11 INFO client.RMProxy: Connecting to ResourceManager at hadoop103/192.168.1.103:8033
 ```
-(Web端查看)[hadoop102:50070/dfshealth.html#tab-datanode]
+
+[Web端查看](http://hadoop102:50070/dfshealth.html#tab-datanode)
 
 ```bash
 #如果数据不均衡，可以用命令行实现集群的再平衡
@@ -961,6 +974,8 @@ yarn rmadmin -refreshNodes
 # starting balancer, logging to /opt/module/hadoop-2.7.2/logs/hadoop-tian-balancer-hadoop102.out
 # Time Stamp               Iteration#  Bytes Already Moved  Bytes Left To Move  Bytes Being Moved
 ```
+
+*测试退役后的节点重启datanode的各种状态如何*
 
 ### 5.2黑名单退役
 
@@ -1003,6 +1018,8 @@ sbin/start-balancer.sh
 ```
 **注意**不允许白名单和黑名中同时出现同一个主机名
 
+***视频***
+
 ## 6.DataNode多目录设置
 
 DataNode也可以配置成多个目录，每个目录存储的数据不一样，即:**数据不是副本**
@@ -1031,7 +1048,11 @@ bin/hadoop distcp hdfs://hadoop102:9000/user/tian/hello.txt hdfs://hadoop103:900
 
 ### 2.1 HDFS存储小文件弊端
 
+每个文件均按块存储，每个块的元数据存储在NameNode的内存中，因此HDFS存储小文件会非常低效，因为大量的小文件会耗尽NameNode中的大部分内存，但注意，存储小文件所需要的磁盘容量和数据块的大小无关。
+
 ### 2.2 解决小文件办法之一
+
+HDFS存档文件或HAR文件，是一个高效的文件存档工具，它将文件存入HDFS块，在减少NameNode内存使用的同时，允许对文件进行透明访问。具体来说，HDFS存档文件对内是一个个独立的文件，对NameNode而言是一个整体，减少了NameNode的内存。
 
 ### 2.3案例
 
@@ -1046,6 +1067,8 @@ hadoop fs -lsr har:///user/tian/output/input.har
 #解归档文件
 hadoop fs -cp har:///user/tian/output/input.har/* /user/tian
 ```
+
+### 3.其他(略)
 
 # 八、HDFS-HA高可用
 

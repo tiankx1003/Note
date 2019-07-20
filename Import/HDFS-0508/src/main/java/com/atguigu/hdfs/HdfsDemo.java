@@ -1,4 +1,4 @@
-package com.atguigu.hdfs;
+package com.tian.hdfs;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,7 +24,7 @@ public class HdfsDemo {
 	Configuration conf  = null  ; 
 	FileSystem fs = null ;
 	String uri = "hdfs://hadoop102:9000";
-	String user = "atguigu";
+	String user = "tian";
 	
 	/**
 	 * 定位读取文件  128M ~ 
@@ -251,7 +251,7 @@ public class HdfsDemo {
 		Configuration conf = new Configuration();
 		conf.set("dfs.replication", "2");
 		
-		FileSystem fs  = FileSystem.get(new URI("hdfs://hadoop102:9000"), conf, "atguigu");
+		FileSystem fs  = FileSystem.get(new URI("hdfs://hadoop102:9000"), conf, "tian");
 		//2. 操作
 		fs.copyFromLocalFile(new Path("d:/hadoopsrc/longlong.txt"), new Path("/0508/dashenban"));
 		//3. 关闭资源
@@ -266,7 +266,7 @@ public class HdfsDemo {
 		//Configuration
 		Configuration conf  = new Configuration();
 		//FileSystem
-		FileSystem fs  = FileSystem.get(new URI("hdfs://hadoop102:9000"), conf, "atguigu");
+		FileSystem fs  = FileSystem.get(new URI("hdfs://hadoop102:9000"), conf, "tian");
 		
 		//在HDFS上创建一个目录  /0508/dashenban
 		fs.mkdirs(new Path("/0508/dashenban"));
