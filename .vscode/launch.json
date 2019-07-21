@@ -15,7 +15,8 @@
             "type": "java",
             "name": "Debug (Launch)-TestGetClassLoader",
             "request": "launch",
-            "mainClass": "TestGetClassLoader"
+            "mainClass": "TestGetClassLoader",
+            "console": "internalConsole"
         }
     ]
 }
