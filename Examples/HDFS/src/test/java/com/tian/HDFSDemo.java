@@ -121,6 +121,7 @@ public class HDFSDemo {
      * @throws IllegalArgumentException
      * @throws FileNotFoundException
      */
+    @Test 
     public void listFile() throws FileNotFoundException, IllegalArgumentException, IOException {
         
         //获取文件详情
