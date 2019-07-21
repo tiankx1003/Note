@@ -6,8 +6,13 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.BlockLocation;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
+import org.apache.hadoop.hdfs.protocol.BlockListAsLongs;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -118,6 +123,55 @@ public class HDFSDemo {
     public void listFile() throws FileNotFoundException, IllegalArgumentException, IOException {
         
         //获取文件详情
-        fs.listFiles(new Path("/"), true);
+        RemoteIterator<LocatedFileStatus> listFiles = fs.listFiles(new Path("/"), true);
+
+        while(listFiles.hasNext()){
+            LocatedFileStatus status = listFiles.next();
+
+            //输出详情
+            //文件名称
+            System.out.println(status.getPath().getName());
+            //长度
+            System.out.println(status.getLen());
+            //权限
+            System.out.println(status.getPermission());
+            //分组
+            System.out.println(status.getGroup());
+
+            //获取文件存储的块信息
+            BlockLocation[] blockLocations = status.getBlockLocations();
+
+            for (BlockLocation blockLocation : blockLocations){
+
+                //获取块存储的主机节点
+                String[] hosts = blockLocation.getHosts();
+
+                for (String host : hosts) {
+                    System.out.println(host);
+                }
+            }
+        }
+    }
+
+    /**
+     * judge file or dir
+     * 
+     * @throws IOException
+     * @throws IllegalArgumentException
+     * @throws FileNotFoundException
+     */
+    @Test
+    public void listStatus() throws FileNotFoundException, IllegalArgumentException, IOException {
+
+        //判断是文件还是文件夹
+
+        FileStatus[] listStatus = fs.listStatus(new Path("/"));
+
+        for (FileStatus filesStatus : listStatus) {
+            if(filesStatus.isFile())
+            System.out.println("f:"+filesStatus.getPath().getName());
+            else
+            System.out.println();
+        }
     }
 }

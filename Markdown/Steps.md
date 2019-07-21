@@ -1,5 +1,5 @@
 ### 安装虚拟机
-最小安装版yum安装vim tar rsync openssh openssh-client
+最小安装版yum安装vim tar rsync openssh openssh-clients
 设置vimrc
 ```
 colorscheme murphy
@@ -117,16 +117,18 @@ vim /etc/sysconfig/network #修改主机名
 **YARN**|NodeManager|ResourceManager<br>NodeManager|NodeManager
 
 ```bash
+echo $JAVA_HOME
+vim hadoop-env.sh
+vim yarn-env.sh
+vim mapred-env.sh
+
 vim core-site.xml
 vim hdfs-site.xml
 vi yarn-site.xml 
 cp mapred-site.xml.template mapred-site.xml
 vim mapred-site.xml
 
-echo $JAVA_HOME
-vim hadoop-env.sh
-vim yarn-env.sh
-vim mapred-env.sh
+vim /opt/module/hadoop-2.7.2/etc/hadoop/slaves
 ```
 
 ```xml
@@ -173,6 +175,17 @@ vim mapred-env.sh
 </property>
 ```
 
+```
+hadoop101
+hadoop102
+hadoop103
+hadoop104
+hadoop105
+hadoop106
+```
+*该文件中添加的内容结尾不允许有空格，文件中不允许有空行。
+集群同步slaves文件*
+
 ```bash
 ##配置历史服务器
 vim mapred-site.xml
@@ -204,44 +217,9 @@ vim yarn-site.xml
 
 *集群上分发配置*
 
-[web端查看HDFS文件系统](http://tian:50070/dfshealth.html#tab-overview)
 
-[Web页面查看YARN](http://hadoop102:8088/cluster)
-
-[查看JobHistory](http://hadoop101:19888/jobhistory)
-
-[Web查看日志](http://hadoop102:19888/jobhistory)
-
-
-
-### 单点启动
-```bash
-#如果集群是第一次启动，需要格式化NameNode
-hdfs namenode -format
-#在hadoop101上启动NameNode
-hadoop-daemon.sh start namenode
-#在hadoop101、hadoop102以及hadoop103上分别启动DataNode
-hadoop-daemon.sh start datanode
-jps
-```
 
 ### 群起集群
-
-```bash
-##配置slaves
-vim /opt/module/hadoop-2.7.2/etc/hadoop/slaves
-```
-
-```
-hadoop101
-hadoop102
-hadoop103
-hadoop104
-hadoop105
-hadoop106
-```
-*该文件中添加的内容结尾不允许有空格，文件中不允许有空行。
-集群同步slaves文件*
 
 ```bash
 #第一次启动集群时需要格式化namenode
@@ -264,6 +242,14 @@ sbin/start-yarn.sh #102
 ```
 [Web端查看SecondaryNameNode](http://hadoop103:50090/status.html).
 
+[web端查看HDFS文件系统](http://tian:50070/dfshealth.html#tab-overview)
+
+[Web页面查看YARN](http://hadoop102:8088/cluster)
+
+[查看JobHistory](http://hadoop101:19888/jobhistory)
+
+[Web查看日志](http://hadoop102:19888/jobhistory)
+
 ### 集群测试
 ```bash
 #hadoop fs -mkdir -p /user/tian/input
@@ -283,22 +269,3 @@ cat blk_1073741836>>tmp.file
 cat blk_1073741837>>tmp.file
 tar -zxvf tmp.file
 ```
-
-### 宕机异常
-```
-19/07/18 16:24:47 INFO hdfs.DFSClient: Exception in createBlockOutputStream
-java.io.IOException: Got error, status message , ack with firstBadLink as 192.168.2.106:50010
-        at org.apache.hadoop.hdfs.protocol.datatransfer.DataTransferProtoUtil.checkBlockOpStatus(DataTransferProtoUtil.java:140)
-        at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.createBlockOutputStream(DFSOutputStream.java:1363)
-        at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.nextBlockOutputStream(DFSOutputStream.java:1266)
-        at org.apache.hadoop.hdfs.DFSOutputStream$DataStreamer.run(DFSOutputStream.java:449)
-19/07/18 16:24:47 INFO hdfs.DFSClient: Abandoning BP-221899475-192.168.2.101-1563437596084:blk_1073741827_1003
-19/07/18 16:24:47 INFO hdfs.DFSClient: Excluding datanode DatanodeInfoWithStorage[192.168.2.106:50010,DS-8d6b136a-9870-4862-a76f-7339d84833f5,DISK]
-```
-***不影响数据的读写***
-
->**思考**
-namenode宕机，secondarynamenode正常工作，集群状态如何
-仅有secondarynamenode工作，集群状态如何
-六个节点存入数据后，namemode之外的所有datanode宕机，状态如何
-宕机后存取数据操作后，其他节点重新上线，状态如何（会不会有节点间的数据同步）

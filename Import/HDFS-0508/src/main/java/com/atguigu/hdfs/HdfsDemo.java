@@ -1,4 +1,4 @@
-package com.tian.hdfs;
+package com.atguigu.hdfs;
 
 import java.io.File;
 import java.io.FileInputStream;
