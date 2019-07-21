@@ -1,5 +1,6 @@
 package com.tian;
 
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
@@ -12,7 +13,6 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.RemoteIterator;
-import org.apache.hadoop.hdfs.protocol.BlockListAsLongs;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,6 +22,7 @@ import org.junit.Test;
  */
 public class HDFSDemo {
 
+    
     private FileSystem fs;
 
     @Before
@@ -30,7 +31,7 @@ public class HDFSDemo {
         // Configuration
         Configuration configuration = new Configuration();
         // FileSystem
-        fs = FileSystem.get(new URI("hadoop101:9000"), configuration, "tian");
+        fs = FileSystem.get(new URI("hdfs://hadoop101:9000"), configuration, "tian");
 
     }
 
@@ -63,7 +64,7 @@ public class HDFSDemo {
     @Test
     public void uploadfile() throws IllegalArgumentException, IOException {
 
-        fs.copyToLocalFile(new Path("e:/bak_soft/test.c"), new Path("/tian/input/test.c"));
+        fs.copyFromLocalFile(new Path("d:/hdfs/test.c"), new Path("/tian/input/test.c"));
 
     }
 
@@ -79,11 +80,11 @@ public class HDFSDemo {
         /**
          * 参数优先级由高到低 客户端代码设置的值 ClassPath下的用户自定义的配置文件 服务器默认的配置
          */
-        fs.copyToLocalFile(new Path("/tian/input/test.c"), new Path("e:/bak_soft/test.c"));
+        // fs.copyToLocalFile(new Path("/tian/input/test.c"), new Path("e:/bak_soft/test.c"));
         //false不删除源文件
-        fs.copyToLocalFile(false, new Path("/tian/input/test.c"), new Path("e:/bak_soft/test.c"));
-        //true开启文件检查
-        fs.copyToLocalFile(false, new Path("/tian/input/test.c"), new Path("e:/bak_soft/test.c"), true);
+        // fs.copyToLocalFile(false, new Path("/tian/input/test.c"), new Path("e:/bak_soft/test.c"));
+        //true关闭文件检查
+        fs.copyToLocalFile(false, new Path("/tian/input/test.c"), new Path("d:/hdfs/test.c"), true);
 
     }
 
@@ -97,9 +98,9 @@ public class HDFSDemo {
     public void deldir() throws IllegalArgumentException, IOException {
 
         //方法已过期
-        //fs.delete(new Path("test1"));
+        // fs.delete(new Path("/testdelpath/"));
         //级联删除
-        fs.delete(new Path("/testpath/"), true);
+        fs.delete(new Path("/testdelpath/"), true);
     }
 
     /**
@@ -110,7 +111,7 @@ public class HDFSDemo {
      */
     @Test
     public void rename() throws IllegalArgumentException, IOException {
-        fs.rename(new Path("renametest"), new Path("renamed"));
+        fs.rename(new Path("/tian/input/renamed.c"), new Path("/tian/input/test.c"));
     }
 
     /**
@@ -173,5 +174,14 @@ public class HDFSDemo {
             else
             System.out.println();
         }
+    }
+
+
+    /**
+     * test print "Hello World!"
+     */
+    @Test
+    public void hello() {
+        System.out.println("Hello World!");
     }
 }
