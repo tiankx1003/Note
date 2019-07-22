@@ -110,7 +110,7 @@ ssh -V
 ```bash
 ##获取安装包并解压
 wget http://ftp.gnu.org/gnu/gcc/gcc-6.1.0/gcc-6.1.0.tar.bz2
-tar -zxvf gcc-6.1.0.tar.bz2
+tar -xvf gcc-6.1.0.tar.bz2
 ##下载供编译需求的依赖项
 cd gcc-6.1.0
 ./contrib/download_prerequisites
@@ -132,7 +132,7 @@ strings /usr/lib64/libstdc++.so.6 | grep GLIBC
 ##查找编译gcc时生成的最新动态库
 find / -name "libstdc++.so*"
 ##拷贝文件到/usr/lib64
-cp /opt/gcc-6.1.0/gcc-build-6.1.0/stage1-x86_64-pc-linux-gnu/libstdc++-v3/src/.libs/libstdc++.so.6.0.22 ./
+cp /opt/module/gcc-6.1.0/gcc-build-6.1.0/stage1-x86_64-pc-linux-gnu/libstdc++-v3/src/.libs/libstdc++.so.6.0.22 ./
 ##删除原来的软链接并新建软链接指向最新动态库
 rm -rf libstdc++.so.6
 ln -s libstdc++.so.6.0.22 libstdc++.so.6
