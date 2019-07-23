@@ -18,7 +18,7 @@
 
 ```bash
 git config --global user.name tian #设置账户
-git config --global user.email tiankx@gmail.com #设置邮箱
+git config --global user.email tiankx1003@gmail.com #设置邮箱
 vim ~/gitconfig #查看配置文件
 git init
 vim hello.txt

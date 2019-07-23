@@ -78,6 +78,7 @@ MapTask和ReduceTask之间如何衔接
 ```java
 //reducer
 
+
 ```
 
 ## 6.常用数据序列化类型
@@ -90,7 +91,7 @@ Int|IntWritable
 Float|FloatWritabl
 Long|LongWritabl
 Double|DoubleWritabl
-String|TextWritabl
+String|**Text**
 Map|MapWritabl
 Array|ArrayWritabl
 
@@ -349,7 +350,7 @@ public class WordcountDriver {
 					<archive>
 						<manifest>
                         <!-- 需要修改 -->
-							<mainClass>com.tian.mr.WordcountDriver</mainClass>
+							<mainClass>com.tian.MapReduce.WordcountDriver</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
@@ -366,6 +367,8 @@ public class WordcountDriver {
 		</plugins>
 	</build>
 ```
+**打包前注释掉已经确定的路径**
+
 右键项目 -> maven -> update project
 
 将程序打成jar包，然后拷贝到Hadoop集群中
@@ -636,6 +639,7 @@ public class FlowCountReducer extends Reducer<Text, FlowBean, Text, FlowBean> {
 ```
 
 **编写Driver驱动类**
+
 ```java
 package com.tian.FlowCount;
 
@@ -690,31 +694,844 @@ public class FlowCountDriver {
 
 ## 1.InputFormat数据输入
 
+![数据输入](img/InputFormat-input.png)
+
 ### 1.1 切片与MapTask并行度决定机制
+
+>**问题引出**
+>MapTask的并行度决定Map阶段的并发度，进而影响整个进程的处理速度
+
+> **MapTask并行度决定机制**
+> **数据块：**Block是HDFS物理上把数据分成一块一块。
+> **数据切片：**数据切片只是在逻辑上对输入进行分片，并不会在磁盘上将其切分成片进行存储。
+
+![](img/split-maptask.png)
 
 ### 1.2 Job提交流程源码和切片源码详解
 
+***视频03***
+
+
+
+**Job提交流程源码解析**
+
+```java
+waitForCompletion()
+
+submit();
+
+// 1建立连接
+	connect();	
+		// 1）创建提交Job的代理
+		new Cluster(getConfiguration());
+			// （1）判断是本地yarn还是远程
+			initialize(jobTrackAddr, conf); 
+
+// 2 提交job
+submitter.submitJobInternal(Job.this, cluster)
+	// 1）创建给集群提交数据的Stag路径
+	Path jobStagingArea = JobSubmissionFiles.getStagingDir(cluster, conf);
+
+	// 2）获取jobid ，并创建Job路径
+	JobID jobId = submitClient.getNewJobID();
+
+	// 3）拷贝jar包到集群
+copyAndConfigureFiles(job, submitJobDir);	
+	rUploader.uploadFiles(job, jobSubmitDir);
+
+// 4）计算切片，生成切片规划文件
+writeSplits(job, submitJobDir);
+		maps = writeNewSplits(job, jobSubmitDir);
+		input.getSplits(job);
+
+// 5）向Stag路径写XML配置文件
+writeConf(conf, submitJobFile);
+	conf.writeXml(out);
+
+// 6）提交Job,返回提交状态
+status = submitClient.submitJob(jobId, submitJobDir.toString(), job.getCredentials());
+```
+
+
+
+**FileInputFormat切片源码解析**
+
+
+
 ### 1.3 FileInputFormat切片机制
+
+> **切片机制**
+> 简单的按照文件的内容长度进行切片
+> 切片太小，默认等于BlockSize
+> 欺骗时不考虑数据集整体，而是逐个针对每一个文件单独切片
+
+> **案例分析**
+>
+> 输入数据有两个文件
+>
+> > file1.txt – 320MB    
+> > file2.txt – 10MB
+>
+> 经过FileInputFormat的切片机制运算后，形成的切片
+>
+> > file1.txt.split1 – 0~128MB
+> > file1.txt.split2 – 128~256MB
+> > file1.txt.split3 – 256~320MB
+> > file2.txt.split1 – 0~10MB
+
+**FileInputFormat切片大小的参数配置**
+
+> **源码中计算切片大小的公式**
+>
+> ```java
+> Math.max(minSize,Math.min(maxSize,blockSize));
+> mapreduce.input.fileinputformat.split.minsize = 1;//默认值为1
+> mapreduce.input.fileinputformat.split.maxsize = Long.MAXValue;//默认值Long.MAXValue	
+> /* 因此，默认情况下，切片大小=blocksize */
+> ```
+
+> **切片大小设置**
+> maxsize(切片最大值):参数如果调的必blockSize小，则会让切片变小，而且就等于配置的这个参数的值。
+> minsize(切片最大值):参数调的比blockSize大，则可以让切片变得比blockSize还大。
+
+> **获取切片信息API**
+>
+> ```java
+> String name = inputSplit.getPath().getName();//获取切片的文件名称
+> FileSplit inputSplit = (FileSplit) context.getInputSplit();//根据文件类型获取切片信息
+> ```
+>
+> 
+
+***视频04***
+
+***视频05***
+
 
 ### 1.4 CombineTextInputFormat切片机制
 
+框架默认的**TextInputFormat**切片机制是对任务按文件规划切片，<u>不管文件多小，都会是一个单独的切片</u>，都会交给一个MapTask，这样如果有<u>大量小文件</u>，就会产生<u>大量的MapTask</u>，处理效率极其低下。
+
+**应用场景**
+用于<u>小文件过多</u>的场景，可以将多个小文件从<u>逻辑上</u>规划到一个切片中，这样多个小文件交给<u>一个MapTask</u>处理。
+
+**虚拟存储切片最大值设置**
+
+```java
+CombineTextInputFormat.setMaxInputSplitSize(job, 4194304);// 4m
+```
+
+***注意***：虚拟存储切片最大值设置最好根据实际的小文件大小情况来设置具体的值。
+
+**切片机制**
+生成切片过程包括：<u>虚拟存储</u>过程和<u>切片</u>过程二部分。
+
+> **虚拟存储过程**
+将输入目录下所有文件大小，依次和设置的setMaxInputSplitSize值比较，如果不大于设置的最大值，逻辑上划分一个块。如果输入文件大于设置的最大值且大于两倍，那么以最大值切割一块；当剩余数据大小超过设置的最大值且不大于最大值2倍，此时将文件均分成2个虚拟存储块（防止出现太小切片）。
+例如setMaxInputSplitSize值为4M，输入文件大小为8.02M，则先逻辑上分成一个4M。剩余的大小为4.02M，如果按照4M逻辑划分，就会出现0.02M的小的虚拟存储文件，所以将剩余的4.02M文件切分成（2.01M和2.01M）两个文件。
+
+>**切片过程**
+判断虚拟存储的文件大小是否大于setMaxInputSplitSize值，大于等于则单独形成一个切片。
+如果不大于则跟下一个虚拟存储文件进行合并，共同形成一个切片。
+测试举例：有4个小文件大小分别为1.7M、5.1M、3.4M以及6.8M这四个小文件，则虚拟存储之后形成6个文件块，大小分别为：
+1.7M，（2.55M、2.55M），3.4M以及（3.4M、3.4M）
+最终会形成3个切片，大小分别为：
+(1.7+2.55）M，（2.55+3.4）M，（3.4+3.4）M
+
+[**合并小文件逻辑**](link/merge-tiny-file.docx)
+
 ### 1.5 CombineTextInputFormat案例实操
+
+> **需求**将输入的大量小文件合并成一个切片统一处理
+> 输入数据:准备4个小文件
+> 期望:一个切片处理4个文件
+
+> **实现过程**
+> 不做任何处理，运行WordCount案例程序，控制台日志观察切片个数为4
+>
+> ```
+> number of splits:4
+> ```
+>
+> 在WordCountDriver中添加代码，运行程序并观察切片个数
+>
+> ```java
+> // 如果不设置InputFormat，它默认用的是TextInputFormat.class
+> job.setInputFormatClass(CombineTextInputFormat.class);
+> 
+> //虚拟存储切片最大值设置4m
+> CombineTextInputFormat.setMaxInputSplitSize(job, 4194304);
+> ```
+>
+> ```
+> number of splits:3
+> ```
+>
+> 在WordCountDriver中添加代码，运行程序并观察切片个数
+>
+> ```java
+> // 如果不设置InputFormat，它默认用的是TextInputFormat.class
+> job.setInputFormatClass(CombineTextInputFormat.class);
+> 
+> //虚拟存储切片最大值设置20m
+> CombineTextInputFormat.setMaxInputSplitSize(job, 20971520);
+> ```
+>
+> ```
+> number of splits:1
+> ```
 
 ### 1.6 FileInputFormat实现类
 
+> **TextInputFormat**
+> TextInputFormat是<u>默认</u>的FileInputFormat实现类。按行读取每天记录
+> <u>Key</u>是存储该行整个文件中的起始字节偏移量，<u>LongWritable</u>
+> <u>Value</u>是行的内容，不包括任何终止符(换行符和回车符)，<u>Text</u>
+
+Value是行的内容，不包括任何终止符(换行符和回车符)，Text类型
+
+> **KeyValueTextInputFormat**
+> 每一行均为一条记录，分隔符为key , value，可以通过在驱动类中设置分隔符，默认分隔符为“\t”
+> <u>不改变切片规则</u>
+> <u>key</u>为分隔符前的内容，<u>Text</u>
+> <u>value</u>为分隔符后的所有内容，<u>Text</u>
+
+> **NLineInputFormat**
+> map进程处理的<u>InputSplit不再按Block块划分</u>，而是按NlineInputFormat指定的行数N来划分
+> 即输入文件的总行数/N=切片数，如果不整除，切片数=商+1
+> <u>Key</u>和<u>Value</u>类型与<u>TextInputFormat</u>类型一致
+
+***视频***
+
 ### 1.7 KeyValueTextInputFormat使用案例
+
+>**需求**统计输入文件中每一行的第一个单词相同的行数
+>输入数据
+>```
+>banzhang ni hao
+>xihuan hadoop banzhang
+>banzhang ni hao
+>xihuan hadoop banzhang
+>```
+>期望结果数据
+>```
+>banzhang 2
+>xihuan 2
+>```
+
+>**需求分析**
+>Map
+>```
+>设置key和value<banzhang,1>
+>写出
+>```
+>Reduce
+>```
+><banzhang,1>
+><banzhang,1>
+>汇总
+>写出
+>```
+>Driver
+>```java
+>//设置切割符
+>conf.set(KeyValueLineRecordReader.KEY_VALUE_SEPERATOR," ");
+>//设置输入格式
+>job.setInputFormatClass(KeyValueTextInputFormat.class);
+>```
+
+>**代码实现**
+>编写Mapper类
+>```java
+>package com.atguigu.mapreduce.KeyValueTextInputFormat;
+>import java.io.IOException;
+>import org.apache.hadoop.io.LongWritable;
+>import org.apache.hadoop.io.Text;
+>import org.apache.hadoop.mapreduce.Mapper;
+>
+>public class KVTextMapper extends Mapper<Text, Text, Text, LongWritable>{
+>	
+>// 1 设置value
+>   LongWritable v = new LongWritable(1);  
+>    
+>	@Override
+>	protected void map(Text key, Text value, Context context)
+>			throws IOException, InterruptedException {
+>
+>// banzhang ni hao
+>        
+>        // 2 写出
+>        context.write(key, v);  
+>	}
+>}
+>```
+>编写Reducer类
+>```java
+>package com.atguigu.mapreduce.KeyValueTextInputFormat;
+>import java.io.IOException;
+>import org.apache.hadoop.io.LongWritable;
+>import org.apache.hadoop.io.Text;
+>import org.apache.hadoop.mapreduce.Reducer;
+>
+>public class KVTextReducer extends Reducer<Text, LongWritable, Text, LongWritable>{
+>	
+>    LongWritable v = new LongWritable();  
+>    
+>	@Override
+>	protected void reduce(Text key, Iterable<LongWritable> values,	Context context) throws IOException, InterruptedException {
+>		
+>		 long sum = 0L;  
+>
+>		 // 1 汇总统计
+>        for (LongWritable value : values) {  
+>            sum += value.get();  
+>        }
+>         
+>        v.set(sum);  
+>         
+>        // 2 输出
+>        context.write(key, v);  
+>	}
+>}
+>```
+>编写Driver类
+>```java
+>package com.atguigu.mapreduce.keyvaleTextInputFormat;
+>import java.io.IOException;
+>import org.apache.hadoop.conf.Configuration;
+>import org.apache.hadoop.fs.Path;
+>import org.apache.hadoop.io.LongWritable;
+>import org.apache.hadoop.io.Text;
+>import org.apache.hadoop.mapreduce.Job;
+>import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+>import org.apache.hadoop.mapreduce.lib.input.KeyValueLineRecordReader;
+>import org.apache.hadoop.mapreduce.lib.input.KeyValueTextInputFormat;
+>import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+>
+>public class KVTextDriver {
+>
+>	public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
+>		
+>		Configuration conf = new Configuration();
+>		// 设置切割符
+>	conf.set(KeyValueLineRecordReader.KEY_VALUE_SEPERATOR, " ");
+>		// 1 获取job对象
+>		Job job = Job.getInstance(conf);
+>		
+>		// 2 设置jar包位置，关联mapper和reducer
+>		job.setJarByClass(KVTextDriver.class);
+>		job.setMapperClass(KVTextMapper.class);
+>job.setReducerClass(KVTextReducer.class);
+>				
+>		// 3 设置map输出kv类型
+>		job.setMapOutputKeyClass(Text.class);
+>		job.setMapOutputValueClass(LongWritable.class);
+>
+>		// 4 设置最终输出kv类型
+>		job.setOutputKeyClass(Text.class);
+>job.setOutputValueClass(LongWritable.class);
+>		
+>		// 5 设置输入输出数据路径
+>		FileInputFormat.setInputPaths(job, new Path(args[0]));
+>		
+>		// 设置输入格式
+>	job.setInputFormatClass(KeyValueTextInputFormat.class);
+>		
+>		// 6 设置输出数据路径
+>		FileOutputFormat.setOutputPath(job, new Path(args[1]));
+>		
+>		// 7 提交job
+>		job.waitForCompletion(true);
+>	}
+>}
+>```
+
 
 ### 1.8 NLineInputFormat使用案例
 
+> **需求**对每个单词进行个数统计，要求根据每个输入文件的行数来规定输出多少个切片。此案例要求每三行放入一个切片中。
+>
+> **输入数据**
+>
+> ```
+> banzhang ni hao
+> xihuan hadoop banzhang
+> banzhang ni hao
+> xihuan hadoop banzhang
+> banzhang ni hao
+> xihuan hadoop banzhang
+> banzhang ni hao
+> xihuan hadoop banzhang
+> banzhang ni hao
+> xihuan hadoop banzhang banzhang ni hao
+> xihuan hadoop banzhang
+> ```
+>
+> **期望输出数据**
+>
+> ```
+> Number of splits:4
+> ```
+
+> **需求分析**
+> Map
+>
+> ```
+> 获取一行
+> 切割
+> 循环写出
+> ```
+>
+> Reduce
+>
+> ```
+> 汇总
+> 输出
+> ```
+>
+> Dirver
+>
+> ```java
+> //设置每个切片InputSplit中划分三条记录
+> NLineInputFormat.setNumLinesPerSplit(job,3);
+> ```
+
+> **代码实现**
+> 编写Mapper类
+>
+> ```java
+> package com.atguigu.mapreduce.nline;
+> import java.io.IOException;
+> import org.apache.hadoop.io.LongWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.Mapper;
+> 
+> public class NLineMapper extends Mapper<LongWritable, Text, Text, LongWritable>{
+> 	
+> 	private Text k = new Text();
+> 	private LongWritable v = new LongWritable(1);
+> 	
+> 	@Override
+> 	protected void map(LongWritable key, Text value, Context context)	throws IOException, InterruptedException {
+> 		
+> 		 // 1 获取一行
+>         String line = value.toString();
+>         
+>         // 2 切割
+>         String[] splited = line.split(" ");
+>         
+>         // 3 循环写出
+>         for (int i = 0; i < splited.length; i++) {
+>         	
+>         	k.set(splited[i]);
+>         	
+>            context.write(k, v);
+>         }
+> 	}
+> }
+> ```
+>
+> 编写Reducer类
+>
+> ```java
+> package com.atguigu.mapreduce.nline;
+> import java.io.IOException;
+> import org.apache.hadoop.io.LongWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.Reducer;
+> 
+> public class NLineReducer extends Reducer<Text, LongWritable, Text, LongWritable>{
+> 	
+> 	LongWritable v = new LongWritable();
+> 	
+> 	@Override
+> 	protected void reduce(Text key, Iterable<LongWritable> values,	Context context) throws IOException, InterruptedException {
+> 		
+>         long sum = 0l;
+> 
+>         // 1 汇总
+>         for (LongWritable value : values) {
+>             sum += value.get();
+>         }  
+>         
+>         v.set(sum);
+>         
+>         // 2 输出
+>         context.write(key, v);
+> 	}
+> }
+> ```
+>
+> 编写Driver类
+>
+> ```java
+> package com.atguigu.mapreduce.nline;
+> import java.io.IOException;
+> import java.net.URISyntaxException;
+> import org.apache.hadoop.conf.Configuration;
+> import org.apache.hadoop.fs.Path;
+> import org.apache.hadoop.io.LongWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.Job;
+> import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+> import org.apache.hadoop.mapreduce.lib.input.NLineInputFormat;
+> import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+> 
+> public class NLineDriver {
+> 	
+> 	public static void main(String[] args) throws IOException, URISyntaxException, ClassNotFoundException, InterruptedException {
+> 		
+> // 输入输出路径需要根据自己电脑上实际的输入输出路径设置
+> args = new String[] { "e:/input/inputword", "e:/output1" };
+> 
+> 		 // 1 获取job对象
+> 		 Configuration configuration = new Configuration();
+>         Job job = Job.getInstance(configuration);
+>         
+>         // 7设置每个切片InputSplit中划分三条记录
+>         NLineInputFormat.setNumLinesPerSplit(job, 3);
+>           
+>         // 8使用NLineInputFormat处理记录数  
+>         job.setInputFormatClass(NLineInputFormat.class);  
+>           
+>         // 2设置jar包位置，关联mapper和reducer
+>         job.setJarByClass(NLineDriver.class);  
+>         job.setMapperClass(NLineMapper.class);  
+>         job.setReducerClass(NLineReducer.class);  
+>         
+>         // 3设置map输出kv类型
+>         job.setMapOutputKeyClass(Text.class);  
+>         job.setMapOutputValueClass(LongWritable.class);  
+>         
+>         // 4设置最终输出kv类型
+>         job.setOutputKeyClass(Text.class);  
+>         job.setOutputValueClass(LongWritable.class);  
+>           
+>         // 5设置输入输出数据路径
+>         FileInputFormat.setInputPaths(job, new Path(args[0]));  
+>         FileOutputFormat.setOutputPath(job, new Path(args[1]));  
+>           
+>         // 6提交job
+>         job.waitForCompletion(true);  
+> 	}
+> }
+> ```
+>
+> 
+
 ### 1.9 自定义InputFormat
+
+在企业开发中，Hadoop框架自带的InputFormat类型不能满足所有应用场景，需要自定义InputFormat来解决问题
+
+>**自定义InputFormat步骤**
+>自定义类继承FileInputFormat
+>重写RecordReader，实现一次读取一个完整文件
+>在输出时使用SequenceFileOutPutFormat输出并合并文件
 
 ### 1.10 自定义InputFormat案例实操
 
-### 2.MapReduce工作流程
+***视频11***
 
-### 3.Shuffle机制
+无论HDFS还是MapReduce，在处理小文件时效率都非常低，但又难免面临处理大量小文件的场景，此时，就需要有相应解决方案。可以自定义InputFormat实现小文件的合并。
+
+> **需求**
+> 将多个小文件合并成一个SequenceFile文件（SequenceFile文件是Hadoop用来存储二进制形式的key-value对的文件格式），SequenceFile里面存储着多个文件，存储的形式为文件路径+名称为key，文件内容为value。
+> 输入数据
+>
+> ```one.txt
+> yongpeng weidong weinan
+> sanfeng luozong xiaoming
+> ```
+> ```two.txt
+> longlong fanfan
+> mazong kailun yuhang yixin
+> longlong fanfan
+> mazong kailun yuhang yixin
+> ```
+> ```three.txt
+> shuaige changmo zhenqiang 
+> dongli lingu xuanxuan
+> ```
+>
+> 期望输出
+>
+> ```
+> //字节码文件
+> ```
+
+> **需求分析**
+> 自定义类继承FileInputFormat
+>
+> ```
+> 重写isSplitable()方法，返回false表示文件不可切割
+> 重写creatRecordReader()，创建自定义RecordReader对象，并初始化
+> ```
+>
+> 重写RecorderReader，实现一次读取一个完整的文件封装为KV
+>
+> ```
+> 采用IO流一次读取一个文件输出到value中，因为设置了不可切片，最终把文件封装到了value中
+> 获取文件路径信息+名称，并设置key
+> ```
+>
+> 设置Driver
+>
+> ```java
+> //设置输入的inputFormat
+> job.setInputFormatClass(WholeFileInputFormat.class);
+> //设置输出的outputFormat
+> job.setOutputFormatClass(SequenceFileOutputFormat.class);
+> ```
+
+> **程序实现**
+> 自定义InputFormat
+>
+> ```java
+> package com.atguigu.mapreduce.inputformat;
+> import java.io.IOException;
+> import org.apache.hadoop.fs.Path;
+> import org.apache.hadoop.io.BytesWritable;
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.mapreduce.InputSplit;
+> import org.apache.hadoop.mapreduce.JobContext;
+> import org.apache.hadoop.mapreduce.RecordReader;
+> import org.apache.hadoop.mapreduce.TaskAttemptContext;
+> import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+> 
+> // 定义类继承FileInputFormat
+> public class WholeFileInputformat extends FileInputFormat<Text, BytesWritable>{
+> 	
+> 	@Override
+> 	protected boolean isSplitable(JobContext context, Path filename) {
+> 		return false;
+> 	}
+> 
+> 	@Override
+> 	public RecordReader<Text, BytesWritable> createRecordReader(InputSplit split, TaskAttemptContext context)	throws IOException, InterruptedException {
+> 		
+> 		WholeRecordReader recordReader = new WholeRecordReader();
+> 		recordReader.initialize(split, context);
+> 		
+> 		return recordReader;
+> 	}
+> }
+> 
+> ```
+>
+> 自定义RecordReader类
+>
+> ```java
+> package com.atguigu.mapreduce.inputformat;
+> import java.io.IOException;
+> import org.apache.hadoop.conf.Configuration;
+> import org.apache.hadoop.fs.FSDataInputStream;
+> import org.apache.hadoop.fs.FileSystem;
+> import org.apache.hadoop.fs.Path;
+> import org.apache.hadoop.io.BytesWritable;
+> import org.apache.hadoop.io.IOUtils;
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.mapreduce.InputSplit;
+> import org.apache.hadoop.mapreduce.RecordReader;
+> import org.apache.hadoop.mapreduce.TaskAttemptContext;
+> import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+> 
+> public class WholeRecordReader extends RecordReader<Text, BytesWritable>{
+> 
+> 	private Configuration configuration;
+> 	private FileSplit split; //便于别的方法调用
+> 	
+> 	private boolean isProgress= true;
+> 	private BytesWritable value = new BytesWritable();
+> 	private Text k = new Text();
+> 
+> /**
+>     * 初始化
+>     * InputSplit split : 当前的切片对象 FileSplit
+>     * TaskAttemptContext Context : 上下文对象，包含多种需要的信息
+> */
+> 	@Override
+> 	public void initialize(InputSplit split, TaskAttemptContext context) throws IOException, InterruptedException {
+> 		
+> 		this.split = (FileSplit)split;
+> 		configuration = context.getConfiguration();
+> 	}
+> /*
+>     * key : 文件路径 + 文件名
+>     * value : 文件中的内容
+> *
+> */
+> 	@Override
+> 	public boolean nextKeyValue() throws IOException, InterruptedException {
+> 		
+> 		if (isProgress) {
+> 
+> 			// 1 定义缓存区
+> 			byte[] contents = new byte[(int)split.getLength()];
+> 			
+> 			FileSystem fs = null;
+> 			FSDataInputStream fis = null;
+> 			
+>          try {
+>              // 2 获取文件系统
+>              Path path = split.getPath();
+>              fs = path.getFileSystem(configuration);
+>              fis = fs.open(path);
+>              // 5 输出文件内容
+>              value.set(contents, 0, contents.length);
+>              // 6 获取文件路径及名称
+>              String name = split.getPath().toString();
+>              // 7 设置输出的key值
+>              k.set(name);
+> 
+>          } catch (Exception e) {
+> 
+>          }finally {
+>              IOUtils.closeStream(fis);
+>          }
+>              isProgress = false;
+>              return true;
+> 		}
+> 		
+> 		return false;
+> 	}
+> 
+> 	@Override
+> 	public Text getCurrentKey() throws IOException, InterruptedException {
+> 		return k;
+> 	}
+> 
+> 	@Override
+> 	public BytesWritable getCurrentValue() throws IOException, InterruptedException {
+> 		return value;
+> 	}
+> 
+> 	@Override
+> 	public float getProgress() throws IOException, InterruptedException {
+> 		return 0;
+> 	}
+> 
+> 	@Override
+> 	public void close() throws IOException {
+> 	}
+> }
+> ```
+>
+> 编写SequenceFileMapper类处理流程
+>
+> ```java
+> package com.atguigu.mapreduce.inputformat;
+> import java.io.IOException;
+> import org.apache.hadoop.io.BytesWritable;
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.Mapper;
+> import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+> 
+> /**
+> * key : 文件路径
+> * value : 文件的内容
+> */
+> public class SequenceFileMapper extends Mapper<Text, BytesWritable, Text, BytesWritable>{
+> 	
+> 	@Override
+> 	protected void map(Text key, BytesWritable value,			Context context)		throws IOException, InterruptedException {
+> 
+> 		context.write(key, value);
+> 	}
+> }
+> ```
+>
+> 编写SequenceFileReducer类处理流程
+>
+> ```java
+> package com.atguigu.mapreduce.inputformat;
+> import java.io.IOException;
+> import org.apache.hadoop.io.BytesWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.Reducer;
+> 
+> public class SequenceFileReducer extends Reducer<Text, BytesWritable, Text, BytesWritable> {
+> 
+> 	@Override
+> 	protected void reduce(Text key, Iterable<BytesWritable> values, Context context)		throws IOException, InterruptedException {
+> 
+> 		context.write(key, values.iterator().next());
+>         //或者使用迭代
+> 	}
+> }
+> ```
+> 编写SequenceFileDriver类处理流程
+>
+> ```java
+> package com.atguigu.mapreduce.inputformat;
+> import java.io.IOException;
+> import org.apache.hadoop.conf.Configuration;
+> import org.apache.hadoop.fs.Path;
+> import org.apache.hadoop.io.BytesWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.Job;
+> import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+> import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+> import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
+> 
+> public class SequenceFileDriver {
+> 
+> 	public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
+> 		
+>         // 输入输出路径需要根据自己电脑上实际的输入输出路径设置
+>         args = new String[] { "e:/input/inputinputformat", "e:/output1" };
+>         // 1 获取job对象
+>         Configuration conf = new Configuration();
+>         Job job = Job.getInstance(conf);
+>         // 2 设置jar包存储位置、关联自定义的mapper和reducer
+>         job.setJarByClass(SequenceFileDriver.class);
+>         job.setMapperClass(SequenceFileMapper.class);
+>         job.setReducerClass(SequenceFileReducer.class);
+>         // 7 设置输入的自定义inputFormat
+>         job.setInputFormatClass(WholeFileInputformat.class);
+>         // 8 设置输出的outputFormat
+>         job.setOutputFormatClass(SequenceFileOutputFormat.class);
+>         // 3 设置map输出端的kv类型
+>         job.setMapOutputKeyClass(Text.class);
+>         job.setMapOutputValueClass(BytesWritable.class);
+>         // 4 设置最终输出端的kv类型
+>         job.setOutputKeyClass(Text.class);
+>         job.setOutputValueClass(BytesWritable.class);
+>         // 5 设置输入输出路径
+>         FileInputFormat.setInputPaths(job, new Path(args[0]));
+>         FileOutputFormat.setOutputPath(job, new Path(args[1]));
+>         // 6 提交job
+>         boolean result = job.waitForCompletion(true);
+>         System.exit(result ? 0 : 1);
+> 	}
+> }
+> ```
+
+
+
+**自定义InputFormat Debug**
+
+
+
+## 2.MapReduce工作流程
+
+![](img\MapReduce-workdetail-1.png)
+
+
+
+![](img\MapReduce-workdetail-2.png)
+
+## 3.Shuffle机制
+
+
+
+
 
 ### 3.1 Shuffle机制
+
+
+
+
 
 ### 3.2 Partition分区
 
@@ -852,3 +1669,12 @@ public class FlowCountDriver {
 
 # 八、常见错误及解决方案
 
+
+
+* [ ] **MapReduce Job submit >> debug src**  ***视频3***
+* [ ] **MapReduce >> FileInputFormat** ***视频 4 5***
+* [ ] **MapReduce测试 @ 集群**
+* [ ] **MapReduce >> NLineInputFormat实现类的理解**  ***视频***
+* [ ] **MapReduce >> KeyValueTextInputFormat & NLineInputFormat使用案例**
+* [ ] **MapReduce >> 自定义FileInputFormat** ***视频11*** *2019-7-23 15:58:32*
+* [ ] **自定义InputFormat调试** ***视频***
