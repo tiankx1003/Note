@@ -2,14 +2,10 @@
 ## Note.md
 
 * [ ] **HDFS >> HDFS IO**
-
-* [x] **MapReduce >> MapReduce框架原理 **
-
-  ​	**>> InputFormat数据输入 & 切片与MapTask并发度决定机制**
-
-*2019-7-23 08:53:49*
-
-* [ ] test
+* [ ] **解决HDFS和MapReduce的所有TODO**
+* [ ] **MapReduce代码在IDEA上再写一遍**
+* [ ] **自定义inputformat的debug**
+* [ ] **shuffle源码**
 
 
 ## Settings
@@ -25,8 +21,6 @@
 
 <!-- test -->
 
-test
-
 
 ## Learning
 
@@ -38,11 +32,8 @@ test
 
 
 
-​	ctrl + shift + t  搜索查看类
 
-​	ctrl + t 查看子类/实现类
-
-​	ctrl + shift + o :全局导包
-
-
-
+>**Eclipse keys expend**
+ctrl + shift + t  搜索查看类
+ctrl + t 查看子类/实现类
+ctrl + shift + o :全局导包
