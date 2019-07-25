@@ -1,7 +1,9 @@
 # TODO-List
-
+* [ ] -
+* [ ] 
 * [x] **Job submit >> debug src**  ***视频3***
 * [x] **FileInputFormat split >> debug src**
+* [x] **Xmind**  *2019-7-25 15:39:23*
 * [ ] **FileInputFormat** ***视频 4 5***
 * [ ] **MapReduce测试 @ 集群**
 * [ ] **NLineInputFormat实现类的理解**  ***视频***
@@ -16,7 +18,6 @@
 * [ ] **MapReduce工作流程图**  *2019-7-24 16:31:21*
 * [ ] **InputFormat数据输入**  *2019-7-25 01:12:40*
 * [ ] **切片与MapTask并发度决定机制**  *2019-7-25 01:13:13*
-* [ ] **Xmind**
 
 
 
@@ -2760,6 +2761,43 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
    > 	}
    > }
    > ```
+
+### 3.11 Shuffle init 源码
+
+```java
+org.apache.hadoop.mapred.MapTask //关键类
+    public void run(final JobConf job, final TaskUmbilicalProtocol umbilical){} //
+        conf.getNumReduceTasks() != 0 //ReduceTask个数不为零
+            mapPhase = getProgress().addPhase("map", 0.667f); // map 阶段
+            sortPhase  = getProgress().addPhase("sort", 0.333f); // 快排
+        runNewMapper(job, splitMetaInfo, umbilical, reporter); //调用runNewMapper
+            new NewTrackingRecordReader<INKEY,INVALUE>(split, inputFormat, reporter, taskContext); //
+                inputFormat.createRecordReader(split, taskContext);
+            // get an output object
+            job.getNumReduceTasks() != 0 //ReduceTask个数不为零
+                new NewOutputCollector(taskContext, job, umbilical, reporter);
+                    
+                    /**
+                     * 获取缓冲区并调用init方法
+                     */
+                    collector = createSortingCollector(job, reporter); //获取collector，缓冲区
+                        /**
+                         * String MAP_OUTPUT_COLLECTOR_CLASS_ATTR = "mapreduce.job.map.output.collector.class"
+                         */
+                        clazz.asSubclass(MapOutputCollector.class);
+                            //判断类型 MapOutputBuffer
+                            if (clazz.isAssignableFrom(this))
+                                return (Class<? extends U>) this;
+                            else
+                                throw new ClassCastException(this.toString());
+                        ReflectionUtils.newInstance(subclazz, job);//反射获取对象
+                        collector.init(context); // 关键方法，缓冲区初始化
+
+                    partitions = jobContext.getNumReduceTasks(); //获取分区数
+            
+            
+
+```
 
 ## 4.MapTask工作机制
 

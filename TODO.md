@@ -2,7 +2,7 @@
 ## Note
 
 * [ ] -
-* [ ] **Hadoop Xmind 总结**
+* [x] **Hadoop Xmind 总结**
 * [ ] **Hadoop crontab 定时任务** *2019-7-25 14:44:55*
 * [ ] **HDFS >> HDFS IO**
 * [ ] **解决HDFS和MapReduce的所有TODO**
