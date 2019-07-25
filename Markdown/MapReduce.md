@@ -1,6 +1,7 @@
 # TODO-List
 
-* [ ] **Job submit >> debug src**  ***视频3***
+* [x] **Job submit >> debug src**  ***视频3***
+* [x] **FileInputFormat split >> debug src**
 * [ ] **FileInputFormat** ***视频 4 5***
 * [ ] **MapReduce测试 @ 集群**
 * [ ] **NLineInputFormat实现类的理解**  ***视频***
@@ -15,6 +16,7 @@
 * [ ] **MapReduce工作流程图**  *2019-7-24 16:31:21*
 * [ ] **InputFormat数据输入**  *2019-7-25 01:12:40*
 * [ ] **切片与MapTask并发度决定机制**  *2019-7-25 01:13:13*
+* [ ] **Xmind**
 
 
 
@@ -341,34 +343,6 @@ public class WordcountDriver {
 在本地操作系统配置Hadoop环境
 在编译器上运行程序
 
-```
-1. job.WaitForCompletion();提交job
-2. waitForCompletion(true);调用submit
-3. submit();
-	3.1 ensureState(JobState.DEFINE);确认Job的状态
-	3.2 setUseNewAPI();设置使用新的API
-	3.3 connect();
-		[1] 创建cluster对象，return new Cluster(getConfiguration());
-		[2] initialize方法中创建cluster，判断是本地运行还是yarn运行
-			最终获取不同的Runner，(LocalJobRunner or YarnRunner)
-	3.4 ★ submitJobInternal();
-		[1] checkSpecs(job);判断输出路径是否存在，如果存在抛出异常
-		[2] JobSubmissionFiles.getStagingDir(cluster,conf);
-			创建临时目录用于存放切片和job信息
-		[3] submitClient.getNewJobID();生成一个jobID
-		[4] copyAndConfigureFile();拷贝并配置文件
-		[5] ★ writeSplits(job,submitJobDir);生成切片信息
-			a. 默认使用的FileInputFormat是TextInputFormat
-			b. input.getSplits(job);获取切片信息
-				long minSize -- 
-				long maxSize -- Long的最大值
-				本地块BlockSize大小默认 -- 32M
-				获取切片大小 -- 
-				判断是否继续切片 -- 
-		[6] writeConf(conf,jobFile);将所有xml配置信息写入job.xml
-		[7] submitClient.submitJob(jobID,submitJobDir.toString());提交job，
-		[8] jtFs.delete(submitJobDir,true);删除存放job和切片的临时目录
-```
 
 ### 8.6 集群测试
 
@@ -753,54 +727,81 @@ public class FlowCountDriver {
 
 ### 1.2 Job提交流程源码和切片源码详解
 
-***视频03***
-
-
+![](img/job-src.png)
 
 **Job提交流程源码解析**
 
 ```java
-waitForCompletion()
-
-submit();
-
-// 1建立连接
-	connect();	
-		// 1）创建提交Job的代理
-		new Cluster(getConfiguration());
-			// （1）判断是本地yarn还是远程
-			initialize(jobTrackAddr, conf); 
-
-// 2 提交job
-submitter.submitJobInternal(Job.this, cluster)
-	// 1）创建给集群提交数据的Stag路径
-	Path jobStagingArea = JobSubmissionFiles.getStagingDir(cluster, conf);
-
-	// 2）获取jobid ，并创建Job路径
-	JobID jobId = submitClient.getNewJobID();
-
-	// 3）拷贝jar包到集群
-copyAndConfigureFiles(job, submitJobDir);	
-	rUploader.uploadFiles(job, jobSubmitDir);
-
-// 4）计算切片，生成切片规划文件
-writeSplits(job, submitJobDir);
-		maps = writeNewSplits(job, jobSubmitDir);
-		input.getSplits(job);
-
-// 5）向Stag路径写XML配置文件
-writeConf(conf, submitJobFile);
-	conf.writeXml(out);
-
-// 6）提交Job,返回提交状态
-status = submitClient.submitJob(jobId, submitJobDir.toString(), job.getCredentials());
+job.waitForCompletion(true); //提交job，调用submit()方法
+    submit();
+        ensureState(JobState.DEFINE); //确定Job的状态
+        setUseNewAPI(); //设置新的API
+        connect();
+            return new Cluster(getConfiguration()); //创建并返回cluster对象
+                /**
+                创建cluster对象，判断是本地运行还是yarn运行
+                最终获取不同的Runner   (LocalJobRunner or YarnRunner)
+                */
+                /*
+                String framework =
+                    conf.get(MRConfig.FRAMEWORK_NAME, MRConfig.LOCAL_FRAMEWORK_NAME);
+                if (!MRConfig.LOCAL_FRAMEWORK_NAME.equals(framework)) {
+                    return null;
+                }
+                conf.setInt(JobContext.NUM_MAPS, 1);
+                return new LocalJobRunner(conf);
+                */
+                initialize(jobTrackAddr, conf); 
+                    return new LocalJobRunner(conf);
+        return submitter.submitJobInternal(Job.this, cluster);
+            checkSpecs(job); //判断输出路径是否存在，存在则抛异常
+            JobSubmissionFiles.getStagingDir(cluster, conf); //创建临时目录用于存放切片和job信息，当前工程所在分区根目录的tmp文件夹
+                fs.mkdirs(stagingArea, new FsPermission(JOB_DIR_PERMISSION));
+            submitClient.getNewJobID(); //生成一个jobID
+            new Path(jobStagingArea, jobId.toString()); //根据jobID再临时目录下创建目录
+            copyAndConfigureFiles(job, submitJobDir); //
+            /**
+             * 具体见下述切片机制源码解析
+             */
+            writeSplits(job, submitJobDir); //临时目录中写入切片信息
+                /**
+                * 通过反射获取input实例，默认使用的FileInputFormat是TextInputFormat
+                */
+                ReflectionUtils.newInstance(job.getInputFormatClass(), conf);
+                input.getSplits(job); //获取切片信息
+                    long minSize = Math.max(getFormatMinSplitSize(), getMinSplitSize(job));  // 1
+                    long maxSize = getMaxSplitSize(job); // Long类型的最大值
+                    for (FileStatus file: files){} // 迭代
+                        file.getBlockSize();  //本地块大小区别于集群，32MB
+                        return Math.max(minSize, Math.min(maxSize, blockSize)); //获取切片大小
+                        /**
+                        * 调大minSize可增加切片大小
+                        * 调小maxSize可减小切片大小
+                        */
+                        while (((double) bytesRemaining)/splitSize > SPLIT_SLOP){}//文件大小切片后剩余如果是切片大小的1.1倍则继续切片
+                splits.toArray(new InputSplit[splits.size()]); //从splits的值可以验证出文件仍旧是以块的形式存在的，切片只是逻辑行为
+            writeConf(conf, submitJobFile); //写入配置信息
+            submitClient.submitJob(jobId, submitJobDir.toString(),job.getCredentials()); // 生成状态信息
+            jtFs.delete(submitJobDir, true); // 删除临时目录内的切片和配置信息
 ```
-
-
 
 **FileInputFormat切片源码解析**
 
-
+>程序先找到存储数据的目录
+>开始遍历处理（规划切片）目录下的每一个文件
+>遍历第一个文件ss.txt
+>
+>```
+>获取文件大小fs.sezeOf(ss.txt)
+>计算切片大小computeSplitSize(Math.max(minSize,Math.min(maxSize,blockSize))) = blocksize = 128M
+>默认情况写切片大小=blocksize
+>开始切片
+>将切片信息写到一个切片规划文件中
+>整个切片的核心过程再getSplit()方法中完成
+>InputSplit只记录了切片的元数据信息，如起始位置，长度以及所在的节点列表等
+>```
+>
+>提交切片规划文件到yarn上，yarn上的MrAppMaster就可以根据切片规划文件开始计算开启的MapTask个数
 
 ### 1.3 FileInputFormat切片机制
 
@@ -845,7 +846,8 @@ status = submitClient.submitJob(jobId, submitJobDir.toString(), job.getCredentia
 > FileSplit inputSplit = (FileSplit) context.getInputSplit();//根据文件类型获取切片信息
 > ```
 >
-> 
+
+
 
 ***视频04***
 
@@ -2661,7 +2663,7 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
    > public class OrderGroupingComparator extends WritableComparator {
    > 
    > 	protected OrderGroupingComparator() {
-   >         //
+   >      //
    > 		super(OrderBean.class, true);
    > 	}
    > 
@@ -2683,8 +2685,11 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
    > 		return result;
    > 	}
    > }
+   > ```
 > ```
-   
+> 
+> ```
+
    > 编写OrderSortReducer类
    >
    > ```java
@@ -2703,7 +2708,7 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
    > 	}
    > }
    > ```
-   
+
    > 编写OrderSortDriver类
    >
    > ```java

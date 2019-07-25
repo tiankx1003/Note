@@ -1,9 +1,12 @@
 
-## Note.md
+## Note
 
+* [ ] -
+* [ ] **Hadoop Xmind 总结**
+* [ ] **Hadoop crontab 定时任务** *2019-7-25 14:44:55*
 * [ ] **HDFS >> HDFS IO**
 * [ ] **解决HDFS和MapReduce的所有TODO**
-* [ ] **MapReduce代码在IDEA上再写一遍**
+* [x] **MapReduce代码在IDEA上再写一遍**
 * [ ] **自定义inputformat的debug**
 * [ ] **shuffle源码**
 
@@ -12,9 +15,27 @@
 
 * [x] **VS Code Untitled open >> "startup" "init"**
 ```json
-"workbench.startupEditor": "none",
-"workbench.editor.enablePreviewFromQuickOpen": true,
-"workbench.editor.enablePreview": true
+{
+    "workbench.startupEditor": "none",
+    "java.configuration.maven.userSettings": "C:\\Developing\\apache-maven-3.5.3\\conf\\settings.xml",
+    "java.home": "C:\\Developing\\jdk1.8.0_211",
+    "java.maven.downloadSources": true,
+    "maven.executable.path": "C:\\Developing\\apache-maven-3.5.3\\bin\\mvn.cmd",
+    "editor.suggestSelection": "first",
+    "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
+    "java.configuration.checkProjectSettingsExclusions": false,
+    "workbench.iconTheme": "material-icon-theme",
+    "explorer.confirmDragAndDrop": false,
+    "explorer.confirmDelete": false,
+    "workbench.editor.enablePreview": false,
+    "markdown-preview-enhanced.previewTheme": "github-dark.css",
+    "markdown-preview-enhanced.revealjsTheme": "black.css",
+    "markdown-preview-enhanced.mermaidTheme": "dark",
+    "markdown-preview-enhanced.codeBlockTheme": "atom-dark.css",
+    "git.autofetch": true,
+    "window.zoomLevel": 0,
+    "window.menuBarVisibility": "toggle"
+}
 ```
 
 *2019-7-23 08:54:09*
@@ -33,7 +54,9 @@
 
 
 
->**Eclipse keys expend**
+>**Eclipse keymaps**
 ctrl + shift + t  搜索查看类
 ctrl + t 查看子类/实现类
 ctrl + shift + o :全局导包
+
+>**IDEA keymaps**
