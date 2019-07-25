@@ -459,13 +459,13 @@ public void readFields(DataInput in) throws IOException {
 注意反序列化的顺序和序列化的顺序完全一致
 把结果显示在文件中，需要重写toString()，用"\t"分开，方便后续使用
 如果需要将自定义的bean放在key中传输，则还需要实现Comparable接口，因为MapReduce框中的Shuffle过程要求对key必须能排序，详见排序案例
+
 ```java
 @Override
 public int compareTo(FlowBean o) {
 	// 倒序排列，从大到小
 	return this.sumFlow > o.getSumFlow() ? -1 : 1;
 }
-
 ```
 ## 3.序列化案例实操
 
@@ -473,6 +473,7 @@ public int compareTo(FlowBean o) {
 
 统计每一个手机号耗费的总上行流量、下行流量、总流量
 输入数据 phone_data.txt
+
 ```txt
 1	13736230513	192.196.100.1	www.atguigu.com	2481	24681	200
 2	13846544121	192.196.100.2			264	0	200
@@ -968,6 +969,7 @@ Value是行的内容，不包括任何终止符(换行符和回车符)，Text类
 
 >**需求分析**
 >Map
+>
 >```
 >设置key和value<banzhang,1>
 >写出
@@ -1276,8 +1278,6 @@ Value是行的内容，不包括任何终止符(换行符和回车符)，Text类
 >在输出时使用SequenceFileOutPutFormat输出并合并文件
 
 ### 1.10 自定义InputFormat案例实操
-
-***视频11***
 
 无论HDFS还是MapReduce，在处理小文件时效率都非常低，但又难免面临处理大量小文件的场景，此时，就需要有相应解决方案。可以自定义InputFormat实现小文件的合并。
 
@@ -1648,7 +1648,7 @@ context.write(k, NullWritable.get());
 >默认分区时根据key的hashCode对ReduceTask个数取模得到的，用户没法控制key存储到那个分区
 
 >**自定义Partitioner步骤**
->自顶一个类继承Partitioner，重写getPartition()方法
+>自定义一个类继承Partitioner，重写getPartition()方法
 >
 >```java
 >public class CustomPartitioner extends Partitioner<Text, FlowBean> {
@@ -1836,7 +1836,7 @@ context.write(k, NullWritable.get());
 
 **排序**是MapReduce框架中最重要的操作之一
 
-MapTask和ReduceTask均会对数据按照key排序，该操作属于Hadoop的额默认行为，任何应用程序中的数据均会被排序，而不管逻辑上是否需要。
+MapTask和ReduceTask均会对数据按照key排序，该操作属于Hadoop的默认行为，任何应用程序中的数据均会被排序，而不管逻辑上是否需要。
 
 默认排序是按照字典顺序排序，且实现该排序的方法是快速排序
 
@@ -1857,6 +1857,8 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
 >**自定义排序WritableComparable**
 >**分析原理**
 >bean对象作为key传输，需要实现WritableComparable接口重写compareTo方法，就可以实现排序
+>
+>？？？？？？？？？？？？？？？？
 >```java
 >package com.atguigu.mapreduce.flowsum;
 >import java.io.IOException;
@@ -2315,11 +2317,9 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
 
 5. Combiner能够应用的前提是不能影响最终的业务逻辑，而且Combiner输出kv应该跟Reducer的输入kv类型要对应起来
 
-   ```
+   ```java
    
    ```
-
-   
 
 6. 自定义Combiner实现步骤
 
@@ -2753,7 +2753,7 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
    > 		FileOutputFormat.setOutputPath(job, new Path(args[1]));
    > 
    > 		// 8 设置reduce端的分组
-   > 	job.setGroupingComparatorClass(OrderGroupingComparator.class);
+   > 		job.setGroupingComparatorClass(OrderGroupingComparator.class);
    > 
    > 		// 7 提交
    > 		boolean result = job.waitForCompletion(true);
