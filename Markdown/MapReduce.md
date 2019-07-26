@@ -1,6 +1,9 @@
 # TODO-List
 * [ ] -
-* [ ] 
+* [ ] **ReduceTask-src**  *2019-7-26 15:19:33*
+* [ ] **MapTask-src**  *2019-7-26 14:54:29*
+* [ ] **OutputFormat >> IO流**  *2019-7-26 10:51:08*
+* [ ] **分组排序Reducer中对values的迭代** *2019-7-26 09:12:03*
 * [x] **Job submit >> debug src**  ***视频3***
 * [x] **FileInputFormat split >> debug src**
 * [x] **Xmind**  *2019-7-25 15:39:23*
@@ -14,7 +17,7 @@
 * [ ] **Partition实操**  *2019-7-24 11:43:01*
 * [ ] **Combiner合并 视频**  *2019-7-24 14:49:10*
 * [ ] **GroupingComparator分组 视频**  *2019-7-24 15:16:26*
-* [ ] **Shuffle-src 视频**  *2019-7-24 15:50:36*
+* [ ] **Shuffle-src**  *2019-7-24 15:50:36*
 * [ ] **MapReduce工作流程图**  *2019-7-24 16:31:21*
 * [ ] **InputFormat数据输入**  *2019-7-25 01:12:40*
 * [ ] **切片与MapTask并发度决定机制**  *2019-7-25 01:13:13*
@@ -233,7 +236,7 @@ log4j.appender.logfile.layout.ConversionPattern=%d %p [%c] - %m%n
 ### 8.4 编写程序
 Mapper
 ```java
-package com.atguigu.mapreduce;
+package com.tian.mapreduce;
 import java.io.IOException;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
@@ -266,7 +269,7 @@ public class WordcountMapper extends Mapper<LongWritable, Text, Text, IntWritabl
 
 Reducer
 ```java
-package com.atguigu.mapreduce.wordcount;
+package com.tian.mapreduce.wordcount;
 import java.io.IOException;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -294,7 +297,7 @@ public class WordcountReducer extends Reducer<Text, IntWritable, Text, IntWritab
 
 Driver驱动类
 ```java
-package com.atguigu.mapreduce.wordcount;
+package com.tian.mapreduce.wordcount;
 import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -475,18 +478,18 @@ public int compareTo(FlowBean o) {
 输入数据 phone_data.txt
 
 ```txt
-1	13736230513	192.196.100.1	www.atguigu.com	2481	24681	200
+1	13736230513	192.196.100.1	www.tian.com	2481	24681	200
 2	13846544121	192.196.100.2			264	0	200
 3 	13956435636	192.196.100.3			132	1512	200
 4 	13966251146	192.168.100.1			240	0	404
-5 	18271575951	192.168.100.2	www.atguigu.com	1527	2106	200
-6 	84188413	192.168.100.3	www.atguigu.com	4116	1432	200
+5 	18271575951	192.168.100.2	www.tian.com	1527	2106	200
+6 	84188413	192.168.100.3	www.tian.com	4116	1432	200
 7 	13590439668	192.168.100.4			1116	954	200
 8 	15910133277	192.168.100.5	www.hao123.com	3156	2936	200
 9 	13729199489	192.168.100.6			240	0	200
 10 	13630577991	192.168.100.7	www.shouhu.com	6960	690	200
 11 	15043685818	192.168.100.8	www.baidu.com	3659	3538	200
-12 	15959002129	192.168.100.9	www.atguigu.com	1938	180	500
+12 	15959002129	192.168.100.9	www.tian.com	1938	180	500
 13 	13560439638	192.168.100.10			918	4938	200
 14 	13470253144	192.168.100.11			180	180	200
 15 	13682846555	192.168.100.12	www.qq.com	1938	2910	200
@@ -517,7 +520,7 @@ id	手机号码		网络ip			上行流量  下行流量     网络状态码
 
 **编写流量统计的Bean对象**
 ```java
-package com.atguigu.mapreduce.flowsum;
+package com.tian.mapreduce.flowsum;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
@@ -592,7 +595,7 @@ public class FlowBean implements Writable{
 ```
 **编写Mapper类**
 ```java
-package com.atguigu.mapreduce.flowsum;
+package com.tian.mapreduce.flowsum;
 import java.io.IOException;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -630,7 +633,7 @@ public class FlowCountMapper extends Mapper<LongWritable, Text, Text, FlowBean>{
 ```
 **编写Reducer类**
 ```java
-package com.atguigu.mapreduce.flowsum;
+package com.tian.mapreduce.flowsum;
 import java.io.IOException;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -992,7 +995,7 @@ Value是行的内容，不包括任何终止符(换行符和回车符)，Text类
 >**代码实现**
 >编写Mapper类
 >```java
->package com.atguigu.mapreduce.KeyValueTextInputFormat;
+>package com.tian.mapreduce.KeyValueTextInputFormat;
 >import java.io.IOException;
 >import org.apache.hadoop.io.LongWritable;
 >import org.apache.hadoop.io.Text;
@@ -1016,7 +1019,7 @@ Value是行的内容，不包括任何终止符(换行符和回车符)，Text类
 >```
 >编写Reducer类
 >```java
->package com.atguigu.mapreduce.KeyValueTextInputFormat;
+>package com.tian.mapreduce.KeyValueTextInputFormat;
 >import java.io.IOException;
 >import org.apache.hadoop.io.LongWritable;
 >import org.apache.hadoop.io.Text;
@@ -1045,7 +1048,7 @@ Value是行的内容，不包括任何终止符(换行符和回车符)，Text类
 >```
 >编写Driver类
 >```java
->package com.atguigu.mapreduce.keyvaleTextInputFormat;
+>package com.tian.mapreduce.keyvaleTextInputFormat;
 >import java.io.IOException;
 >import org.apache.hadoop.conf.Configuration;
 >import org.apache.hadoop.fs.Path;
@@ -1149,7 +1152,7 @@ Value是行的内容，不包括任何终止符(换行符和回车符)，Text类
 > 编写Mapper类
 >
 > ```java
-> package com.atguigu.mapreduce.nline;
+> package com.tian.mapreduce.nline;
 > import java.io.IOException;
 > import org.apache.hadoop.io.LongWritable;
 > import org.apache.hadoop.io.Text;
@@ -1183,7 +1186,7 @@ Value是行的内容，不包括任何终止符(换行符和回车符)，Text类
 > 编写Reducer类
 >
 > ```java
-> package com.atguigu.mapreduce.nline;
+> package com.tian.mapreduce.nline;
 > import java.io.IOException;
 > import org.apache.hadoop.io.LongWritable;
 > import org.apache.hadoop.io.Text;
@@ -1214,7 +1217,7 @@ Value是行的内容，不包括任何终止符(换行符和回车符)，Text类
 > 编写Driver类
 >
 > ```java
-> package com.atguigu.mapreduce.nline;
+> package com.tian.mapreduce.nline;
 > import java.io.IOException;
 > import java.net.URISyntaxException;
 > import org.apache.hadoop.conf.Configuration;
@@ -1334,7 +1337,7 @@ Value是行的内容，不包括任何终止符(换行符和回车符)，Text类
 > 自定义InputFormat
 >
 > ```java
-> package com.atguigu.mapreduce.inputformat;
+> package com.tian.mapreduce.inputformat;
 > import java.io.IOException;
 > import org.apache.hadoop.fs.Path;
 > import org.apache.hadoop.io.BytesWritable;
@@ -1368,7 +1371,7 @@ Value是行的内容，不包括任何终止符(换行符和回车符)，Text类
 > 自定义RecordReader类
 >
 > ```java
-> package com.atguigu.mapreduce.inputformat;
+> package com.tian.mapreduce.inputformat;
 > import java.io.IOException;
 > import org.apache.hadoop.conf.Configuration;
 > import org.apache.hadoop.fs.FSDataInputStream;
@@ -1466,7 +1469,7 @@ Value是行的内容，不包括任何终止符(换行符和回车符)，Text类
 > 编写SequenceFileMapper类处理流程
 >
 > ```java
-> package com.atguigu.mapreduce.inputformat;
+> package com.tian.mapreduce.inputformat;
 > import java.io.IOException;
 > import org.apache.hadoop.io.BytesWritable;
 > import org.apache.hadoop.io.NullWritable;
@@ -1491,7 +1494,7 @@ Value是行的内容，不包括任何终止符(换行符和回车符)，Text类
 > 编写SequenceFileReducer类处理流程
 >
 > ```java
-> package com.atguigu.mapreduce.inputformat;
+> package com.tian.mapreduce.inputformat;
 > import java.io.IOException;
 > import org.apache.hadoop.io.BytesWritable;
 > import org.apache.hadoop.io.Text;
@@ -1510,7 +1513,7 @@ Value是行的内容，不包括任何终止符(换行符和回车符)，Text类
 > 编写SequenceFileDriver类处理流程
 >
 > ```java
-> package com.atguigu.mapreduce.inputformat;
+> package com.tian.mapreduce.inputformat;
 > import java.io.IOException;
 > import org.apache.hadoop.conf.Configuration;
 > import org.apache.hadoop.fs.Path;
@@ -1694,18 +1697,18 @@ context.write(k, NullWritable.get());
 >**数据输入**
 >
 >```phone_data.txt
->1	13736230513	192.196.100.1	www.atguigu.com	2481	24681	200
+>1	13736230513	192.196.100.1	www.tian.com	2481	24681	200
 >2	13846544121	192.196.100.2			264	0	200
 >3 	13956435636	192.196.100.3			132	1512	200
 >4 	13966251146	192.168.100.1			240	0	404
->5 	18271575951	192.168.100.2	www.atguigu.com	1527	2106	200
->6 	84188413	192.168.100.3	www.atguigu.com	4116	1432	200
+>5 	18271575951	192.168.100.2	www.tian.com	1527	2106	200
+>6 	84188413	192.168.100.3	www.tian.com	4116	1432	200
 >7 	13590439668	192.168.100.4			1116	954	200
 >8 	15910133277	192.168.100.5	www.hao123.com	3156	2936	200
 >9 	13729199489	192.168.100.6			240	0	200
 >10 	13630577991	192.168.100.7	www.shouhu.com	6960	690	200
 >11 	15043685818	192.168.100.8	www.baidu.com	3659	3538	200
->12 	15959002129	192.168.100.9	www.atguigu.com	1938	180	500
+>12 	15959002129	192.168.100.9	www.tian.com	1938	180	500
 >13 	13560439638	192.168.100.10			918	4938	200
 >14 	13470253144	192.168.100.11			180	180	200
 >15 	13682846555	192.168.100.12	www.qq.com	1938	2910	200
@@ -1748,7 +1751,7 @@ context.write(k, NullWritable.get());
 >**在FlowCount案例中增加分区类**
 >
 >```java
->package com.atguigu.mapreduce.flowsum;
+>package com.tian.mapreduce.flowsum;
 >import org.apache.hadoop.io.Text;
 >import org.apache.hadoop.mapreduce.Partitioner;
 >
@@ -1781,7 +1784,7 @@ context.write(k, NullWritable.get());
 >**在驱动函数中增加自定义数据分区设置和ReduceTask设置**
 >
 >```java
->package com.atguigu.mapreduce.flowsum;
+>package com.tian.mapreduce.flowsum;
 >import java.io.IOException;
 >import org.apache.hadoop.conf.Configuration;
 >import org.apache.hadoop.fs.Path;
@@ -1860,7 +1863,7 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
 >
 >？？？？？？？？？？？？？？？？
 >```java
->package com.atguigu.mapreduce.flowsum;
+>package com.tian.mapreduce.flowsum;
 >import java.io.IOException;
 >import org.apache.hadoop.conf.Configuration;
 >import org.apache.hadoop.fs.Path;
@@ -1919,18 +1922,18 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
 > **输入数据**
 >
 > ```
-> 1	13736230513	192.196.100.1	www.atguigu.com	2481	24681	200
+> 1	13736230513	192.196.100.1	www.tian.com	2481	24681	200
 > 2	13846544121	192.196.100.2			264	0	200
 > 3 	13956435636	192.196.100.3			132	1512	200
 > 4 	13966251146	192.168.100.1			240	0	404
-> 5 	18271575951	192.168.100.2	www.atguigu.com	1527	2106	200
-> 6 	84188413	192.168.100.3	www.atguigu.com	4116	1432	200
+> 5 	18271575951	192.168.100.2	www.tian.com	1527	2106	200
+> 6 	84188413	192.168.100.3	www.tian.com	4116	1432	200
 > 7 	13590439668	192.168.100.4			1116	954	200
 > 8 	15910133277	192.168.100.5	www.hao123.com	3156	2936	200
 > 9 	13729199489	192.168.100.6			240	0	200
 > 10 	13630577991	192.168.100.7	www.shouhu.com	6960	690	200
 > 11 	15043685818	192.168.100.8	www.baidu.com	3659	3538	200
-> 12 	15959002129	192.168.100.9	www.atguigu.com	1938	180	500
+> 12 	15959002129	192.168.100.9	www.tian.com	1938	180	500
 > 13 	13560439638	192.168.100.10			918	4938	200
 > 14 	13470253144	192.168.100.11			180	180	200
 > 15 	13682846555	192.168.100.12	www.qq.com	1938	2910	200
@@ -1988,7 +1991,7 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
 > FlowBean对象在需求1基础上增加了比较功能
 >
 > ```java
-> package com.atguigu.mapreduce.sort;
+> package com.tian.mapreduce.sort;
 > import java.io.DataInput;
 > import java.io.DataOutput;
 > import java.io.IOException;
@@ -2092,7 +2095,7 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
 > 编写Mapper类
 >
 > ```java
-> package com.atguigu.mapreduce.sort;
+> package com.tian.mapreduce.sort;
 > import java.io.IOException;
 > import org.apache.hadoop.io.LongWritable;
 > import org.apache.hadoop.io.Text;
@@ -2129,7 +2132,7 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
 > 编写Reducer类
 >
 > ```java
-> package com.atguigu.mapreduce.sort;
+> package com.tian.mapreduce.sort;
 > import java.io.IOException;
 > import org.apache.hadoop.io.Text;
 > import org.apache.hadoop.mapreduce.Reducer;
@@ -2150,7 +2153,7 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
 > 编写Driver类
 >
 > ```java
-> package com.atguigu.mapreduce.sort;
+> package com.tian.mapreduce.sort;
 > import java.io.IOException;
 > import org.apache.hadoop.conf.Configuration;
 > import org.apache.hadoop.fs.Path;
@@ -2263,7 +2266,7 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
 > 增加自定义分区类，因为kv颠倒，所以不能直接使用上一个案例中的分区类
 >
 > ```java
-> package com.atguigu.mapreduce.sort;
+> package com.tian.mapreduce.sort;
 > import org.apache.hadoop.io.Text;
 > import org.apache.hadoop.mapreduce.Partitioner;
 > 
@@ -2387,7 +2390,7 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
    > 增加一个WordCountCombiner类继承Reducer
    >
    > ```java
-   > package com.atguigu.mr.combiner;
+   > package com.tian.mr.combiner;
    > import java.io.IOException;
    > import org.apache.hadoop.io.IntWritable;
    > import org.apache.hadoop.io.Text;
@@ -2547,7 +2550,7 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
    > 定义订单信息类OrderBean类
    >
    > ```java
-   > package com.atguigu.mapreduce.order;
+   > package com.tian.mapreduce.order;
    > import java.io.DataInput;
    > import java.io.DataOutput;
    > import java.io.IOException;
@@ -2624,7 +2627,7 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
    > 编写OrderSortMapper类
    >
    > ```java
-   > package com.atguigu.mapreduce.order;
+   > package com.tian.mapreduce.order;
    > import java.io.IOException;
    > import org.apache.hadoop.io.LongWritable;
    > import org.apache.hadoop.io.NullWritable;
@@ -2657,7 +2660,7 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
    > 编写OrderSortGroupingComparator类
    >
    > ```java
-   > package com.atguigu.mapreduce.order;
+   > package com.tian.mapreduce.order;
    > import org.apache.hadoop.io.WritableComparable;
    > import org.apache.hadoop.io.WritableComparator;
    > 
@@ -2694,7 +2697,7 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
    > 编写OrderSortReducer类
    >
    > ```java
-   > package com.atguigu.mapreduce.order;
+   > package com.tian.mapreduce.order;
    > import java.io.IOException;
    > import org.apache.hadoop.io.NullWritable;
    > import org.apache.hadoop.mapreduce.Reducer;
@@ -2703,7 +2706,6 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
    > 
    > 	@Override
    > 	protected void reduce(OrderBean key, Iterable<NullWritable> values, Context context)		throws IOException, InterruptedException {
-   > 		
    >      //没有迭代则会自动过滤重复数据，如果想要处理所有数据可使用foreach迭代
    > 		context.write(key, NullWritable.get());
    > 	}
@@ -2713,7 +2715,7 @@ MapReduce根据输入记录的键对数据集排序，保证<u>输出的每个�
    > 编写OrderSortDriver类
    >
    > ```java
-   > package com.atguigu.mapreduce.order;
+   > package com.tian.mapreduce.order;
    > import java.io.IOException;
    > import org.apache.hadoop.conf.Configuration;
    > import org.apache.hadoop.fs.Path;
@@ -2794,42 +2796,1108 @@ org.apache.hadoop.mapred.MapTask //关键类
                         collector.init(context); // 关键方法，缓冲区初始化
 
                     partitions = jobContext.getNumReduceTasks(); //获取分区数
-            
-            
-
 ```
 
 ## 4.MapTask工作机制
 
+
+
 ## 5.ReduceTask工作机制
+
+
 
 ## 6.OutputFormat数据输出
 
+OutputFormat时MapReduce输出的基类，所有实现MapReduce输出都实现了OutputFormat接口
+
 ### 6.1 OutputFormat接口实现类
+
+> **TextInputFormat**
+> 默认的输出格式，把每条记录写为文本行，键值可以是任意类型，最终TextOutputFormat会调用toString()方法把他们转为字符串。
+
+> **SequentceFileOutputFormat**
+> 作为MapReduce任务的输入，这种输出格式，格式紧凑，很容易被压缩。
+
+> **自定义OutputFormat**
+> 根据用户需求，自定义实现输出。
 
 ### 6.2 自定义OutputFormat
 
+> **使用场景**
+> 为了实现控制最终文件的输出路径和格式，可以自定义OutputFormat
+> 如，要在MapReduce程序中根据数据的不同输出两类结果到不同目录，
+> 这类灵活的输出需求就可以通过自定义OutputFormat实现
+
+> **自定义OutputFormat步骤**
+> 自定义类继承FileOutputFormat
+> 重写RecordWriter，具体改写输出数据的方法writer()
+
 ### 6.3 自定义OutputFormat案例实操
 
+> **需求**
+> 过滤输入的log日志，包含tian的网站输出到指定目录的tian.log文件，不包含tian的文件输入到other.log
+> **输入数据**
+>
+> ```log.txt
+> http://www.baidu.com
+> http://www.google.com
+> http://cn.bing.com
+> http://www.tian.com
+> http://www.sohu.com
+> http://www.sina.com
+> http://www.sin2a.com
+> http://www.sin2desa.com
+> http://www.sindsafa.com
+> ```
+>
+> **期望输出**
+>
+> ```tian.log
+> http://www.tian.com
+> ```
+>
+> ```other.log
+> http://cn.bing.com
+> http://www.baidu.com
+> http://www.google.com
+> http://www.sin2a.com
+> http://www.sin2desa.com
+> http://www.sina.com
+> http://www.sindsafa.com
+> http://www.sohu.com
+> ```
+
+> **需求分析**
+>
+> ```
+> 自定义一个OutputFormat类
+> 创建类继承RecordWriter
+> 出啊你啊两个文件的输出流:tianOut,otherOut
+> 如果输出数据包含tian，输出到tianOut流，如果不包含tian，输出到otherOut流
+> 将自定义的输出格式组件设置到job中
+> ```
+
+> **案例实操**
+>
+> 编写FilterMapper类
+>
+> ```java
+> package com.tian.mapreduce.outputformat;
+> import java.io.IOException;
+> import org.apache.hadoop.io.LongWritable;
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.Mapper;
+> 
+> public class FilterMapper extends Mapper<LongWritable, Text, Text, NullWritable>{
+> 	
+> 	@Override
+> 	protected void map(LongWritable key, Text value, Context context)	throws IOException, InterruptedException {
+> 
+> 		// 写出
+> 		context.write(value, NullWritable.get());
+> 	}
+> }
+> ```
+>
+> 编写FilterReducer类
+>
+> ```java
+> package com.tian.mapreduce.outputformat;
+> import java.io.IOException;
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.Reducer;
+> 
+> public class FilterReducer extends Reducer<Text, NullWritable, Text, NullWritable> {
+> 	Text k = new Text();
+> 	@Override
+> 	protected void reduce(Text key, Iterable<NullWritable> values, Context context)		throws IOException, InterruptedException {
+>         // 1 获取一行
+>         String line = key.toString();
+>         // 2 拼接
+>         line = line + "\r\n";
+>         // 3 设置key
+>         k.set(line);
+>         // 4 输出
+>         context.write(k, NullWritable.get());
+> 	}
+> }
+> ```
+>
+> 自定义OutputFormat类
+> ```java
+> package com.tian.mapreduce.outputformat;
+> import java.io.IOException;
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.RecordWriter;
+> import org.apache.hadoop.mapreduce.TaskAttemptContext;
+> import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+> 
+> public class FilterOutputFormat extends FileOutputFormat<Text, NullWritable>{
+> 
+> 	@Override
+> 	public RecordWriter<Text, NullWritable> getRecordWriter(TaskAttemptContext job)			throws IOException, InterruptedException {
+> 
+> 		// 创建一个RecordWriter
+> 		return new FilterRecordWriter(job);
+> 	}
+> }
+> 
+> ```
+>
+> 编写RecordWriter
+>
+> ```java
+> package com.tian.mapreduce.outputformat;
+> import java.io.IOException;
+> import org.apache.hadoop.fs.FSDataOutputStream;
+> import org.apache.hadoop.fs.FileSystem;
+> import org.apache.hadoop.fs.Path;
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.RecordWriter;
+> import org.apache.hadoop.mapreduce.TaskAttemptContext;
+> 
+> public class FilterRecordWriter extends RecordWriter<Text, NullWritable> {
+> 
+> 	FSDataOutputStream tianOut = null;
+> 	FSDataOutputStream otherOut = null;
+> 
+> 	public FilterRecordWriter(TaskAttemptContext job) {
+> 
+> 		// 1 获取文件系统
+> 		FileSystem fs;
+> 
+> 		try {
+> 			fs = FileSystem.get(job.getConfiguration());
+> 
+> 			// 2 创建输出文件路径
+> 			Path tianPath = new Path("e:/tian.log");
+> 			Path otherPath = new Path("e:/other.log");
+> 
+> 			// 3 创建输出流
+> 			tianOut = fs.create(tianPath);
+> 			otherOut = fs.create(otherPath);
+> 		} catch (IOException e) {
+> 			e.printStackTrace();
+> 		}
+> 	}
+> 
+> 	@Override
+> 	public void write(Text key, NullWritable value) throws IOException, InterruptedException {
+> 
+> 		// 判断是否包含“tian”输出到不同文件
+> 		if (key.toString().contains("tian")) {
+> 			tianOut.write(key.toString().getBytes());
+> 		} else {
+> 			otherOut.write(key.toString().getBytes());
+> 		}
+> 	}
+> 
+> 	@Override
+> 	public void close(TaskAttemptContext context) throws IOException, InterruptedException {
+> 
+> 		// 关闭资源
+> IOUtils.closeStream(tianOut);
+> 		IOUtils.closeStream(otherOut);	}
+> }
+> ```
+>
+> 编写FilterDriver类
+>
+> ```java
+> package com.tian.mapreduce.outputformat;
+> import org.apache.hadoop.conf.Configuration;
+> import org.apache.hadoop.fs.Path;
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.Job;
+> import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+> import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+> 
+> public class FilterDriver {
+> 
+> 	public static void main(String[] args) throws Exception {
+> 
+> // 输入输出路径需要根据自己电脑上实际的输入输出路径设置
+> args = new String[] { "e:/input/inputoutputformat", "e:/output2" };
+> 
+> 		Configuration conf = new Configuration();
+> 		Job job = Job.getInstance(conf);
+> 
+> 		job.setJarByClass(FilterDriver.class);
+> 		job.setMapperClass(FilterMapper.class);
+> 		job.setReducerClass(FilterReducer.class);
+> 
+> 		job.setMapOutputKeyClass(Text.class);
+> 		job.setMapOutputValueClass(NullWritable.class);
+> 		
+> 		job.setOutputKeyClass(Text.class);
+> 		job.setOutputValueClass(NullWritable.class);
+> 
+> 		// 要将自定义的输出格式组件设置到job中
+> 		job.setOutputFormatClass(FilterOutputFormat.class);
+> 
+> 		FileInputFormat.setInputPaths(job, new Path(args[0]));
+> 
+> 		// 虽然我们自定义了outputformat，但是因为我们的outputformat继承自fileoutputformat
+> 		// 而fileoutputformat要输出一个_SUCCESS文件，所以，在这还得指定一个输出目录
+> 		FileOutputFormat.setOutputPath(job, new Path(args[1]));
+> 
+> 		boolean result = job.waitForCompletion(true);
+> 		System.exit(result ? 0 : 1);
+> 	}
+> }
+> ```
 
 
 ## 7.Join多种应用
 
 ## 7.1 Reduce Join
 
+> **Map端**
+> 为来自不同表或文件的kv对打标签以区别来源记录的不通过，然后用连接字段作为key，
+> 其余部分和新家的标志作为value，最后进行输出
+
+> **Reduce端**
+> 在Reduce端以连接字段作为key的分组已经完成，我么你只需要在每一个分组中将那些来源于不同文件的记录(在map阶段已经打标签)分开，最后进行合并
+
+> **缺点**
+> 合并的操作是在Reduce阶段完成，Reduce端处理的压力太大，Map节点的运算负载很低，资源利用率不高，且在Reduce节点极易产生数据倾斜
+
+> **解决方案**
+> Map端实现数据合并Combiner
+
 ## 7.2 Reduce Join案例实操
+
+> **需求**
+> 将商品信息表中的数据根据商品pid合并到订单数据表中
+> **输入数据**
+>
+> ```order.txt
+> 1001	01	1
+> 1002	02	2
+> 1003	03	3
+> 1004	01	4
+> 1005	02	5
+> 1006	03	6
+> ```
+>
+> ```pd.txt
+> 01	小米
+> 02	华为
+> 03	格力
+> ```
+> **期望输出**
+> ```
+> 1001	小米	1	
+> 1001	小米	1	
+> 1002	华为	2	
+> 1002	华为	2	
+> 1003	格力	3	
+> 1003	格力	3	
+> ```
+
+订单数据表
+| id   | pid  | amount |
+| ---- | ---- | ------ |
+| 1001 | 01   | 1      |
+| 1002 | 02   | 2      |
+| 1003 | 03   | 3      |
+| 1004 | 01   | 4      |
+| 1005 | 02   | 5      |
+| 1006 | 03   | 6      |
+商品信息表
+
+| pid  | pname |
+| ---- | ----- |
+| 01   | 小米  |
+| 02   | 华为  |
+| 03   | 格力  |
+
+
+最终输出形式
+
+| id   | pname | amount |
+| ---- | ----- | ------ |
+| 1001 | 小米  | 1      |
+| 1004 | 小米  | 4      |
+| 1002 | 华为  | 2      |
+| 1005 | 华为  | 5      |
+| 1003 | 格力  | 3      |
+| 1006 | 格力  | 6      |
+
+> **需求分析**
+> 通过将关联条件作为Map输出的key，将两表满足Join条件的数据并携带数据所来源的文件信息，发往同一个ReduceTask，在Reduce中进行数据的串联，
+> **Map端处理**
+>
+> ```
+> 获取输入文件类型
+> 获取输入数据
+> 不同文件分别处理
+> 封装Bean对象输出
+> ```
+>
+> **Reduce端**
+>
+> ```
+> reduce方法缓存订单数据集合和产品表，然后合并
+> ```
+
+> **代码实现**
+> 创建商品和订单合并后的Bean类
+>
+> ```java
+> package com.tian.reducejoin;
+> 
+> import org.apache.hadoop.io.WritableComparable;
+> 
+> import java.io.DataInput;
+> import java.io.DataOutput;
+> import java.io.IOException;
+> 
+> public class OrderBean implements WritableComparable<OrderBean> {
+>     private String id;
+>     private String pid;
+>     private int amount;
+>     private String pname;
+> 
+>     @Override
+>     public String toString() {
+>         return id + "\t" + pname + "\t" + amount;
+>     }
+> 
+>     public String getId() {
+>         return id;
+>     }
+> 
+>     public void setId(String id) {
+>         this.id = id;
+>     }
+> 
+>     public String getPid() {
+>         return pid;
+>     }
+> 
+>     public void setPid(String pid) {
+>         this.pid = pid;
+>     }
+> 
+>     public int getAmount() {
+>         return amount;
+>     }
+> 
+>     public void setAmount(int amount) {
+>         this.amount = amount;
+>     }
+> 
+>     public String getPname() {
+>         return pname;
+>     }
+> 
+>     public void setPname(String pname) {
+>         this.pname = pname;
+>     }
+> 
+>     //按照Pid分组，组内按照pname排序，有pname的在前
+>     @Override
+>     public int compareTo(OrderBean o) {
+>         int compare = this.pid.compareTo(o.pid);
+>         if (compare == 0) {
+>             return o.getPname().compareTo(this.getPname());
+>         } else {
+>             return compare;
+>         }
+>     }
+> 
+>     @Override
+>     public void write(DataOutput out) throws IOException {
+>         out.writeUTF(id);
+>         out.writeUTF(pid);
+>         out.writeInt(amount);
+>         out.writeUTF(pname);
+>     }
+> 
+>     @Override
+>     public void readFields(DataInput in) throws IOException {
+>         id = in.readUTF();
+>         pid = in.readUTF();
+>         amount = in.readInt();
+>         pname = in.readUTF();
+>     }
+> }
+> ```
+>
+> 编写TableMapper
+>
+> ```java
+> package com.tian.reducejoin;
+> 
+> import org.apache.hadoop.io.LongWritable;
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.Mapper;
+> import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+> 
+> import java.io.IOException;
+> 
+> public class OrderMapper extends Mapper<LongWritable, Text, OrderBean, NullWritable> {
+> 
+>     private String filename;
+> 
+>     private OrderBean order = new OrderBean();
+> 
+>     @Override
+>     protected void setup(Context context) throws IOException, InterruptedException {
+>         
+>         //获取切片文件名
+>         FileSplit fs = (FileSplit) context.getInputSplit();
+>         filename = fs.getPath().getName();
+>     }
+> 
+>     @Override
+>     protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+>         String[] fields = value.toString().split("\t");
+>         
+>         //对不同数据来源分开处理
+>         if ("order.txt".equals(filename)) {
+>             order.setId(fields[0]);
+>             order.setPid(fields[1]);
+>             order.setAmount(Integer.parseInt(fields[2]));
+>             order.setPname("");
+>         } else {
+>             order.setPid(fields[0]);
+>             order.setPname(fields[1]);
+>             order.setAmount(0);
+>             order.setId("");
+>         }
+> 
+>         context.write(order, NullWritable.get());
+>     }
+> }
+> ```
+>
+> **编写TableReducer**
+>
+> ```java
+> package com.tian.reducejoin;
+> 
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.mapreduce.Reducer;
+> 
+> import java.io.IOException;
+> import java.util.Iterator;
+> 
+> public class OrderReducer extends Reducer<OrderBean, NullWritable, OrderBean, NullWritable> {
+> 
+>     @Override
+>     protected void reduce(OrderBean key, Iterable<NullWritable> values, Context context) throws IOException, InterruptedException {
+>         
+>         //第一条数据来自pd，之后全部来自order
+>         Iterator<NullWritable> iterator = values.iterator();
+>         
+>         //通过第一条数据获取pname
+>         iterator.next();
+>         String pname = key.getPname();
+>         
+>         //遍历剩下的数据，替换并写出
+>         while (iterator.hasNext()) {
+>             iterator.next();
+>             key.setPname(pname);
+>             context.write(key,NullWritable.get());
+>         }
+>     }
+> }
+> ```
+>
+> **编写TableDriver**
+>
+> ```java
+> package com.tian.reducejoin;
+> 
+> import org.apache.hadoop.conf.Configuration;
+> import org.apache.hadoop.fs.Path;
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.mapreduce.Job;
+> import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+> import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+> 
+> import java.io.IOException;
+> 
+> public class OrderDriver {
+>     public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
+>         Job job = Job.getInstance(new Configuration());
+>         job.setJarByClass(OrderDriver.class);
+> 
+>         job.setMapperClass(OrderMapper.class);
+>         job.setReducerClass(OrderReducer.class);
+>         job.setGroupingComparatorClass(OrderComparator.class);
+> 
+>         job.setMapOutputKeyClass(OrderBean.class);
+>         job.setMapOutputValueClass(NullWritable.class);
+> 
+>         job.setOutputKeyClass(OrderBean.class);
+>         job.setOutputValueClass(NullWritable.class);
+> 
+>         FileInputFormat.setInputPaths(job, new Path("d:\\input"));
+>         FileOutputFormat.setOutputPath(job, new Path("d:\\output"));
+> 
+>         boolean b = job.waitForCompletion(true);
+> 
+>         System.exit(b ? 0 : 1);
+> 
+>     }
+> }
+> ```
+>
 
 ## 7.3 Map Join
 
+> **使用场景**
+> 使用于一张表十分小，一张表十分大的场景
+> **优点**
+> 在Map端缓存多张表，提前处理业务逻辑，这样增加Map端业务，减少Reduce端数据的压力，尽可能的减少数据倾斜
+> **DistributedCache**
+>
+> ```java
+> //在Maper的setup阶段，将文件读取到缓存集合中
+> //在驱动函数中加载缓存
+> //缓存普通文件到Task运行节点
+> job.addCacheFile(new URI("file://e:/cache/pd.txt"));
+> ```
+
 ## 7.4 Map Join案例实操
+
+> **需求**
+> 与Reduce Join案例一致
+
+> **需求分析**
+> DistributedCacheDriver缓存文件
+>
+> ```java
+> //1 加载缓存数据
+> job.addCacheFile(new URI("file:///e:cache/pd.txt"));
+> //2 Map端join的逻辑不需要Reduce阶段，设置ReduceTask数量为0
+> job.setNumReduceTasks(0);
+> ```
+>
+> 读取缓存的文件数据
+>
+> ```java
+> setup()方法中
+> //获取缓存的文件
+> //循环读取缓存文件一行
+> //切割
+> //缓存数据到集合
+> //关流
+> 
+> map方法中
+> //获取一行
+> //截取
+> //获取订单id
+> //获取商品名称
+> //拼接
+> //写出
+> ```
+
+> **实现代码**
+>
+> Mapper读取缓存的文件
+>
+> ```java
+> package com.tian.mapjoin;
+> 
+> import org.apache.commons.lang.StringUtils;
+> import org.apache.hadoop.fs.FSDataInputStream;
+> import org.apache.hadoop.fs.FileSystem;
+> import org.apache.hadoop.fs.Path;
+> import org.apache.hadoop.io.IOUtils;
+> import org.apache.hadoop.io.LongWritable;
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.Mapper;
+> 
+> import java.io.BufferedReader;
+> import java.io.IOException;
+> import java.io.InputStreamReader;
+> import java.net.URI;
+> import java.util.HashMap;
+> import java.util.Map;
+> 
+> public class MjMapper extends Mapper<LongWritable, Text, Text, NullWritable> {
+> 
+>     //pd表在内存中的缓存
+>     private Map<String, String> pMap = new HashMap<>();
+> 
+>     private Text line = new Text();
+> 
+>     //任务开始前将pd数据缓存进PMap
+>     @Override
+>     protected void setup(Context context) throws IOException, InterruptedException {
+>         
+>         //从缓存文件中找到pd.txt
+>         URI[] cacheFiles = context.getCacheFiles();
+>         Path path = new Path(cacheFiles[0]);
+> 
+>         //获取文件系统并开流
+>         FileSystem fileSystem = FileSystem.get(context.getConfiguration());
+>         FSDataInputStream fsDataInputStream = fileSystem.open(path);
+> 
+>         //通过包装流转换为reader
+>         BufferedReader bufferedReader = new BufferedReader(
+>                 new InputStreamReader(fsDataInputStream, "utf-8"));
+> 
+>         //逐行读取，按行处理
+>         String line;
+>         while (StringUtils.isNotEmpty(line = bufferedReader.readLine())) {
+>             String[] fields = line.split("\t");
+>             pMap.put(fields[0], fields[1]);
+>         }
+> 
+>         //关流
+>         IOUtils.closeStream(bufferedReader);
+> 
+>     }
+> 
+>     @Override
+>     protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+>         String[] fields = value.toString().split("\t");
+> 
+>         String pname = pMap.get(fields[1]);
+> 
+>         line.set(fields[0] + "\t" + pname + "\t" + fields[2]);
+> 
+>         context.write(line, NullWritable.get());
+> 
+>     }
+> }
+> ```
+>
+> 
+>
+> Driver中添加缓存文件
+>
+> ```java
+> package test;
+> import java.net.URI;
+> import org.apache.hadoop.conf.Configuration;
+> import org.apache.hadoop.fs.Path;
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.Job;
+> import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+> import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+> 
+> public class DistributedCacheDriver {
+> 
+> 	public static void main(String[] args) throws Exception {
+> 		
+> // 0 根据自己电脑路径重新配置
+> args = new String[]{"e:/input/inputtable2", "e:/output1"};
+> 
+> // 1 获取job信息
+> 		Configuration configuration = new Configuration();
+> 		Job job = Job.getInstance(configuration);
+> 
+> 		// 2 设置加载jar包路径
+> 		job.setJarByClass(DistributedCacheDriver.class);
+> 
+> 		// 3 关联map
+> 		job.setMapperClass(DistributedCacheMapper.class);
+> 		
+> // 4 设置最终输出数据类型
+> 		job.setOutputKeyClass(Text.class);
+> 		job.setOutputValueClass(NullWritable.class);
+> 
+> 		// 5 设置输入输出路径
+> 		FileInputFormat.setInputPaths(job, new Path(args[0]));
+> 		FileOutputFormat.setOutputPath(job, new Path(args[1]));
+> 
+> 		// 6 加载缓存数据
+> 		job.addCacheFile(new URI("file:///e:/input/inputcache/pd.txt"));
+> 		
+> 		// 7 Map端Join的逻辑不需要Reduce阶段，设置reduceTask数量为0
+> 		job.setNumReduceTasks(0);
+> 
+> 		// 8 提交
+> 		boolean result = job.waitForCompletion(true);
+> 		System.exit(result ? 0 : 1);
+> 	}
+> }
+> ```
+>
+> 
 
 ## 8.计数器应用
 
+​        Hadoop为每个作业维护若干内置计数器，以描述多项指标。例如，某些计数器记录已处理的字节数和记录数，使用户可监控已处理的输入数据量和已产生的输出数据量。
+
+> **计数器API**
+>
+> ```java
+> /* 采用枚举的方式统计计数 */
+> enum MyCounter{MALFORORMED, NORMAL}
+> //对枚举定义的自定义计数器加1
+> context.getCounter(MyCounter.MALFORORMED).increment(1);
+> /* 采用计数器组、计数器名称的方式统计 */
+> context.getCounter("counterGroup", "counter").increment(1);
+> //组名和计数器名称可自定义，尽量做到见名知意
+> /*计数器结果在程序运行后的控制台查看*/
+> ```
+>
+> **计数器案例实操** 详见数据清洗案例
+
 ## 9.数据清洗(ETL)
 
-### 9.1 数据清晰案例实操-简单解析版
+在运行核心业务MapReduce程序之前，往往要先对数据进行清洗，清理掉不符合用户要求的数据。清理的过程往往只需要运行Mapper程序，不需要运行Reduce程序。
+
+### 9.1 数据清洗案例实操-简单解析版
+
+> **需求**
+> 去除日志中字段个数小于11的日志
+> **输入数据**
+>
+> ```log
+> //日志内容过多，略
+> ```
+>
+> **期望输出**
+> 每行字段长度均大于11
+
+> **需求分析**
+> 在Map阶段对输入的数据根据规则进行过滤清洗
+
+> **代码实现**
+> LogMapper
+>
+> ```java
+> package com.tian.mapreduce.weblog;
+> import java.io.IOException;
+> import org.apache.hadoop.io.LongWritable;
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.Mapper;
+> 
+> public class LogMapper extends Mapper<LongWritable, Text, Text, NullWritable>{
+> 	
+> 	Text k = new Text();
+> 	
+> 	@Override
+> 	protected void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+> 		
+> 		// 1 获取1行数据
+> 		String line = value.toString();
+> 		
+> 		// 2 解析日志
+> 		boolean result = parseLog(line,context);
+> 		
+> 		// 3 日志不合法退出
+> 		if (!result) {
+> 			return;
+> 		}
+> 		
+> 		// 4 设置key
+> 		k.set(line);
+> 		
+> 		// 5 写出数据
+> 		context.write(k, NullWritable.get());
+> 	}
+> 
+> 	// 2 解析日志
+> 	private boolean parseLog(String line, Context context) {
+> 
+> 		// 1 截取
+> 		String[] fields = line.split(" ");
+> 		
+> 		// 2 日志长度大于11的为合法
+> 		if (fields.length > 11) {
+> 
+> 			// 系统计数器
+> 			context.getCounter("map", "true").increment(1);
+> 			return true;
+> 		}else {
+> 			context.getCounter("map", "false").increment(1);
+> 			return false;
+> 		}
+> 	}
+> }
+> ```
+>
+> LogDriver
+>
+> ```java
+> package com.tian.mapreduce.weblog;
+> import org.apache.hadoop.conf.Configuration;
+> import org.apache.hadoop.fs.Path;
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.Job;
+> import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+> import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+> 
+> public class LogDriver {
+> 
+> 	public static void main(String[] args) throws Exception {
+> 
+> // 输入输出路径需要根据自己电脑上实际的输入输出路径设置
+>         args = new String[] { "e:/input/inputlog", "e:/output1" };
+> 
+> 		// 1 获取job信息
+> 		Configuration conf = new Configuration();
+> 		Job job = Job.getInstance(conf);
+> 
+> 		// 2 加载jar包
+> 		job.setJarByClass(LogDriver.class);
+> 
+> 		// 3 关联map
+> 		job.setMapperClass(LogMapper.class);
+> 
+> 		// 4 设置最终输出类型
+> 		job.setOutputKeyClass(Text.class);
+> 		job.setOutputValueClass(NullWritable.class);
+> 
+> 		// 设置reducetask个数为0
+> 		job.setNumReduceTasks(0);
+> 
+> 		// 5 设置输入和输出路径
+> 		FileInputFormat.setInputPaths(job, new Path(args[0]));
+> 		FileOutputFormat.setOutputPath(job, new Path(args[1]));
+> 
+> 		// 6 提交
+> 		job.waitForCompletion(true);
+> 	}
+> }
+> ```
 
 ### 9.2 数据清洗案例实操-复杂解析版
+
+> **需求**
+> 对Web访问日志中的各字段识别切分，去除日志中不合法的记录
+> **输入数据**
+> log内容过多，略
+> **期望输出**
+> 都是合法的数据
+
+> **代码实现**
+>
+> 自定义bean用于记录日志中数据字段
+>
+> ```java
+> package com.tian.mapreduce.log;
+> 
+> public class LogBean {
+> 	private String remote_addr;// 记录客户端的ip地址
+> 	private String remote_user;// 记录客户端用户名称,忽略属性"-"
+> 	private String time_local;// 记录访问时间与时区
+> 	private String request;// 记录请求的url与http协议
+> 	private String status;// 记录请求状态；成功是200
+> 	private String body_bytes_sent;// 记录发送给客户端文件主体内容大小
+> 	private String http_referer;// 用来记录从那个页面链接访问过来的
+> 	private String http_user_agent;// 记录客户浏览器的相关信息
+> 
+> 	private boolean valid = true;// 判断数据是否合法
+> 
+> 	public String getRemote_addr() {
+> 		return remote_addr;
+> 	}
+> 
+> 	public void setRemote_addr(String remote_addr) {
+> 		this.remote_addr = remote_addr;
+> 	}
+> 
+> 	public String getRemote_user() {
+> 		return remote_user;
+> 	}
+> 
+> 	public void setRemote_user(String remote_user) {
+> 		this.remote_user = remote_user;
+> 	}
+> 
+> 	public String getTime_local() {
+> 		return time_local;
+> 	}
+> 
+> 	public void setTime_local(String time_local) {
+> 		this.time_local = time_local;
+> 	}
+> 
+> 	public String getRequest() {
+> 		return request;
+> 	}
+> 
+> 	public void setRequest(String request) {
+> 		this.request = request;
+> 	}
+> 
+> 	public String getStatus() {
+> 		return status;
+> 	}
+> 
+> 	public void setStatus(String status) {
+> 		this.status = status;
+> 	}
+> 
+> 	public String getBody_bytes_sent() {
+> 		return body_bytes_sent;
+> 	}
+> 
+> 	public void setBody_bytes_sent(String body_bytes_sent) {
+> 		this.body_bytes_sent = body_bytes_sent;
+> 	}
+> 
+> 	public String getHttp_referer() {
+> 		return http_referer;
+> 	}
+> 
+> 	public void setHttp_referer(String http_referer) {
+> 		this.http_referer = http_referer;
+> 	}
+> 
+> 	public String getHttp_user_agent() {
+> 		return http_user_agent;
+> 	}
+> 
+> 	public void setHttp_user_agent(String http_user_agent) {
+> 		this.http_user_agent = http_user_agent;
+> 	}
+> 
+> 	public boolean isValid() {
+> 		return valid;
+> 	}
+> 
+> 	public void setValid(boolean valid) {
+> 		this.valid = valid;
+> 	}
+> 
+> 	@Override
+> 	public String toString() {
+> 
+> 		StringBuilder sb = new StringBuilder();
+> 		sb.append(this.valid);
+> 		sb.append("\001").append(this.remote_addr);
+> 		sb.append("\001").append(this.remote_user);
+> 		sb.append("\001").append(this.time_local);
+> 		sb.append("\001").append(this.request);
+> 		sb.append("\001").append(this.status);
+> 		sb.append("\001").append(this.body_bytes_sent);
+> 		sb.append("\001").append(this.http_referer);
+> 		sb.append("\001").append(this.http_user_agent);
+> 		
+> 		return sb.toString();
+> 	}
+> }
+> ```
+>
+> Mapper
+>
+> ```java
+> package com.tian.mapreduce.log;
+> import java.io.IOException;
+> import org.apache.hadoop.io.LongWritable;
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.Mapper;
+> 
+> public class LogMapper extends Mapper<LongWritable, Text, Text, NullWritable>{
+> 	Text k = new Text();
+> 	
+> 	@Override
+> 	protected void map(LongWritable key, Text value, Context context)	throws IOException, InterruptedException {
+> 
+> 		// 1 获取1行
+> 		String line = value.toString();
+> 		
+> 		// 2 解析日志是否合法
+> 		LogBean bean = parseLog(line);
+> 		
+> 		if (!bean.isValid()) {
+> 			return;
+> 		}
+> 		
+> 		k.set(bean.toString());
+> 		
+> 		// 3 输出
+> 		context.write(k, NullWritable.get());
+> 	}
+> 
+> 	// 解析日志
+> 	private LogBean parseLog(String line) {
+> 
+> 		LogBean logBean = new LogBean();
+> 		
+> 		// 1 截取
+> 		String[] fields = line.split(" ");
+> 		
+> 		if (fields.length > 11) {
+> 
+> 			// 2封装数据
+> 			logBean.setRemote_addr(fields[0]);
+> 			logBean.setRemote_user(fields[1]);
+> 			logBean.setTime_local(fields[3].substring(1));
+> 			logBean.setRequest(fields[6]);
+> 			logBean.setStatus(fields[8]);
+> 			logBean.setBody_bytes_sent(fields[9]);
+> 			logBean.setHttp_referer(fields[10]);
+> 			
+> 			if (fields.length > 12) {
+> 				logBean.setHttp_user_agent(fields[11] + " "+ fields[12]);
+> 			}else {
+> 				logBean.setHttp_user_agent(fields[11]);
+> 			}
+> 			
+> 			// 大于400，HTTP错误
+> 			if (Integer.parseInt(logBean.getStatus()) >= 400) {
+> 				logBean.setValid(false);
+> 			}
+> 		}else {
+> 			logBean.setValid(false);
+> 		}
+> 		
+> 		return logBean;
+> 	}
+> }
+> ```
+>
+> Driver
+>
+> ```java
+> package com.tian.mapreduce.log;
+> import org.apache.hadoop.conf.Configuration;
+> import org.apache.hadoop.fs.Path;
+> import org.apache.hadoop.io.NullWritable;
+> import org.apache.hadoop.io.Text;
+> import org.apache.hadoop.mapreduce.Job;
+> import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+> import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+> 
+> public class LogDriver {
+> 	public static void main(String[] args) throws Exception {
+> 		
+> // 1 获取job信息
+> 		Configuration conf = new Configuration();
+> 		Job job = Job.getInstance(conf);
+> 
+> 		// 2 加载jar包
+> 		job.setJarByClass(LogDriver.class);
+> 
+> 		// 3 关联map
+> 		job.setMapperClass(LogMapper.class);
+> 
+> 		// 4 设置最终输出类型
+> 		job.setOutputKeyClass(Text.class);
+> 		job.setOutputValueClass(NullWritable.class);
+> 
+> 		// 5 设置输入和输出路径
+> 		FileInputFormat.setInputPaths(job, new Path(args[0]));
+> 		FileOutputFormat.setOutputPath(job, new Path(args[1]));
+> 
+> 		// 6 提交
+> 		job.waitForCompletion(true);
+> 	}
+> }
+> ```
 
 ## 10.MapReduce开发总结
 
