@@ -1,5 +1,10 @@
 # TODO-List
 * [ ] -
+* [ ] **MapReduce扩展案例** *2019-7-27 16:00:45*
+* [ ] **小文件解决方案>>开启JVM重用**  *2019-7-27 15:56:42*
+* [ ] **Hadoop企业优化**  *2019-7-27 15:51:53*
+* [ ] **空间复杂度，时间复杂度** *2019-7-27 14:59:29*
+* [ ] **压缩测试类**  *2019-7-27 11:46:48*
 * [ ] **ReduceTask-src**  *2019-7-26 15:19:33*
 * [ ] **MapTask-src**  *2019-7-26 14:54:29*
 * [ ] **OutputFormat >> IO流**  *2019-7-26 10:51:08*
@@ -7,19 +12,19 @@
 * [x] **Job submit >> debug src**  ***视频3***
 * [x] **FileInputFormat split >> debug src**
 * [x] **Xmind**  *2019-7-25 15:39:23*
-* [ ] **FileInputFormat** ***视频 4 5***
+* [x] **FileInputFormat** ***视频 4 5***
 * [ ] **MapReduce测试 @ 集群**
-* [ ] **NLineInputFormat实现类的理解**  ***视频***
-* [ ] **KeyValueTextInputFormat & NLineInputFormat使用案例**
-* [ ] **自定义FileInputFormat** ***视频11*** *2019-7-23 15:58:32*
-* [ ] **自定义InputFormat调试** ***视频***
+* [x] **NLineInputFormat实现类的理解**  ***视频***
+* [x] **KeyValueTextInputFormat & NLineInputFormat使用案例**
+* [x] **自定义FileInputFormat** ***视频11*** *2019-7-23 15:58:32*
+* [x] **自定义InputFormat调试** ***视频***
 * [ ] **快速排序算法**  *2019-7-24 09:26:38*    
-* [ ] **Partition实操**  *2019-7-24 11:43:01*
-* [ ] **Combiner合并 视频**  *2019-7-24 14:49:10*
-* [ ] **GroupingComparator分组 视频**  *2019-7-24 15:16:26*
+* [x] **Partition实操**  *2019-7-24 11:43:01*
+* [x] **Combiner合并 视频**  *2019-7-24 14:49:10*
+* [x] **GroupingComparator分组 视频**  *2019-7-24 15:16:26*
 * [ ] **Shuffle-src**  *2019-7-24 15:50:36*
 * [ ] **MapReduce工作流程图**  *2019-7-24 16:31:21*
-* [ ] **InputFormat数据输入**  *2019-7-25 01:12:40*
+* [x] **InputFormat数据输入**  *2019-7-25 01:12:40*
 * [ ] **切片与MapTask并发度决定机制**  *2019-7-25 01:13:13*
 
 
@@ -109,17 +114,17 @@ MapTask和ReduceTask之间如何衔接
 
 ## 6.常用数据序列化类型
 
-Java类型|Hadoop Writable类型
-:-:|:-:
-Boolean|BooleanWritable
-Byte|ByteWritable
-Int|IntWritable
-Float|FloatWritabl
-Long|LongWritabl
-Double|DoubleWritabl
-String|**Text**
-Map|MapWritabl
-Array|ArrayWritabl
+| Java类型 | Hadoop Writable类型 |
+| :------: | :-----------------: |
+| Boolean  |   BooleanWritable   |
+|   Byte   |    ByteWritable     |
+|   Int    |     IntWritable     |
+|  Float   |    FloatWritabl     |
+|   Long   |     LongWritabl     |
+|  Double  |    DoubleWritabl    |
+|  String  |      **Text**       |
+|   Map    |     MapWritabl      |
+|  Array   |    ArrayWritabl     |
 
 ## 7.Mapreduce编程规范
 
@@ -3101,21 +3106,21 @@ OutputFormat时MapReduce输出的基类，所有实现MapReduce输出都实现�
 > ```
 
 订单数据表
-| id   | pid  | amount |
-| ---- | ---- | ------ |
-| 1001 | 01   | 1      |
-| 1002 | 02   | 2      |
-| 1003 | 03   | 3      |
-| 1004 | 01   | 4      |
-| 1005 | 02   | 5      |
-| 1006 | 03   | 6      |
+| id   | pid | amount |
+| ---- | --- | ------ |
+| 1001 | 01  | 1      |
+| 1002 | 02  | 2      |
+| 1003 | 03  | 3      |
+| 1004 | 01  | 4      |
+| 1005 | 02  | 5      |
+| 1006 | 03  | 6      |
 商品信息表
 
-| pid  | pname |
-| ---- | ----- |
-| 01   | 小米  |
-| 02   | 华为  |
-| 03   | 格力  |
+| pid | pname |
+| --- | ----- |
+| 01  | 小米  |
+| 02  | 华为  |
+| 03  | 格力  |
 
 
 最终输出形式
@@ -3903,43 +3908,440 @@ OutputFormat时MapReduce输出的基类，所有实现MapReduce输出都实现�
 
 # 四、Hadoop数据压缩
 
+
+
 ## 1.概述
 
+>**压缩概述**
+压缩技术能够有效减少底层存储系统（HDFS）读写字节数。压缩提高了网络带宽和磁盘空间的效率。在运行MR程序时，I/O操作、网络数据传输、 Shuffle和Merge要花大量的时间，尤其是数据规模很大和工作负载密集的情况下，因此，使用数据压缩显得非常重要。
+鉴于磁盘I/O和网络带宽是Hadoop的宝贵资源，数据压缩对于节省资源、最小化磁盘I/O和网络传输非常有帮助。可以在任意MapReduce阶段启用压缩。不过，尽管压缩与解压操作的CPU开销不高，其性能的提升和资源的节省并非没有代价。
+
+>**压缩策略**
+压缩是提高Hadoop运行效率的一种优化策略。
+通过对Mapper、Reducer运行过程的数据进行压缩，以减少磁盘IO，提高MR程序运行速度。
+注意：采用压缩技术减少了磁盘IO，但同时增加了CPU运算负担。所以，压缩特性运用得当能提高性能，但运用不当也可能降低性能。
+
+>**压缩基本原则**
+运算密集型的job，少用压缩
+IO密集型的job，多用压缩
+
 ## 2.MR支持的压缩编码
+
+*map支持的压缩算法*
+
+*Hadoop引入的编码解码器*
+
+*压缩性能的比较*
+
+
+[链接](http://google.github.io/snappy/)
+
+On a single core of a Core i7 processor in 64-bit mode, Snappy compresses at about 250 MB/sec or more and decompresses at about 500 MB/sec or more.
+
 
 ## 3.压缩方式选择
 
 ### 3.1 Gzip压缩
 
+>**优点**
+压缩率比较高,而且压缩解压缩速度快,Hadoop本身支持,在应用中处理Gzip格式的文件和直接处理文一样,大部分Linux系统都自带Gzip命令，使用方便
+
+>**缺点**
+不支持split
+
+>**应用场景**
+当每个文件压缩后在130M以内(一个块的大小)，都可以考虑用Gzip压缩格式，例如某一天或者一个小时的日志压缩成一个Gzip文件。
+
+
 ### 3.2 Bzip2压缩
+
+>**优点**
+支持split，具有很高的压缩率，比Gzip压缩率都高，Hadoop本身自带，使用方便。
+
+>**缺点**
+压缩/解压速度慢
+
+>**应用场景**
+适合对速度要求不高，但需要较高的压缩率的时候，或者输出之后的数据比较大，处理之后的数据需要压缩存档减少磁盘从空间并且以后数据使用较少的情况，或者对单个大文件的文本文件或想压缩减少存储空间，同时又需要支持split，而且兼容之前的应用程序的情况。
 
 ### 3.3 Lzo压缩
 
+>**优点**
+压缩解压缩速度比较快，合理的压缩率，支持split，是Hadoop中最流行的压缩格式，可以在Linux系统下安装lzop命令，使用方便。
+
+>**缺点**
+压缩率比Gzip低，Hadoop不自带，需要额外安装，在应用中对Lzo格式的文件需要做一些特殊处理(为了支持split需要建索引，还需要指定InputFormat为Lzo格式)。
+
+>**应用场景**
+一个很大的文本文件，压缩之后还大于200M以上的可以考虑，而且单个文件越大，Lzo优点越明显。
+
 ### 3.4 Snappy压缩
 
+>**优点**
+高速压缩速度和合理的压缩率
+
+>**缺点**
+不支持split，压缩率比Gzip低，Hadoop不自带，需要额外安装
+
+>**应用场景**
+MapReduce作业的Map输出的数据比较大的时候，作为Map到Reduce的中间数据的压缩格式，或者作为一个MapReduce作业的输出和另外一个MapReduce作业的速度。
 
 
 ## 4.压缩位置选择
 
+![](img/compress-position.png)
+
 ## 5.压缩参数配置
+
+*压缩参数配置*
+
 
 ## 6.压缩实操案例
 
 ### 6.1 数据流的压缩和解压缩
 
+CompressionCode有连个办法可以轻松的压缩或解压缩数据
+要想对正在被写入一个输出流的数据进行压缩，我们可以使用createOutputStream(OutputStreamout)方法创建一个CompressionOutputStream,将其以压缩格式写入底层的数据流。
+相反，要想对输入流读取来的数据进行解压缩，则调用createInputStream(InputStreamin)函数，从而获得一个CompressorionInputStream，从而底层的读取未压缩的数据。
+
+
+| 压缩方式 | 全类名                                     |
+| :------: | :----------------------------------------- |
+| DEFLATE  | org.apache.hadoop.io.compress.DefaultCodec |
+|   gzip   | org.apache.hadoop.io.compress.GzipCodec    |
+|  bzip2   | org.apache.hadoop.io.compress.BZip2Codec   |
+
+```java
+package com.atguigu.mapreduce.compress;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.CompressionCodecFactory;
+import org.apache.hadoop.io.compress.CompressionInputStream;
+import org.apache.hadoop.io.compress.CompressionOutputStream;
+import org.apache.hadoop.util.ReflectionUtils;
+
+public class TestCompress {
+
+	public static void main(String[] args) throws Exception {
+		compress("e:/hello.txt","org.apache.hadoop.io.compress.BZip2Codec");
+//		decompress("e:/hello.txt.bz2");
+	}
+
+	// 1、压缩
+	private static void compress(String filename, String method) throws Exception {
+		
+		// （1）获取输入流
+		FileInputStream fis = new FileInputStream(new File(filename));
+		
+		Class codecClass = Class.forName(method);
+		
+		CompressionCodec codec = (CompressionCodec) ReflectionUtils.newInstance(codecClass, new Configuration());
+		
+		// （2）获取输出流
+		FileOutputStream fos = new FileOutputStream(new File(filename + codec.getDefaultExtension()));
+		CompressionOutputStream cos = codec.createOutputStream(fos);
+		
+		// （3）流的对拷
+		IOUtils.copyBytes(fis, cos, 1024*1024*5, false);
+		
+        // （4）关闭资源
+                cos.close();
+                fos.close();
+        fis.close();
+	}
+
+	// 2、解压缩
+	private static void decompress(String filename) throws FileNotFoundException, IOException {
+		
+		// （0）校验是否能解压缩
+		CompressionCodecFactory factory = new CompressionCodecFactory(new Configuration());
+
+		CompressionCodec codec = factory.getCodec(new Path(filename));
+		
+		if (codec == null) {
+			System.out.println("cannot find codec for file " + filename);
+			return;
+		}
+		
+		// （1）获取输入流
+		CompressionInputStream cis = codec.createInputStream(new FileInputStream(new File(filename)));
+		
+		// （2）获取输出流
+		FileOutputStream fos = new FileOutputStream(new File(filename + ".decoded"));
+		
+		// （3）流的对拷
+		IOUtils.copyBytes(cis, fos, 1024*1024*5, false);
+		
+		// （4）关闭资源
+		cis.close();
+		fos.close();
+	}
+}
+```
+
 ### 6.2 Map输出端采用压缩
 
+即使你的MapReduce的输入输出文件都是未压缩的文件，你仍然可以对Map任务的中间结果输出做压缩，因为它要写在硬盘并且通过网络传输到Reduce节点，对其压缩可以提高很多性能，这些工作只要设置两个属性即可，我们来看下代码怎么设置。
+
+提供的Hadoop源码支持的压缩格式有Bzip2Codec DefaultCodec
+
+按照业务逻辑编写Mapper和Reducer子类，不需要额外变更
+```java
+package com.atguigu.mapreduce.compress;
+import java.io.IOException;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
+
+public class WordCountMapper extends Mapper<LongWritable, Text, Text, IntWritable>{
+
+Text k = new Text();
+	IntWritable v = new IntWritable(1);
+
+	@Override
+	protected void map(LongWritable key, Text value, Context context)throws IOException, InterruptedException {
+
+		// 1 获取一行
+		String line = value.toString();
+
+		// 2 切割
+		String[] words = line.split(" ");
+
+		// 3 循环写出
+		for(String word:words){
+k.set(word);
+			context.write(k, v);
+		}
+	}
+}
+```
+```java
+package com.atguigu.mapreduce.compress;
+import java.io.IOException;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Reducer;
+
+public class WordCountReducer extends Reducer<Text, IntWritable, Text, IntWritable>{
+
+	IntWritable v = new IntWritable();
+
+	@Override
+	protected void reduce(Text key, Iterable<IntWritable> values,
+			Context context) throws IOException, InterruptedException {
+		
+		int sum = 0;
+
+		// 1 汇总
+		for(IntWritable value:values){
+			sum += value.get();
+		}
+		
+        v.set(sum);
+
+        // 2 输出
+		context.write(key, v);
+	}
+}
+```
+Driver如下
+```java
+package com.atguigu.mapreduce.compress;
+import java.io.IOException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.compress.BZip2Codec;	
+import org.apache.hadoop.io.compress.CompressionCodec;
+import org.apache.hadoop.io.compress.GzipCodec;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+public class WordCountDriver {
+
+	public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
+
+		Configuration configuration = new Configuration();
+
+		// 开启map端输出压缩
+	configuration.setBoolean("mapreduce.map.output.compress", true);
+		// 设置map端输出压缩方式
+	configuration.setClass("mapreduce.map.output.compress.codec", BZip2Codec.class, CompressionCodec.class);
+
+		Job job = Job.getInstance(configuration);
+
+		job.setJarByClass(WordCountDriver.class);
+
+		job.setMapperClass(WordCountMapper.class);
+		job.setReducerClass(WordCountReducer.class);
+
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(IntWritable.class);
+
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(IntWritable.class);
+
+		FileInputFormat.setInputPaths(job, new Path(args[0]));
+		FileOutputFormat.setOutputPath(job, new Path(args[1]));
+
+		boolean result = job.waitForCompletion(true);
+
+		System.exit(result ? 1 : 0);
+	}
+}
+```
 ### 6.3 Reduce输出端采用压缩
 
+基于WordCount案例，Mapper和Reducer子类同上
+修改驱动
+```java
+package com.atguigu.mapreduce.compress;
+import java.io.IOException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.compress.BZip2Codec;
+import org.apache.hadoop.io.compress.DefaultCodec;
+import org.apache.hadoop.io.compress.GzipCodec;
+import org.apache.hadoop.io.compress.Lz4Codec;
+import org.apache.hadoop.io.compress.SnappyCodec;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+public class WordCountDriver {
+
+	public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
+		
+		Configuration configuration = new Configuration();
+		
+		Job job = Job.getInstance(configuration);
+		
+		job.setJarByClass(WordCountDriver.class);
+		
+		job.setMapperClass(WordCountMapper.class);
+		job.setReducerClass(WordCountReducer.class);
+		
+		job.setMapOutputKeyClass(Text.class);
+		job.setMapOutputValueClass(IntWritable.class);
+		
+		job.setOutputKeyClass(Text.class);
+		job.setOutputValueClass(IntWritable.class);
+		
+		FileInputFormat.setInputPaths(job, new Path(args[0]));
+		FileOutputFormat.setOutputPath(job, new Path(args[1]));
+		
+		// 设置reduce端输出压缩开启
+		FileOutputFormat.setCompressOutput(job, true);
+		
+		// 设置压缩的方式
+	    FileOutputFormat.setOutputCompressorClass(job, BZip2Codec.class); 
+//	    FileOutputFormat.setOutputCompressorClass(job, GzipCodec.class); 
+//	    FileOutputFormat.setOutputCompressorClass(job, DefaultCodec.class); 
+	    
+		boolean result = job.waitForCompletion(true);
+		
+		System.exit(result?1:0);
+	}
+}
+```
 # 五、Yarn资源调度
+
+Yarn是一个资源调度平台，负责为运算程序提供服务器运算资源，相当于一个分布式的操作系统平台，而MapReduce等运算程序则相当于运行于操作系统之上的应用程序。
 
 ## 1.基本架构
 
+YARN主要由ResourceManager、NodeManager、ApplicationMaster和Container等组件构成，
+
+![](img/yarn-struc.png)
+
 ## 2.工作机制
+
+![](img/yarn-work.png)
+
+>**工作机制详解**
+MR程序提交到客户端所在的节点。
+YarnRunner向ResourceManager申请一个Application。
+RM将该应用程序的资源路径返回给YarnRunner。
+该程序将运行所需资源提交到HDFS上。
+程序资源提交完毕后，申请运行mrAppMaster。
+RM将用户的请求初始化成一个Task。
+其中一个NodeManager领取到Task任务。
+该NodeManager创建容器Container，并产生MRAppmaster。
+Container从HDFS上拷贝资源到本地。
+MRAppmaster向RM 申请运行MapTask资源。
+RM将运行MapTask任务分配给另外两个NodeManager，另两个NodeManager分别领取任务并创建容器。
+MR向两个接收到任务的NodeManager发送程序启动脚本，这两个NodeManager分别启动MapTask，MapTask对数据分区排序。
+MrAppMaster等待所有MapTask运行完毕后，向RM申请容器，运行ReduceTask。
+ReduceTask向MapTask获取相应分区的数据。
+程序运行完毕后，MR会向RM申请注销自己。
+
 
 ## 3.作业提交全过程
 
+**Yarn作业提交过程**
+
+![](img/yarn-work.png)
+
+>作业提交全过程详解
+（1）作业提交
+第1步：Client调用job.waitForCompletion方法，向整个集群提交MapReduce作业。
+第2步：Client向RM申请一个作业id。
+第3步：RM给Client返回该job资源的提交路径和作业id。
+第4步：Client提交jar包、切片信息和配置文件到指定的资源提交路径。
+第5步：Client提交完资源后，向RM申请运行MrAppMaster。
+（2）作业初始化
+第6步：当RM收到Client的请求后，将该job添加到容量调度器中。
+第7步：某一个空闲的NM领取到该Job。
+第8步：该NM创建Container，并产生MRAppmaster。
+第9步：下载Client提交的资源到本地。
+（3）任务分配
+第10步：MrAppMaster向RM申请运行多个MapTask任务资源。
+第11步：RM将运行MapTask任务分配给另外两个NodeManager，另两个NodeManager分别领取任务并创建容器。
+（4）任务运行
+第12步：MR向两个接收到任务的NodeManager发送程序启动脚本，这两个NodeManager分别启动MapTask，MapTask对数据分区排序。
+第13步：MrAppMaster等待所有MapTask运行完毕后，向RM申请容器，运行ReduceTask。
+第14步：ReduceTask向MapTask获取相应分区的数据。
+第15步：程序运行完毕后，MR会向RM申请注销自己。
+（5）进度和状态更新
+YARN中的任务将其进度和状态(包括counter)返回给应用管理器, 客户端每秒(通过mapreduce.client.progressmonitor.pollinterval设置)向应用管理器请求进度更新, 展示给用户。
+（6）作业完成
+除了向应用管理器请求作业进度外, 客户端每5秒都会通过调用waitForCompletion()来检查作业是否完成。时间间隔可以通过mapreduce.client.completion.pollinterval来设置。作业完成之后, 应用管理器和Container会清理工作状态。作业的信息会被作业历史服务器存储以备之后用户核查。
+
+**MapReduce作业提交过程**
+
+![](img/workcommit-mapreduce.png)
+
+>
+
 ## 4.资源调度器
+
+[资源调度器.doc](link/Capacity-Scheduler.docx)
+
+目前，Hadoop作业调度器主要有三种：FIFO、Capacity Scheduler和Fair Scheduler。Hadoop2.7.2默认的资源调度器是Capacity Scheduler。
+
+具体设置详见：yarn-default.xml文件
+
+```xml
+<property>
+    <description>The class to use as the resource scheduler.</description>
+    <name>yarn.resourcemanager.scheduler.class</name>
+<value>org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler</value>
+</property>
+```
+
+
 
 ## 5.容量调度器多队列提交案例
 
