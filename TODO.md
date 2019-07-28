@@ -2,6 +2,8 @@
 ## Note
 
 * [ ] -
+* [ ] **编写MapReduce扩充案例** *2019-7-29 00:39:00*
+* [ ] **补充MapReduce笔记** *2019-7-29 00:37:39*
 * [x] **Hadoop Xmind 总结**
 * [ ] **Hadoop crontab 定时任务** *2019-7-25 14:44:55*
 * [ ] **HDFS >> HDFS IO**
