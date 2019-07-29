@@ -2,6 +2,9 @@
 # TODO
 
 * [ ] -
+* [ ] Client端递归完成监听器的创建 *2019-7-29 16:50:44*
+* [ ] 监听服务服务器节点动态上下线 *2019-7-29 16:32:47*
+* [ ] zk分布式搭建与宕机模拟 *2019-7-29 14:33:42*
 * [ ] 默认节点类型 *2019年7月29日 10:56:46*
 * [ ] 选举机制 *2019-7-29 10:41:06*
 * [ ] 半数机制与奇数台服务器 *2019-7-29 10:35:41*
@@ -303,9 +306,7 @@ bin/zkServer.sh status #103
 `help`|	显示所有操作命令
 `ls path [watch]`|	使用 ls 命令来查看当前znode中所包含的内容
 `ls2 path [watch]`|	查看当前节点数据并能看到更新次数等数据
-`create`|	普通创建
-`-s` | 含有序列
-`-e` | 临时（重启或者超时消失）
+`create`|	普通创建 <br> `-s` 含有序列 <br>`-e`  临时（重启或者超时消失）
 `get path [watch]`|	获得节点的值
 `set`|	设置节点的具体值
 `stat`|	查看节点状态
@@ -340,7 +341,7 @@ bin/zkCli.sh #103
 [zk: localhost:2181(CONNECTED) 4] create /sanguo/shuguo "liubei"
 # Created /sanguo/shuguo
 # 6．获得节点的值
-[zk: localhost:2181(CONNECTED) 5] get /sanguo
+[zk: localhost:2181(CONNECTED) 5] get /sanguo #末尾不能待斜杠
 # jinlian
 # cZxid = 0x100000003
 # ctime = Wed Aug 29 00:03:23 CST 2018
@@ -394,11 +395,11 @@ bin/zkCli.sh
 # 9．修改节点数据值
 [zk: localhost:2181(CONNECTED) 6] set /sanguo/weiguo "simayi"
 # 10．节点的值变化监听
-	# （1）在hadoop104主机上注册监听/sanguo节点数据变化
+# （1）在hadoop104主机上注册监听/sanguo节点数据变化
 [zk: localhost:2181(CONNECTED) 26] [zk: localhost:2181(CONNECTED) 8] get /sanguo watch
-	# （2）在hadoop103主机上修改/sanguo节点的数据
+# （2）在hadoop103主机上修改/sanguo节点的数据
 [zk: localhost:2181(CONNECTED) 1] set /sanguo "xisi"
-	# （3）观察hadoop104主机收到数据变化的监听
+# （3）观察hadoop104主机收到数据变化的监听
 # WATCHER::
 # WatchedEvent state:SyncConnected type:NodeDataChanged path:/sanguo
 # 11．节点的子节点变化监听（路径变化）
@@ -413,7 +414,7 @@ bin/zkCli.sh
 # WatchedEvent state:SyncConnected type:NodeChildrenChanged path:/sanguo
 # 12．删除节点
 [zk: localhost:2181(CONNECTED) 4] delete /sanguo/jin
-# 13．递归删除节点
+# 13．递归删除节点(用于删除非空节点)
 [zk: localhost:2181(CONNECTED) 15] rmr /sanguo/shuguo
 # 14．查看节点状态
 [zk: localhost:2181(CONNECTED) 17] stat /sanguo
@@ -434,8 +435,10 @@ bin/zkCli.sh
 ## 3.API应用
 
 ### 3.1 Eclipse环境搭建
-创建maven工程
-pom.xml
+
+**创建maven工程**
+
+**pom.xml**
 ```xml
 <dependencies>
 		<dependency>
@@ -457,7 +460,7 @@ pom.xml
 </dependencies>
 ```
 
-log4j.properties
+**log4j.properties**
 ```properties
 log4j.rootLogger=INFO, stdout  
 log4j.appender.stdout=org.apache.log4j.ConsoleAppender  
@@ -508,7 +511,7 @@ private static String connectString =
 public void create() throws Exception {
 
 		// 参数1：要创建的节点的路径； 参数2：节点数据 ； 参数3：节点权限 ；参数4：节点的类型
-		String nodeCreated = zkClient.create("/atguigu", "jinlian".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+		String nodeCreated = zkClient.create("/tian", "jinlian".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 }
 ```
 
@@ -519,15 +522,15 @@ public void create() throws Exception {
 // 获取子节点
 @Test
 public void getChildren() throws Exception {
+	//监听只负责一次
+	List<String> children = zkClient.getChildren("/", true);
 
-		List<String> children = zkClient.getChildren("/", true);
+	for (String child : children) {
+		System.out.println(child);
+	}
 
-		for (String child : children) {
-			System.out.println(child);
-		}
-
-		// 延时阻塞
-		Thread.sleep(Long.MAX_VALUE);
+	// 延时阻塞
+	Thread.sleep(Long.MAX_VALUE);
 }
 ```
 
@@ -563,7 +566,7 @@ public void exist() throws Exception {
 
 （1）服务器端向Zookeeper注册代码
 ```java
-package com.atguigu.zkcase;
+package com.tian.zkcase;
 import java.io.IOException;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
@@ -622,7 +625,7 @@ public class DistributeServer {
 
 （2）客户端代码
 ```java
-package com.atguigu.zkcase;
+package com.tian.zkcase;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -658,6 +661,7 @@ public class DistributeClient {
 	public void getServerList() throws Exception {
 		
 		// 1获取服务器子节点信息，并且对父节点进行监听
+		// 不只是监听一次，自定义监听器，并递归调用
 		List<String> children = zk.getChildren(parentNode, true);
 
         // 2存储服务器信息列表
@@ -676,9 +680,8 @@ public class DistributeClient {
 
 	// 业务功能
 	public void business() throws Exception{
-
 		System.out.println("client is working ...");
-Thread.sleep(Long.MAX_VALUE);
+		Thread.sleep(Long.MAX_VALUE);
 	}
 
 	public static void main(String[] args) throws Exception {
