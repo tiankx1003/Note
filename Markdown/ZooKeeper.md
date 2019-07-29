@@ -285,11 +285,11 @@ xsync zoo.cfg
 dataDir=/opt/module/zookeeper-3.4.10/zkData
 
 #######################cluster##########################
+server.1=hadoop101:2888:3888
 server.2=hadoop102:2888:3888
 server.3=hadoop103:2888:3888
-server.4=hadoop104:2888:3888
 ```
-
+启动一次服务后会生成dataDir目录，只需在该目录下新建myid并只添加id号就行
 集群模式下配置一个文件myid，这个文件在dataDir目录下，这个文件里面有一个数据就是A的值，Zookeeper启动时读取此文件，拿到里面的数据与zoo.cfg里面的配置信息比较从而判断到底是哪个server。
 B是这个服务器的ip地址；
 C是这个服务器与集群中的Leader服务器交换信息的端口；
