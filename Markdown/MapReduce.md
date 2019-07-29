@@ -4646,5 +4646,14 @@ public class TwoShareFriendsDriver {
 }
 ```
 
+map端按分号切割成kv对，k是左侧字母，v是右侧内容，集合HashSet<Character>
+reduce ki 和 kj 对应v的交集 输出ki - kj : 交集
+Map.get(ki).retainAll(Map.get(kj))
+
+map阶段
+读取整行，输入key为偏移量，value为整行的值
+按照":"切割，输出key为Text，value为Text
+reduce阶段
+输出key为输入的key，value为集合HashSet<Character>
 
 # 八、常见错误及解决方案

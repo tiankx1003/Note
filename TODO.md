@@ -74,3 +74,14 @@ ctrl + t 查看子类/实现类
 ctrl + shift + o :全局导包
 
 >**IDEA keymaps**
+
+
+
+使用KeyValueTextInputFormat分隔符为":"
+Map阶段
+读取key为左侧Text，value为右侧Text
+HashMap<Character,HashSet<Character>>
+输出key为hashMap的key，value为hashMap的value
+Reduce阶段
+对key1和key2取交集
+reduceMap.get(key1).containAll(reduceMap.get(key2))
