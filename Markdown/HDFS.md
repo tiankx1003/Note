@@ -1087,8 +1087,8 @@ hadoop fs -cp har:///user/tian/output/input.har/* /user/tian
 2）实现高可用最关键的策略是消除单点故障。HA严格来说应该分成各个组件的HA机制：HDFS的HA和YARN的HA。
 3）Hadoop2.0之前，在HDFS集群中NameNode存在单点故障（SPOF）。
 4）NameNode主要在以下两个方面影响HDFS集群
-	NameNode机器发生意外，如宕机，集群将无法使用，直到管理员重启
-	NameNode机器需要升级，包括软件、硬件升级，此时集群也将无法使用
+NameNode机器发生意外，如宕机，集群将无法使用，直到管理员重启
+NameNode机器需要升级，包括软件、硬件升级，此时集群也将无法使用
 HDFS HA功能通过配置Active/Standby两个NameNodes实现在集群中对NameNode的热备来解决上述问题。如果出现故障，如机器崩溃或机器需要升级维护，这时可通过此种方式将NameNode很快的切换到另外一台机器。
 
 
@@ -1126,28 +1126,28 @@ ZKFC是自动故障转移中的另一个新组件，是ZooKeeper的客户端，�
 ### 3.1环境准备
 
 修改IP
-修该主机名及主机名和IP地址的映射
+修改主机名及主机名和IP地址的映射
 关闭防火墙
 ssh免密登录
 安装JDK,配置环境变量等
 
 ### 3.2规划集群
 
-hadoop102  |	hadoop103 | 	hadoop104
-:-|:-|:-|
-NameNode	|	NameNode	| |
-ZKFC	| ZKFC	 | |
-JournalNode	|	JournalNode	|	JournalNode	
-DataNode|	DataNode	|DataNode
-ZK		|ZK	|	ZK	
-|	|ResourceManager|	|
-NodeManager		|NodeManager	|	NodeManager	
+| hadoop101   | hadoop102       | hadoop103   |
+| :---------- | :-------------- | :---------- |
+| NameNode    | NameNode        |             |
+| ZKFC        | ZKFC            |             |
+| JournalNode | JournalNode     | JournalNode |
+| DataNode    | DataNode        | DataNode    |
+| ZK          | ZK              | ZK          |
+|             | ResourceManager |             |
+| NodeManager | NodeManager     | NodeManager |
 
 
 ### 3.3配置Zookeeper集群
 
 **集群规划**
-在hadoop102、hadoop103和hadoop104三个节点上部署Zookeeper
+在hadoop101、hadoop102和hadoop103三个节点上部署Zookeeper
 
 **解压安装**
 ```bash
@@ -1159,16 +1159,16 @@ mkdir -p zkData
 mv zoo_sample.cfg zoo.cfg
 ```
 
-配置zoo.**cfg文件**
+**配置zoo.cfg文件**
 ```
 dataDir=/opt/module/zookeeper-3.4.10/zkData
 ```
 增加配置
 ```
 #######################cluster##########################
+server.1=hadoop101:2888:3888
 server.2=hadoop102:2888:3888
 server.3=hadoop103:2888:3888
-server.4=hadoop104:2888:3888
 ```
 
 >**配置参数解读**
@@ -1218,7 +1218,7 @@ bin/zkServer.sh status
 #在opt目录下创建一个ha文件夹
 mkdir ha
 #将/opt/app/下的 hadoop-2.7.2拷贝到/opt/ha目录下
-cp -r hadoop-2.7.2/ /opt/ha/
+cp -r hadoop-2.7.2/ /opt/module/ha/
 #配置hadoop-env.sh
 export JAVA_HOME=/opt/module/jdk1.8.0_144
 ```
@@ -1235,7 +1235,7 @@ export JAVA_HOME=/opt/module/jdk1.8.0_144
 		<!-- 指定hadoop运行时产生文件的存储目录 -->
 		<property>
 			<name>hadoop.tmp.dir</name>
-			<value>/opt/ha/hadoop-2.7.2/data/tmp</value>
+			<value>/opt/module/ha/hadoop-2.7.2/data/tmp</value>
 		</property>
 </configuration>
 ```
@@ -1257,31 +1257,31 @@ export JAVA_HOME=/opt/module/jdk1.8.0_144
 	<!-- nn1的RPC通信地址 -->
 	<property>
 		<name>dfs.namenode.rpc-address.mycluster.nn1</name>
-		<value>hadoop102:9000</value>
+		<value>hadoop101:9000</value>
 	</property>
 
 	<!-- nn2的RPC通信地址 -->
 	<property>
 		<name>dfs.namenode.rpc-address.mycluster.nn2</name>
-		<value>hadoop103:9000</value>
+		<value>hadoop102:9000</value>
 	</property>
 
 	<!-- nn1的http通信地址 -->
 	<property>
 		<name>dfs.namenode.http-address.mycluster.nn1</name>
-		<value>hadoop102:50070</value>
+		<value>hadoop101:50070</value>
 	</property>
 
 	<!-- nn2的http通信地址 -->
 	<property>
 		<name>dfs.namenode.http-address.mycluster.nn2</name>
-		<value>hadoop103:50070</value>
+		<value>hadoop102:50070</value>
 	</property>
 
 	<!-- 指定NameNode元数据在JournalNode上的存放位置 -->
 	<property>
 		<name>dfs.namenode.shared.edits.dir</name>
-	<value>qjournal://hadoop102:8485;hadoop103:8485;hadoop104:8485/mycluster</value>
+	<value>qjournal://hadoop101:8485;hadoop102:8485;hadoop103:8485/mycluster</value>
 	</property>
 
 	<!-- 配置隔离机制，即同一时刻只能有一台服务器对外响应 -->
@@ -1299,7 +1299,7 @@ export JAVA_HOME=/opt/module/jdk1.8.0_144
 	<!-- 声明journalnode服务器存储目录-->
 	<property>
 		<name>dfs.journalnode.edits.dir</name>
-		<value>/opt/ha/hadoop-2.7.2/data/jn</value>
+		<value>/opt/module/ha/hadoop-2.7.2/data/jn</value>
 	</property>
 
 	<!-- 关闭权限检查-->
@@ -1317,7 +1317,7 @@ export JAVA_HOME=/opt/module/jdk1.8.0_144
 ```
 ```bash
 #分发配置
-xsync /opt/module/hadoop-2.7.2/etc/hadoop/
+xsync /opt/modole/ha/
 ```
 
 ### 3.5启动HDFS-HA集群
@@ -1341,9 +1341,9 @@ bin/hdfs haadmin -transitionToActive nn1
 bin/hdfs haadmin -getServiceState nn1
 ```
 
-[Web端查看hadoop102(standby)](hadoop102:50070/dfshealth.html#tab-overview)
+[Web端查看hadoop101(standby)](http://hadoop101:50070/dfshealth.html#tab-overview)
 
-[Web端查看hadoop103(standby)](hadoop103:50070/dfshealth.html#tab-overview)
+[Web端查看hadoop102(standby)](http://hadoop102:50070/dfshealth.html#tab-overview)
 
 ### 3.6配置HDFS-HA自动故障转移
 
@@ -1404,14 +1404,14 @@ ssh免密登录
 
 **规划集群**
 
-hadoop102 |	hadoop103  |	hadoop104
-:-|:-|:-
-NameNode	|	NameNode	|  |
-JournalNode	|	JournalNode	|	JournalNode	
-DataNode	|DataNode	|DataNode
-ZK|	ZK	|ZK
-ResourceManager	|	ResourceManager		| |
-NodeManager	|	NodeManager	|	NodeManager	|
+| hadoop101       | hadoop102       | hadoop103   |
+| :-------------- | :-------------- | :---------- |
+| NameNode        | NameNode        |             |
+| JournalNode     | JournalNode     | JournalNode |
+| DataNode        | DataNode        | DataNode    |
+| ZK              | ZK              | ZK          |
+| ResourceManager | ResourceManager |             |
+| NodeManager     | NodeManager     | NodeManager |
 
 **具体配置**
 yarn-site.xml
@@ -1442,18 +1442,18 @@ yarn-site.xml
 
     <property>
         <name>yarn.resourcemanager.hostname.rm1</name>
-        <value>hadoop102</value>
+        <value>hadoop101</value>
     </property>
 
     <property>
         <name>yarn.resourcemanager.hostname.rm2</name>
-        <value>hadoop103</value>
+        <value>hadoop102</value>
     </property>
  
     <!--指定zookeeper集群的地址--> 
     <property>
         <name>yarn.resourcemanager.zk-address</name>
-        <value>hadoop102:2181,hadoop103:2181,hadoop104:2181</value>
+        <value>hadoop101:2181,hadoop102:2181,hadoop103:2181</value>
     </property>
 
     <!--启用自动恢复--> 
@@ -1470,6 +1470,12 @@ yarn-site.xml
 </configuration>
 ```
 *分发配置文件*
+
+**启动ZooKeeper**
+```bash
+# 再每个节点启动ZooKeeper
+zkServer.sh start
+```
 
 **启动hdfs**
 ```bash
@@ -1488,17 +1494,17 @@ sbin/hadoop-daemons.sh start datanode
 bin/hdfs haadmin -transitionToActive nn1
 ```
 
-启动yarn
+**启动yarn**
 ```bash
-#在hadoop102中执行：
+#在hadoop101中执行：
 sbin/start-yarn.sh
-#在hadoop103中执行：
+#在hadoop102中执行：
 sbin/yarn-daemon.sh start resourcemanager
 #查看服务状态，
 bin/yarn rmadmin -getServiceState rm1
 ```
 
-[Web端查看服务状态](http://hadoop102:8088/cluster)
+[Web端查看服务状态](http://hadoop101:8088/cluster)
 
 
 ## 5.HDFS Federation架构设计
