@@ -4,7 +4,7 @@
 * [ ] 低于超海量数据-联邦机制 *2019-7-30 11:45:04*
 * [ ] 群起ZooKeeper脚本 *2019-7-30 10:47:22*
 * [ ] HDFS-HA故障转移机制 *2019-7-30 10:39:25*
-* [ ] HDFS-HA部署 *2019-7-30 09:39:28*
+* [x] HDFS-HA部署 *2019-7-30 09:39:28*
 
 # 一、HDFS概述
 
@@ -1133,15 +1133,15 @@ ssh免密登录
 
 ### 3.2规划集群
 
-hadoop102  |	hadoop103 | 	hadoop104
-:-|:-|:-|
-NameNode	|	NameNode	| |
-ZKFC	| ZKFC	 | |
-JournalNode	|	JournalNode	|	JournalNode	
-DataNode|	DataNode	|DataNode
-ZK		|ZK	|	ZK	
-|	|ResourceManager|	|
-NodeManager		|NodeManager	|	NodeManager	
+| hadoop102   | hadoop103       | hadoop104   |
+| :---------- | :-------------- | :---------- |
+| NameNode    | NameNode        |             |
+| ZKFC        | ZKFC            |             |
+| JournalNode | JournalNode     | JournalNode |
+| DataNode    | DataNode        | DataNode    |
+| ZK          | ZK              | ZK          |
+|             | ResourceManager |             |
+| NodeManager | NodeManager     | NodeManager |
 
 
 ### 3.3配置Zookeeper集群
@@ -1218,7 +1218,7 @@ bin/zkServer.sh status
 #在opt目录下创建一个ha文件夹
 mkdir ha
 #将/opt/app/下的 hadoop-2.7.2拷贝到/opt/ha目录下
-cp -r hadoop-2.7.2/ /opt/ha/
+cp -r hadoop-2.7.2/ /opt/module/ha/
 #配置hadoop-env.sh
 export JAVA_HOME=/opt/module/jdk1.8.0_144
 ```
@@ -1235,7 +1235,7 @@ export JAVA_HOME=/opt/module/jdk1.8.0_144
 		<!-- 指定hadoop运行时产生文件的存储目录 -->
 		<property>
 			<name>hadoop.tmp.dir</name>
-			<value>/opt/ha/hadoop-2.7.2/data/tmp</value>
+			<value>/opt/module/ha/hadoop-2.7.2/data/tmp</value>
 		</property>
 </configuration>
 ```
@@ -1299,7 +1299,7 @@ export JAVA_HOME=/opt/module/jdk1.8.0_144
 	<!-- 声明journalnode服务器存储目录-->
 	<property>
 		<name>dfs.journalnode.edits.dir</name>
-		<value>/opt/ha/hadoop-2.7.2/data/jn</value>
+		<value>/opt/module/ha/hadoop-2.7.2/data/jn</value>
 	</property>
 
 	<!-- 关闭权限检查-->
@@ -1404,14 +1404,14 @@ ssh免密登录
 
 **规划集群**
 
-hadoop102 |	hadoop103  |	hadoop104
-:-|:-|:-
-NameNode	|	NameNode	|  |
-JournalNode	|	JournalNode	|	JournalNode	
-DataNode	|DataNode	|DataNode
-ZK|	ZK	|ZK
-ResourceManager	|	ResourceManager		| |
-NodeManager	|	NodeManager	|	NodeManager	|
+| hadoop102       | hadoop103       | hadoop104   |
+| :-------------- | :-------------- | :---------- |
+| NameNode        | NameNode        |             |
+| JournalNode     | JournalNode     | JournalNode |
+| DataNode        | DataNode        | DataNode    |
+| ZK              | ZK              | ZK          |
+| ResourceManager | ResourceManager |             |
+| NodeManager     | NodeManager     | NodeManager |
 
 **具体配置**
 yarn-site.xml

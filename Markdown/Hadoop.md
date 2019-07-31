@@ -601,22 +601,22 @@ vim mapred-site.xml
 <!-- yarn-site.xml  -->
 <!-- Reducer获取数据的方式 -->
 <property>
-		<name>yarn.nodemanager.aux-services</name>
-		<value>mapreduce_shuffle</value>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
 </property>
 
 <!-- 指定YARN的ResourceManager的地址 -->
 <property>
-		<name>yarn.resourcemanager.hostname</name>
-		<value>hadoop102</value>
+        <name>yarn.resourcemanager.hostname</name>
+        <value>hadoop102</value>
 </property>
 ```
 ```xml
 <!-- mapred-site.xml -->
 <!-- 指定MR运行在Yarn上 -->
 <property>
-		<name>mapreduce.framework.name</name>
-		<value>yarn</value>
+        <name>mapreduce.framework.name</name>
+        <value>yarn</value>
 </property>
 ```
 ```bash

@@ -270,7 +270,7 @@ rm deleteFile -r #递归删除
 rm deleteFile -f #强制删除
 rm deleteFIle -v #删除并显示删除了哪些东西
 rm -rf / #无权限
-
+find module -type f -name "*.cmd" -exec rm -f {} \; ## 删除module目录下多层目录同一后缀的文件
 #移动到不同目录为剪切，同一目录为重命名
 mv oldNameFile newNameFile 
 mv aa/bb cc/aa

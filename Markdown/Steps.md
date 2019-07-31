@@ -2,7 +2,7 @@
 最小安装版yum安装vim tar rsync openssh openssh-clients
 设置vimrc
 ```
-colorscheme murphy
+colorscheme darkblue
 syntax on
 set showmode
 set showcmd
@@ -69,7 +69,7 @@ pdir=`cd -P $(dirname $p1); pwd`
 echo pdir=$pdir
 user=`whoami`
 
-for((host=101; host<107; host++)); do
+for((host=101; host<104; host++)); do
         echo ------------------- hadoop$host -------------------
         rsync -av $pdir/$fname $user@hadoop$host:$pdir
 done
@@ -83,7 +83,7 @@ ssh-copy-id hadoop103
 ssh-copy-id hadoop104
 ssh-copy-id hadoop105
 ssh-copy-id hadoop106
-```
+``` 
 
 ```bash
 ###新建用户授权
@@ -134,44 +134,44 @@ vim /opt/module/hadoop-2.7.2/etc/hadoop/slaves
 ```xml
 <!-- core-site.xml -->
 <property>
-		<name>fs.defaultFS</name>
-      <value>hdfs://hadoop101:9000</value>
+	<name>fs.defaultFS</name>
+	<value>hdfs://hadoop101:9000</value>
 </property>
 
 <property>
-		<name>hadoop.tmp.dir</name>
-		<value>/opt/module/hadoop-2.7.2/data/tmp</value>
+	<name>hadoop.tmp.dir</name>
+	<value>/opt/module/hadoop-2.7.2/data/tmp</value>
 </property>
 ```
 ```xml
 <!-- hdfs-site.xml -->
 <property>
-		<name>dfs.replication</name>
-		<value>6</value>
+	<name>dfs.replication</name>
+	<value>3</value>
 </property>
 
 <property>
-      <name>dfs.namenode.secondary.http-address</name>
-      <value>hadoop103:50090</value>
+	<name>dfs.namenode.secondary.http-address</name>
+	<value>hadoop103:50090</value>
 </property>
 ```
 ```xml
 <!-- yarn-site.xml  -->
 <property>
-		<name>yarn.nodemanager.aux-services</name>
-		<value>mapreduce_shuffle</value>
+	<name>yarn.nodemanager.aux-services</name>
+	<value>mapreduce_shuffle</value>
 </property>
 
 <property>
-		<name>yarn.resourcemanager.hostname</name>
-		<value>hadoop102</value>
+	<name>yarn.resourcemanager.hostname</name>
+	<value>hadoop102</value>
 </property>
 ```
 ```xml
 <!-- mapred-site.xml -->
 <property>
-		<name>mapreduce.framework.name</name>
-		<value>yarn</value>
+	<name>mapreduce.framework.name</name>
+	<value>yarn</value>
 </property>
 ```
 
