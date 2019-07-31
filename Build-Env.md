@@ -4,6 +4,7 @@
 
 ```
 pro4workstation
+activate
 ```
 
 ### System settings
@@ -15,7 +16,7 @@ userdel
 group policy edit
 control pannal >> firewall
 swap data
-delete appx
+uninstall appx
 clean system
 dllsuit
 ```
@@ -26,13 +27,17 @@ dllsuit
 jdk 1.8
 maven
 hadoop
+tomcat
 python 3.7
 Git
+gcc
+nodejs
 ```
 
 ### Software
 
 ```
+office pro plus
 VMWare 15
 *eclipse
 Spring tools suit
