@@ -4,7 +4,7 @@
 * [ ] 低于超海量数据-联邦机制 *2019-7-30 11:45:04*
 * [ ] 群起ZooKeeper脚本 *2019-7-30 10:47:22*
 * [ ] HDFS-HA故障转移机制 *2019-7-30 10:39:25*
-* [ ] HDFS-HA部署 *2019-7-30 09:39:28*
+* [x] HDFS-HA部署 *2019-7-30 09:39:28*
 
 # 一、HDFS概述
 
@@ -1133,7 +1133,11 @@ ssh免密登录
 
 ### 3.2规划集群
 
-| hadoop101   | hadoop102       | hadoop103   |
+<<<<<<< HEAD
+| hadoop102   | hadoop103       | hadoop104   |
+=======
+| hadoop102   | hadoop103       | hadoop104   |
+>>>>>>> 161de8a8642bc282a219bbd295973b6ad2d5e2e0
 | :---------- | :-------------- | :---------- |
 | NameNode    | NameNode        |             |
 | ZKFC        | ZKFC            |             |
@@ -1404,7 +1408,11 @@ ssh免密登录
 
 **规划集群**
 
-| hadoop101       | hadoop102       | hadoop103   |
+<<<<<<< HEAD
+| hadoop102       | hadoop103       | hadoop104   |
+=======
+| hadoop102       | hadoop103       | hadoop104   |
+>>>>>>> 161de8a8642bc282a219bbd295973b6ad2d5e2e0
 | :-------------- | :-------------- | :---------- |
 | NameNode        | NameNode        |             |
 | JournalNode     | JournalNode     | JournalNode |
