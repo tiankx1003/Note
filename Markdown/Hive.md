@@ -3,9 +3,9 @@
 * [ ] 
 * [ ] **配置Hive元数据到MySQL数据库** *2019-7-31 11:20:13*
 * [ ] MySQL用户配置与远程登录连接 *2019-7-31 10:49:18*
-* [ ] MySQL密码文件 *2019-7-31 10:44:47*
-* [ ] 卸载旧MySQL *2019-7-31 10:42:25*
-* [ ] 本地文件导入Hive案例 *2019-7-31 10:40:43*
+* [x] MySQL密码文件 *2019-7-31 10:44:47*
+* [x] 卸载旧MySQL *2019-7-31 10:42:25*
+* [x] 本地文件导入Hive案例 *2019-7-31 10:40:43*
 
 
 # 一、入门
@@ -35,7 +35,7 @@ Hive的效率比较低
 
 ## 3.架构原理
 
-![Hive架构原理]()
+![Hive架构原理](E:\Git\Note\Markdown\img\hive-stru.png)
 
 1．用户接口：Client
 CLI（hive shell）、JDBC/ODBC(java访问hive)、WEBUI（浏览器访问hive）
@@ -50,7 +50,7 @@ CLI（hive shell）、JDBC/ODBC(java访问hive)、WEBUI（浏览器访问hive）
 （3）优化器（Query Optimizer）：对逻辑执行计划进行优化。
 （4）执行器（Execution）：把逻辑执行计划转换成可以运行的物理计划。对于Hive来说，就是MR/Spark。
 
-![Hive运行机制]()
+![Hive运行机制](E:\Git\Note\Markdown\img\hive-run.png)
 
 Hive通过给用户提供的一系列交互接口，接收到用户的指令(SQL)，使用自己的Driver，结合元数据(MetaStore)，将这些指令翻译成MapReduce，提交到Hadoop中执行，最后，将执行返回的结果输出到用户交互接口。
 
@@ -127,7 +127,7 @@ bin/hadoop fs -chmod g+w /tmp
 bin/hadoop fs -chmod g+w /user/hive/warehouse
 ```
 
-```sql
+```mysql
 # 3．Hive基本操作
 # （1）启动hive
 # bin/hive
@@ -191,6 +191,7 @@ OK
 Time taken: 0.266 seconds, Fetched: 3 row(s)
 3．遇到的问题
 再打开一个客户端窗口启动hive，会产生java.sql.SQLException异常。
+
 ```
 Exception in thread "main" java.lang.RuntimeException: java.lang.RuntimeException:
  Unable to instantiate
@@ -222,9 +223,6 @@ Caused by: java.lang.RuntimeException: Unable to instantiate org.apache.hadoop.h
 ## 查看
 rpm -qa|grep -i mysql
 #mysql-libs-5.1.73-7.el6.x86_64
-
-
-
 ## 卸载
 rpm -e --nodeps mysql-libs-5.1.73-7.el6.x86_64
 
@@ -243,7 +241,7 @@ rpm -ivh MySQL-client-5.6.24-1.el6.x86_64.rpm
 mysql -uroot -pOEXaQuS8IWkG19Xs
 ```
 
-```sql
+```mysql
 # 修改密码
 SET PASSWORD=PASSWORD('root');
 ## MySQL在user表中主机配置
@@ -285,29 +283,29 @@ vi hive-site.xml
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 <configuration>
-<property>
-<name>javax.jdo.option.ConnectionURL</name>
-<value>jdbc:mysql://hadoop101:3306/metastore?createDatabaseIfNotExist=true</value>
-<description>JDBC connect string for a JDBC metastore</description>
-</property>
+    <property>
+        <name>javax.jdo.option.ConnectionURL</name>
+        <value>jdbc:mysql://hadoop101:3306/metastore?createDatabaseIfNotExist=true</value>
+        <description>JDBC connect string for a JDBC metastore</description>
+    </property>
 
-<property>
-<name>javax.jdo.option.ConnectionDriverName</name>
-<value>com.mysql.jdbc.Driver</value>
-<description>Driver class name for a JDBC metastore</description>
-</property>
+    <property>
+        <name>javax.jdo.option.ConnectionDriverName</name>
+        <value>com.mysql.jdbc.Driver</value>
+        <description>Driver class name for a JDBC metastore</description>
+    </property>
 
-<property>
-<name>javax.jdo.option.ConnectionUserName</name>
-<value>root</value>
-<description>username to use against metastore database</description>
-</property>
+    <property>
+        <name>javax.jdo.option.ConnectionUserName</name>
+        <value>root</value>
+        <description>username to use against metastore database</description>
+    </property>
 
-<property>
-<name>javax.jdo.option.ConnectionPassword</name>
-<value>root</value>
-<description>password to use against metastore database</description>
-</property>
+    <property>
+        <name>javax.jdo.option.ConnectionPassword</name>
+        <value>root</value>
+        <description>password to use against metastore database</description>
+    </property>
 </configuration>
 ```
 配置完毕后，如果启动hive异常，可以重新启动虚拟机。（重启后，别忘了启动hadoop集群）
@@ -317,9 +315,9 @@ vi hive-site.xml
 ```bash
 # 先启动MySQL并查看几个数据库
  mysql -uroot -proot
- ```
+```
 
-```sql
+```mysql
 show databases;
 ```
 ```
@@ -363,7 +361,7 @@ bin/beeline
 ```
 **连接hiveserver2**
 ```
-beeline> !connect jdbc:hive2://hadoop102:10000（回车）
+beeline> !connect jdbc:hive2://hadoop101:10000（回车）
 Connecting to jdbc:hive2://hadoop102:10000
 Enter username for jdbc:hive2://hadoop102:10000: tian（回车）
 Enter password for jdbc:hive2://hadoop102:10000: （直接回车）
@@ -492,7 +490,7 @@ mv hive-log4j.properties.template hive-log4j.properties
 ### 9.4 参数配置方式
 
 1．查看当前所有的配置信息
-```sql
+```mysql
 set;
 ```
 2．参数的配置三种方式
@@ -508,7 +506,7 @@ bin/hive -hiveconf mapred.reduce.tasks=10;
 ```
 注意：仅对本次hive启动有效
 查看参数设置：
-```sql
+```mysql
 hive (default)> set mapred.reduce.tasks;
 ```
 （3）参数声明方式
@@ -577,7 +575,7 @@ yangyang,caicai_susu,xiao yang:18_xiaoxiao yang:19,chao yang_beijing
 注意：MAP，STRUCT和ARRAY里的元素间关系都可以用同一个字符表示，这里用“_”。
 
 3）Hive上创建测试表test
-```sql
+```mysql
 create table test(
 name string,
 friends array<string>,
@@ -596,12 +594,12 @@ map keys terminated by ':'				-- MAP中的key与value的分隔符
 lines terminated by '\n';					-- 行分隔符
 
 4）导入文本数据到测试表
-```sql
+```mysql
 load data local inpath ‘/opt/module/datas/test.txt’into table test
 ```
 
 5）访问三种集合列里的数据，以下分别是ARRAY，MAP，STRUCT的访问方式
-```sql
+```mysql
 select friends[1],children['xiao song'],address.city from test
 where name="songsong";
 # OK
@@ -626,23 +624,23 @@ Hive的原子数据类型是可以进行隐式转换的，类似于Java的类型
 ## 1.数据库定义
 
 1）创建一个数据库，数据库在HDFS上的默认存储路径是/user/hive/warehouse/*.db。
-```sql
+```mysql
 hive (default)> create database db_hive;
 ```
 2）避免要创建的数据库已经存在错误，增加if not exists判断。（标准写法）
-```sql
+```mysql
 hive (default)> create database db_hive;
 /* FAILED: Execution Error, return code 1 from org.apache.hadoop.hive.ql.exec.DDLTask. Database db_hive already exists */
 hive (default)> create database if not exists db_hive;
 ```
 3）创建一个数据库，指定数据库在HDFS上存放的位置
-```sql
+```mysql
 hive (default)> create database db_hive2 location '/db_hive2.db';
 ```
 
 ## 2.查询数据库
 
-```sql
+```mysql
 # 显示数据库
 hive> show databases;
 # 过滤显示查询的数据库
@@ -667,7 +665,7 @@ hive (default)> use db_hive;
 ## 3.修改数据库
 
 用户可以使用ALTER DATABASE命令为某个数据库的DBPROPERTIES设置键-值对属性值，来描述这个数据库的属性信息。数据库的其他元数据信息都是不可更改的，包括数据库名和数据库所在的目录位置。
-```sql
+```mysql
 hive (default)> alter database db_hive set dbproperties('createtime'='20170830');
 # 在hive中查看修改结果
 hive> desc database extended db_hive;
@@ -677,7 +675,7 @@ hive> desc database extended db_hive;
 
 ## 4.删除数据库
 
-```sql
+```mysql
 # 1．删除空数据库
 hive>drop database db_hive2;
 # 2．如果删除的数据库不存在，最好采用 if exists判断数据库是否存在
@@ -693,7 +691,8 @@ hive> drop database db_hive cascade;
 ## 5.创建表
 
 **建表语法**
-```sql
+
+```mysql
 CREATE [EXTERNAL] TABLE [IF NOT EXISTS] table_name 
 [(col_name data_type [COMMENT col_comment], ...)] 
 [COMMENT table_comment] 
@@ -731,7 +730,7 @@ SerDe是Serialize/Deserilize的简称，目的是用于序列化和反序列化�
 
 
 **实操**
-```sql
+```mysql
 # （1）普通创建表
 create table if not exists student2(
 id int, name string
@@ -761,12 +760,14 @@ hive (default)> desc formatted student2;
 **案例实操**
 分别创建部门和员工外部表，并向表中导入数据
 **原始数据**
-```dept.txt
+
+```
 10	ACCOUNTING	1700
 20	RESEARCH	1800
 30	SALES	1900
 40	OPERATIONS	1700
 ```
+
 ```emp.txt
 7369	SMITH	CLERK	7902	1980-12-17	800.00		20
 7499	ALLEN	SALESMAN	7698	1981-2-20	1600.00	300.00	30
@@ -783,8 +784,9 @@ hive (default)> desc formatted student2;
 7902	FORD	ANALYST	7566	1981-12-3	3000.00		20
 7934	MILLER	CLERK	7782	1982-1-23	1300.00		10
 ```
+
 **建表语句**
-```sql
+```mysql
 # （1）创建部门表
 create external table if not exists default.dept(
 deptno int,
@@ -824,7 +826,7 @@ hive (default)> desc formatted dept;
 
 ### 5.3 管理表和外部表的互相转换
 
-```sql
+```mysql
 # （1）查询表的类型
 hive (default)> desc formatted student2;
 # Table Type:             MANAGED_TABLE
