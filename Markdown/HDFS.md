@@ -1133,11 +1133,7 @@ ssh免密登录
 
 ### 3.2规划集群
 
-<<<<<<< HEAD
 | hadoop102   | hadoop103       | hadoop104   |
-=======
-| hadoop102   | hadoop103       | hadoop104   |
->>>>>>> 161de8a8642bc282a219bbd295973b6ad2d5e2e0
 | :---------- | :-------------- | :---------- |
 | NameNode    | NameNode        |             |
 | ZKFC        | ZKFC            |             |
@@ -1408,11 +1404,7 @@ ssh免密登录
 
 **规划集群**
 
-<<<<<<< HEAD
 | hadoop102       | hadoop103       | hadoop104   |
-=======
-| hadoop102       | hadoop103       | hadoop104   |
->>>>>>> 161de8a8642bc282a219bbd295973b6ad2d5e2e0
 | :-------------- | :-------------- | :---------- |
 | NameNode        | NameNode        |             |
 | JournalNode     | JournalNode     | JournalNode |
