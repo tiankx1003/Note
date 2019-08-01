@@ -1,5 +1,7 @@
 ### 安装虚拟机
 最小安装版yum安装vim tar rsync openssh openssh-clients libaio
+卸载mariadb
+net-tools
 设置vimrc
 ```
 colorscheme darkblue
