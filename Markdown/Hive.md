@@ -1,6 +1,15 @@
 # TODO
 * [ ] -
-* [ ] 
+* [ ] Distributed By分区个数和reducer个数的设置 *2019-8-2 16:44:49*
+* [ ] sort by 多个Reducer 数据随机存入多个文件 *2019-8-2 16:33:34*
+
+* [ ] 多表连接和笛卡尔积 *2019-8-2 16:01:35*
+* [ ] 分组字段问题 *2019-8-2 15:34:02*
+* [ ] import数据到指定hive表 *2019-8-2 14:22:49*
+* [ ] 数据上传到分区目录，让分区表和数据产生关联的方式 *2019-8-2 10:26:29*
+* [ ] Hive分区表实操 *2019-8-2 09:35:11*
+* [ ] hive cli窗口查看本地文件系统 *2019-8-2 09:12:01*
+* [ ] hive cli窗口查看hdfs文件系统 *2019-8-2 09:11:02*
 * [ ] **配置Hive元数据到MySQL数据库** *2019-7-31 11:20:13*
 * [ ] MySQL用户配置与远程登录连接 *2019-7-31 10:49:18*
 * [x] MySQL密码文件 *2019-7-31 10:44:47*
@@ -859,19 +868,518 @@ hive (default)> desc formatted student2;
 
 ### 7.1 重命名表
 
+```mysql
+alter table table_name rename to new_table_name;
+```
+
+
+
 ### 7.2 增加、修改和删除表分区
 
+*见分区表部分*
 
 ### 7.3 增加、修改、替换列信息
 
+```mysql
+alter table table_name add columns (col_name data_type); -- 默认位置在所有列后，(partition列前)
+alter table table_name replace columns (col_name data_type); -- 替换所有列
+alter table table_name change column col_old_name col_new_name column_type;
+
+alter table stu_tab add columns (gender string, add string);
+alter table stu_tab replace columns (phone string, email string);
+alter table stu_tab change column email mail string;
+```
+
+替换列是用指定的列替换**所有的列**
 
 ## 8.删除表
 
+```mysql
+drop table dept_partition;
+```
+
+
+
 # 五、DML数据操作
 
+## 1.数据导入
 
+### 1.1 向表中装载数据(load)
+
+**语法**
+
+```mysql
+hive> load data [local] inpath '/opt/module/datas/student.txt' overwrite | into table student [partition (partcol1=val1,…)];
+/*
+（1）load data:表示加载数据
+（2）local:表示从本地加载数据到hive表；否则从HDFS加载数据到hive表
+（3）inpath:表示加载数据的路径
+（4）overwrite:表示覆盖表中已有数据，否则表示追加
+（5）into table:表示加载到哪张表
+（6）student:表示具体的表
+（7）partition:表示上传到指定分区
+*/
+```
+
+**实操**
+
+```mysql
+create table stu(id int, name string)
+row format delimited fields terminated by "\t";
+
+load data local inpath '/opt/module/datas/student.txt' into table stu_tab; -- 复制本地数据到hive
+dfs -put /opt/module/datas/students.txt /user/tian/hive;
+load data inpath '/user/tian/hive/student.txt' into table stu_tab; -- 剪切hdfs中的数据到hive
+load data local inpath '/opt/module/datas/student.txt' overwrite into stu_tab;
+```
+
+### 1.2 通过查询语句向表中插入数据(Insert)
+
+```mysql
+create tabe stu_tab2 like stu_tab; -- 按结构复制表，不复制数据
+insert into table stu_tab2 partition(month('201709')
+values(1,'wangwu');
+insert into table stu_tab2 partition(month='201708')
+select id, name from student where month='201709';
+insert overwrite table stu_tab2 partition(month='201708')
+select id, name from student where month='201709'; -- 使用ovewrite后不能带into
+
+## 多插入模式 
+
+from stu_tab
+insert overwrite table stu_tab partition(month='201908')
+select id, name where month='201808'
+insert overwrite table stu_tab partition(month='201801')
+select id, name where month='201801'; -- 针对来自同一张表的数据的操作
+```
+
+### 1.3 查询语句中创建表并加载数据(As Select)
+
+```mysql
+create table if not exists student3
+as select id, name from student;
+```
+
+### 1.4 创建表时通过Location指定加载数据路径
+
+```mysql
+create table if not exists student5(
+	id int, name string
+)
+row format delimited fields terminated by '\t'
+locationt '/user/hive/warehouse/student5';
+
+dfs -put /opt/module/datas/studnets.txt /user/hive/warehouse/student5;
+
+select * from student5;
+```
+
+### 1.5 Import数据到指定Hive表中
+
+```mysql
+## 先用export导出数据，再将数据导入
+import table student2 partition(month='201909')
+from '/user/hive/warehouse/export/student';
+```
+
+## 2.数据导出
+
+### 2.1 Insert导出
+
+```mysql
+# 将查询的结果导出到本地 只能使用overwrite 不能使用into
+insert overwrite local directory '/opt/module/datas/export/student'
+select * from student;
+
+# 将查询的结果格式化导出到本地
+insert overwrite local directory '/opt/module/datas/export/student'
+row format delimited fields terminated by '\t'
+select * from student;
+
+# 将查询的结果导出到hdfs上(没有local)
+insert overwrite directory '/user/tian/student2'
+row farmat delimited fields terminated by '\t'
+select * from student;
+```
+
+### 2.2 hadoop命令导出到本地
+
+```mysql
+dfs -get /user/hive/warehouse/student/month=201909/000000_0 /opt/module/datas/export/student3.txt
+```
+
+### 2.3 Hive Shell命令导出
+
+```mysql
+hive -e 'select * from student;' > /opt/module/datas/export/student.txt;
+```
+
+### 2.4 Export导出到hdfs上
+
+```mysql
+export table default.student to 'user/hive/warehouse/export/student';
+-- 然后才能import数据到指定hive表
+```
+
+### 2.5 Sqoop导出
+
+*见后续课程*
+
+## 3.清除表中的数据(Truncate)
+
+```mysql
+# Truncate只能删除管理表，不能删除外部表中数据
+truncate table student;
+```
 
 # 六、查询
+
+[官方文档](https://cwiki.apache.org/confluence/display/Hive/LanguageManual+Select)
+
+**基本语法**
+
+```mysql
+[WITH CommonTableExpression (, CommonTableExpression)*]    (Note: Only available
+ starting with Hive 0.13.0)
+SELECT [ALL | DISTINCT] select_expr, select_expr, ...
+  FROM table_reference
+  [WHERE where_condition]
+  [GROUP BY col_list]
+  [ORDER BY col_list]
+  [CLUSTER BY col_list
+    | [DISTRIBUTE BY col_list] [SORT BY col_list]
+  ]
+ [LIMIT number]
+```
+
+> **说明**
+> order by	全局排序
+> sort by		区内排序
+> distribute by 分区规则
+> cluster by 当sort by和distribute by的字段相同时，可以用cluster by
+
+## 1.基本查询(Select…from)
+
+### 1.1 全表和特定列查询
+
+```mysql
+# 全表查询
+select * from emp;
+# 选择特定列查询
+select empno, ename, from emp;
+```
+
+> **注意**
+> sql语言大小写不敏感
+> sql可以写在一行或多行
+> 关键字不成能被缩写也不能分行
+> 各字句一般要分行写
+> 使用缩进提高语句的可读性
+
+### 1.2 列别名
+
+```mysql
+select ename as name, deptno dn from emp;
+```
+
+### 1.3 算术运算符
+
+| 运算符 | 描述           |
+| ------ | :------------- |
+| A+B    | A和B   相加    |
+| A-B    | A减去B         |
+| A*B    | A和B   相乘    |
+| A/B    | A除以B         |
+| A%B    | A对B取余       |
+| A&B    | A和B按位取与   |
+| A\|B   | A和B按位取或   |
+| A^B    | A和B按位取异或 |
+| ~A     | A按位取反      |
+
+```mysql
+select sal +1 from emp;
+```
+
+### 1.4 常用函数
+
+```mysql
+select count(*) cnt from emp;
+select max(sal) max_sal from emp;
+select min(sal) min_sal from emp;
+select sum(sal) sum_sal from emp;
+select avg(sal) avg_sal from emp;
+```
+
+### 1.5 limit语句
+
+```mysql
+select * from emp limit 5; -- 用于限制返回的行数
+```
+
+## 2.where语句
+
+```mysql
+select * from emp where sal>1000;
+```
+
+### 2.1 比较运算符(between / in / is null)
+
+以下运算符同样可以用于join…on和having语句中
+
+| 操作符                  | 支持的数据类型 | 描述                                                         |
+| ----------------------- | -------------- | ------------------------------------------------------------ |
+| A=B                     | 基本数据类型   | 如果A等于B则返回TRUE，反之返回FALSE                          |
+| A<=>B                   | 基本数据类型   | 如果A和B都为NULL，则返回TRUE，其他的和等号（=）操作符的结果一致，如果任一为NULL则结果为NULL |
+| A<>B, A!=B              | 基本数据类型   | A或者B为NULL则返回NULL；如果A不等于B，则返回TRUE，反之返回FALSE |
+| A<B                     | 基本数据类型   | A或者B为NULL，则返回NULL；如果A小于B，则返回TRUE，反之返回FALSE |
+| A<=B                    | 基本数据类型   | A或者B为NULL，则返回NULL；如果A小于等于B，则返回TRUE，反之返回FALSE |
+| A>B                     | 基本数据类型   | A或者B为NULL，则返回NULL；如果A大于B，则返回TRUE，反之返回FALSE |
+| A>=B                    | 基本数据类型   | A或者B为NULL，则返回NULL；如果A大于等于B，则返回TRUE，反之返回FALSE |
+| A [NOT] BETWEEN B AND C | 基本数据类型   | 如果A，B或者C任一为NULL，则结果为NULL。如果A的值大于等于B而且小于或等于C，则结果为TRUE，反之为FALSE。如果使用NOT关键字则可达到相反的效果。 |
+| A IS NULL               | 所有数据类型   | 如果A等于NULL，则返回TRUE，反之返回FALSE                     |
+| A IS NOT NULL           | 所有数据类型   | 如果A不等于NULL，则返回TRUE，反之返回FALSE                   |
+| IN(数值1, 数值2)        | 所有数据类型   | 使用 IN运算显示列表中的值                                    |
+| A [NOT] LIKE B          | STRING 类型    | B是一个SQL下的简单正则表达式，如果A与其匹配的话，则返回TRUE；反之返回FALSE。B的表达式说明如下：‘x%’表示A必须以字母‘x’开头，‘%x’表示A必须以字母’x’结尾，而‘%x%’表示A包含有字母’x’,可以位于开头，结尾或者字符串中间。如果使用NOT关键字则可达到相反的效果。 |
+| A RLIKE B, A REGEXP B   | STRING 类型    | B是一个正则表达式，如果A与其匹配，则返回TRUE；反之返回FALSE。匹配使用的是JDK中的正则表达式接口实现的，因为正则也依据其中的规则。例如，正则表达式必须和整个字符串A相匹配，而不是只需与其字符串匹配。 |
+
+```mysql
+select * from emp where sal = 5000;
+select * from emp where sal between 5000 and 10000;
+select * from emp where comm is null;
+select * from emp where sal in (1500, 5000);
+```
+
+### 2.2 like和rlike
+
+```mysql
+-- 使用like运算符选择类似的值
+-- 选择条件可以包含字符或数字
+-- 	%代表零个或多个字符(任意个字符)
+-- 	_代表一个字符
+-- rlike是hive中对该功能的扩展，可以通过java正则表达式来指定匹配条件
+
+select * from emp where sal like '2%';
+select * from emp where sal like '_2%';
+select * from emp where sal rlike '[2]'; -- 查找薪水中含有2的员工信息
+```
+
+### 2.3 逻辑运算符(and / or / not)
+
+| 操作符 | 含义   |
+| ------ | ------ |
+| AND    | 逻辑并 |
+| OR     | 逻辑或 |
+| NOT    | 逻辑否 |
+
+```mysql
+select * from emp where sal > 1000 and depno = 30;
+select * from emp where sal > 1000 or depno = 30;
+select * from emp where deptno not in (30, 20);
+```
+
+## 3.分组
+
+### 3.1 group by语句
+
+```mysql
+/* group by语句通常会和聚合函数一起使用，按照一个或者多个队列记过进行分组，然后对每个组执行聚合操作。 */
+-- 计算emp表每个部门的平均工资
+select t.deptno, avg(t.sal) avg_sal from emp t group by t.deptno;
+-- 计算emp每个部门中每个岗位的最高薪水
+select t.deptno t.deptno, t.job, max(t.sal) max_sal
+from emp t
+group by t.deptno, t.job;
+```
+
+### 3.2 having语句
+
+> **having和where不同点**
+> where针对表中的列发挥作用，查询数据，having针对查询结果中的列发挥作用，筛选数据
+> where后面不能写分组函数，而having后面可以使用分组函数
+> having只用于group by分组统计语句
+
+```mysql
+-- 每个部门的平均薪水
+select deptno, avg(sal) from emp group bu deptno;
+-- 每个部门的平均薪水大于2000的部门
+```
+
+## 4.join语句
+
+### 4.1 等值join
+
+```mysql
+/* hive通常支持的sql join语句，但是只支持等值连接，不支持非等值连接 */
+
+-- 根据员工表和部门表中的部门编号相等，查询员工编号、员工名称和部门名称
+select e.empno, e.ename, d.deptno, d.dname
+from emp e
+join dept d 
+on e.deptno = d.deptno;
+```
+
+### 4.2 表的别名
+
+```mysql
+select e.empno, e.ename, d.deptno
+from emp e
+join dept d 
+on e.deptno = d.deptno;
+```
+
+### 4.3 内连接
+
+```mysql
+# 只进行连接的两个表中都存在与连接条件相匹配的数据才会保留下来
+select e.empno, e.name, d.deptno
+from emp e
+join dept d 
+on d.deptno = d.deptno;
+```
+
+### 4.4 左外连接
+
+```mysql
+# join操作符左边表中符合where字句的所有记录将会被返回
+select e.empno, e.ename, d.deptno
+from emp e
+left join dept d 
+on e.deptno = d.deptno;
+```
+
+### 4.5 右外连接
+
+```mysql
+# join操作符右边表中符合where字句的u偶有记录将会被返回
+select e.empno, e.name, d.deptno
+from emp e
+right join dept d 
+on e.deptno = d.deptno;
+```
+
+### 4.6 满外连接
+
+```mysql
+# 返回所有表中符合where语句条件的所有记录，如果任一表的指定字段咩有符合条件的值的话，那么就使用null替代
+select e.empno, e.ename, d.deptno
+from emp e
+full join dept d
+on e.deptno = d.deptno;
+```
+
+### 4.7 多表连接
+
+
+
+### 4.8 笛卡尔积
+
+
+
+### 4.9 连接谓词中不支持or
+
+```mysql
+select e.empno, e.ename, d.deptno
+from emp e
+join dept d 
+on e.deptno = d.deptno or e.ename = d.ename; -- 错误示范
+```
+
+## 5.排序
+
+### 5.1 全局排序(order by)
+
+Order By: 全局排序，一个Reducer
+
+```mysql
+/*
+order by:全局排序，一个reducer
+ASC(ascend):升序(默认)
+DESC(descend):降序
+order by在select语句的结尾
+*/
+
+-- 查询员工信息按工资升序排列
+select * 
+from emp 
+order by sal;
+-- 查询员工信息按工资降序排列
+select *
+from emp
+order by sal desc;
+```
+
+### 5.2  按照别名排序
+
+```mysql
+-- 按照与员工薪水的二倍排序
+select ename, sal*2 double_sal
+from emp
+order by double_sal;
+```
+
+### 5.3 多个列排序
+
+```mysql
+-- 按照部门和工资升序排序
+select ename, deptno, sal
+from emp 
+order by deptno, sal;
+```
+
+### 5.4 每个MapReduce内部排序(sort by)
+
+Sort by:每个Reducer内部排序，对全局结果集来说不是排序
+
+```mysql
+-- 设置reduce个数
+set mapreduce.job.reduces=3;
+-- 查看设置的reduce个数
+set mapreduce.job.reduces;
+-- 根据部门编号降序查看员工信息
+select *
+from emp
+sort by empno desc;
+-- 将查询结果导入到文件中(按照部门编号降序排序)
+insert overwrite local directory '/opt/module/datas/sortby-result' 
+select * from emp sort by deptno desc;
+```
+
+### 5.5 分区排序(Distributed By)
+
+Distribute by:类似MR中partition，进行分区，结合sort by使用
+注意，hive要求distribute by语句要写在sort by语句之前
+只有分派对个reduce进行处理时才能看出distribute by的效果
+**分区个数和reducer个数**的确定与最终文件的个数和文件的内容
+
+```mysql
+-- 先按照部门编号排序，再按照员工编号降序排序
+set mapreduce.job.reduces=3; # 个数的确定★ 
+insert overwrite loacl directory '/opt/module/datas/distribute-result'
+select * from emp
+distribute by deptno
+sort by empno desc;
+```
+
+### 5.6 Cluster By
+
+当distribute by 和 sort by字段相同时，可以使用cluster by
+cluster by除了具有distribute by的功能外还兼具了sort by的功能。但是排序是升序，不能设置规则
+
+```mysql
+select * 
+from emp 
+cluster by depto;
+select * 
+from emp 
+distribute by deptno 
+sort by deptno; -- 和第一条语句相同
+# 按照部门编号分区，不一定是固定死的数值，可以是20和30号部门分到一个分区里面去。
+```
+
+## 6.分桶及抽样查询
+
+### 6.1 分桶表数据存储
+
 
 
 # 七、函数

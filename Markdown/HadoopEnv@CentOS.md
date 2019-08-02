@@ -1,7 +1,7 @@
 ### CentOS7minimal
 
 ```
-关闭K
+关闭Kdump
 手动分区
 设置时间地区
 设置主机名
@@ -11,8 +11,14 @@
 ### Setting
 
 ```bash
+service iptalbes stop
+chkconfig iptables off # 关闭防火墙
+firewall-cmd --state
+systemctl stop firewalld.service
+systemctl disable firewalld.service
 yum install -y net-tools
 yum install -y vim
+yum install -y wget
 vim /etc/vimrc # 配置vim
 vim /etc/hosts # 设置hosts
 ```
@@ -57,6 +63,7 @@ mkdir /home/tian/bin/
 vim xsync
 vim copy-ssh
 chmod 777 xsync copy-ssh
+# centos 7 中用户bin目录下的的脚本确定权限后不能执行
 ```
 
 ```sh
@@ -76,9 +83,10 @@ pdir=`cd -P $(dirname $p1); pwd`
 echo pdir=$pdir
 user=`whoami`
 
-for((host=101; host<104; host++)); do
-        echo ------------------- hadoop$host -------------------
-        rsync -av $pdir/$fname $user@hadoop$host:$pdir
+for((host=101; host<104; host++)); 
+do
+    echo ------------------- hadoop$host -------------------
+    rsync -av $pdir/$fname $user@hadoop$host:$pdir
 done
 ```
 
@@ -144,7 +152,7 @@ wget -i -c http://dev.mysql.com/get/mysql57-community-release-el7-10.noarch.rpm
 #然后就可以直接yum安装了
 yum -y install mysql57-community-release-el7-10.noarch.rpm
 #开始安装MySQL服务器
-#yum -y install mysql-community-server
+yum -y install mysql-community-server
 #启动MySQL
 systemctl start  mysqld.service
 #查看MySQL运行状态
@@ -153,6 +161,14 @@ systemctl status mysqld.service
 grep "password" /var/log/mysqld.log
 #进入数据库
 mysql -uroot -p
+#查看密码策略
+SHOW VARIABLES LIKE 'validate_password%';
+#设置密码验证强度等级
+set global validate_password_policy=LOW;
+#设置密码长度
+set global validate_password_length=6;
+#设置密码
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'root';
 #卸载Yum Repository防止自动更新配置
 yum -y remove mysql57-community-release-el7-10.noarch
 ```
@@ -200,7 +216,7 @@ vim hadoop-env.sh
 vim yarn-env.sh
 vim mapred-env.sh
 
-vim /opt/module/hadoop-2.7.2/etc/hadoop/slaves # 不能由空行
+vim /opt/module/hadoop-2.7.2/etc/hadoop/slaves # 不能有空行
 
 vim core-site.xml
 vim hdfs-site.xml
@@ -214,13 +230,13 @@ xsync /opt/module/hadoop-2.7.2/etc/hadoop/ # 分发配置
 ```xml
 <!-- core-site.xml -->
 <property>
-	<name>fs.defaultFS</name>
-	<value>hdfs://hadoop101:9000</value>
+    <name>fs.defaultFS</name>
+    <value>hdfs://hadoop101:9000</value>
 </property>
 
 <property>
-	<name>hadoop.tmp.dir</name>
-	<value>/opt/module/hadoop-2.7.2/data/tmp</value>
+    <name>hadoop.tmp.dir</name>
+    <value>/opt/module/hadoop-2.7.2/data/tmp</value>
 </property>
 ```
 ```xml
