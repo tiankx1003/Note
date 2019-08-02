@@ -1,4 +1,4 @@
-# TODO
+# `TODO
 * [ ] -
 * [ ] Distributed By分区个数和reducer个数的设置 *2019-8-2 16:44:49*
 * [ ] sort by 多个Reducer 数据随机存入多个文件 *2019-8-2 16:33:34*
@@ -162,69 +162,75 @@ quit;
 
 ## 3.本地文件导入Hive案例
 
-需求
-将本地/opt/module/datas/student.txt这个目录下的数据导入到hive的student(id int, name string)表中。
-1．数据准备
-在/opt/module/datas这个目录下准备数据
-（1）在/opt/module/目录下创建datas
-mkdir datas
-（2）在/opt/module/datas/目录下创建student.txt文件并添加数据
-touch student.txt
-vi student.txt
-1001	zhangshan
-1002	lishi
-1003	zhaoliu
-注意以tab键间隔。
-2．Hive实际操作
-（1）启动hive
-bin/hive
-（2）显示数据库
-show databases;
-（3）使用default数据库
-use default;
-（4）显示default数据库中的表
-show tables;
-（5）删除已创建的student表
-drop table student;
-（6）创建student表, 并声明文件分隔符’\t’
-create table student(id int, name string) ROW FORMAT DELIMITED FIELDS TERMINATED
- BY '\t';
-（7）加载/opt/module/datas/student.txt 文件到student数据库表中。
-load data local inpath '/opt/module/datas/student.txt' into table student;
-（8）Hive查询结果
-select * from student;
-OK
-1001	zhangshan
-1002	lishi
-1003	zhaoliu
-Time taken: 0.266 seconds, Fetched: 3 row(s)
-3．遇到的问题
-再打开一个客户端窗口启动hive，会产生java.sql.SQLException异常。
+> **需求**
+> 将本地/opt/module/datas/student.txt这个目录下的数据导入到hive的student(id int, name string)表中。
 
-```
-Exception in thread "main" java.lang.RuntimeException: java.lang.RuntimeException:
- Unable to instantiate
- org.apache.hadoop.hive.ql.metadata.SessionHiveMetaStoreClient
-        at org.apache.hadoop.hive.ql.session.SessionState.start(SessionState.java:522)
-        at org.apache.hadoop.hive.cli.CliDriver.run(CliDriver.java:677)
-        at org.apache.hadoop.hive.cli.CliDriver.main(CliDriver.java:621)
-        at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
-        at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
-        at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
-        at java.lang.reflect.Method.invoke(Method.java:606)
-        at org.apache.hadoop.util.RunJar.run(RunJar.java:221)
-        at org.apache.hadoop.util.RunJar.main(RunJar.java:136)
-Caused by: java.lang.RuntimeException: Unable to instantiate org.apache.hadoop.hive.ql.metadata.SessionHiveMetaStoreClient
-        at org.apache.hadoop.hive.metastore.MetaStoreUtils.newInstance(MetaStoreUtils.java:1523)
-        at org.apache.hadoop.hive.metastore.RetryingMetaStoreClient.<init>(RetryingMetaStoreClient.java:86)
-        at org.apache.hadoop.hive.metastore.RetryingMetaStoreClient.getProxy(RetryingMetaStoreClient.java:132)
-        at org.apache.hadoop.hive.metastore.RetryingMetaStoreClient.getProxy(RetryingMetaStoreClient.java:104)
-        at org.apache.hadoop.hive.ql.metadata.Hive.createMetaStoreClient(Hive.java:3005)
-        at org.apache.hadoop.hive.ql.metadata.Hive.getMSC(Hive.java:3024)
-        at org.apache.hadoop.hive.ql.session.SessionState.start(SessionState.java:503)
-... 8 more
-```
-原因是，Metastore默认存储在自带的derby数据库中，推荐使用MySQL存储Metastore;
+> **数据准备**
+> 在/opt/module/datas这个目录下准备数据
+> （1）在/opt/module/目录下创建datas
+> mkdir datas
+> （2）在/opt/module/datas/目录下创建student.txt文件并添加数据
+> touch student.txt
+> vi student.txt
+> 1001	zhangshan
+> 1002	lishi
+> 1003	zhaoliu
+> 注意以tab键间隔。
+
+> Hive实际操作
+>
+> ```mysql
+> # （1）启动hive
+> bin/hive
+> # （2）显示数据库
+> show databases;
+> # （3）使用default数据库
+> use default;
+> # （4）显示default数据库中的表
+> show tables;
+> # （5）删除已创建的student表
+> drop table student;
+> （6）创建student表, 并声明文件分隔符’\t’
+> create table student(id int, name string) ROW FORMAT DELIMITED FIELDS TERMINATED
+>  BY '\t';
+> # （7）加载/opt/module/datas/student.txt 文件到student数据库表中。
+> load data local inpath '/opt/module/datas/student.txt' into table student;
+> # （8）Hive查询结果
+> select * from student;
+> # OK
+> # 1001	zhangshan
+> # 1002	lishi
+> # 1003	zhaoliu
+> # Time taken: 0.266 seconds, Fetched: 3 row(s)
+> ```
+
+>**遇到的问题**
+>再打开一个客户端窗口启动hive，会产生java.sql.SQLException异常。
+>
+>```
+>Exception in thread "main" java.lang.RuntimeException: java.lang.RuntimeException:
+> Unable to instantiate
+> org.apache.hadoop.hive.ql.metadata.SessionHiveMetaStoreClient
+>        at org.apache.hadoop.hive.ql.session.SessionState.start(SessionState.java:522)
+>        at org.apache.hadoop.hive.cli.CliDriver.run(CliDriver.java:677)
+>        at org.apache.hadoop.hive.cli.CliDriver.main(CliDriver.java:621)
+>        at sun.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+>        at sun.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:57)
+>        at sun.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+>        at java.lang.reflect.Method.invoke(Method.java:606)
+>        at org.apache.hadoop.util.RunJar.run(RunJar.java:221)
+>        at org.apache.hadoop.util.RunJar.main(RunJar.java:136)
+>Caused by: java.lang.RuntimeException: Unable to instantiate org.apache.hadoop.hive.ql.metadata.SessionHiveMetaStoreClient
+>        at org.apache.hadoop.hive.metastore.MetaStoreUtils.newInstance(MetaStoreUtils.java:1523)
+>        at org.apache.hadoop.hive.metastore.RetryingMetaStoreClient.<init>(RetryingMetaStoreClient.java:86)
+>        at org.apache.hadoop.hive.metastore.RetryingMetaStoreClient.getProxy(RetryingMetaStoreClient.java:132)
+>        at org.apache.hadoop.hive.metastore.RetryingMetaStoreClient.getProxy(RetryingMetaStoreClient.java:104)
+>        at org.apache.hadoop.hive.ql.metadata.Hive.createMetaStoreClient(Hive.java:3005)
+>        at org.apache.hadoop.hive.ql.metadata.Hive.getMSC(Hive.java:3024)
+>        at org.apache.hadoop.hive.ql.session.SessionState.start(SessionState.java:503)
+>... 8 more
+>```
+> **原因**是，Metastore默认存储在自带的derby数据库中，推荐使用MySQL存储Metastore;
 
 ## 4.安装配置MySQL
 
@@ -431,6 +437,7 @@ exit:先隐性提交数据，再退出；
 quit:不提交数据，退出；
 
 2．在hive cli命令窗口中如何查看hdfs文件系统
+
 ```
 hive(default)>dfs -ls /;
 ```
