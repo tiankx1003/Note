@@ -1,8 +1,10 @@
-# `TODO
+# TODO
 * [ ] -
+* [ ] hive常用函数 *2019-8-3 16:54:19*
+* [ ] Maven工程文件在eclipse中打jar包 *2019-8-3 16:54:25*
+* [ ] 列转行  视频09*2019-8-3 11:38:10*
 * [ ] Distributed By分区个数和reducer个数的设置 *2019-8-2 16:44:49*
 * [ ] sort by 多个Reducer 数据随机存入多个文件 *2019-8-2 16:33:34*
-
 * [ ] 多表连接和笛卡尔积 *2019-8-2 16:01:35*
 * [ ] 分组字段问题 *2019-8-2 15:34:02*
 * [ ] import数据到指定hive表 *2019-8-2 14:22:49*
@@ -10,7 +12,7 @@
 * [ ] Hive分区表实操 *2019-8-2 09:35:11*
 * [ ] hive cli窗口查看本地文件系统 *2019-8-2 09:12:01*
 * [ ] hive cli窗口查看hdfs文件系统 *2019-8-2 09:11:02*
-* [ ] **配置Hive元数据到MySQL数据库** *2019-7-31 11:20:13*
+* [x] **配置Hive元数据到MySQL数据库** *2019-7-31 11:20:13*
 * [ ] MySQL用户配置与远程登录连接 *2019-7-31 10:49:18*
 * [x] MySQL密码文件 *2019-7-31 10:44:47*
 * [x] 卸载旧MySQL *2019-7-31 10:42:25*
@@ -1387,9 +1389,537 @@ sort by deptno; -- 和第一条语句相同
 
 ### 6.1 分桶表数据存储
 
+分区针对数据的存储路径，分桶针对数据文件
+分区提供一个隔离数据和优化查询的便利方式，并非所有的数据集都可以形成合理的分区，特别是之前所提到过的要确定合适的划分大小。
+分桶是将数据集分解成更容易管理的若干部分另一个技术。
+
+1. 先创建分桶表，通过直接导入数据文件的方式
+
+   数据准备
+
+   ```
+   1001	ss1
+   1002	ss2
+   1003	ss3
+   1004	ss4
+   1005	ss5
+   1006	ss6
+   1007	ss7
+   1008	ss8
+   1009	ss9
+   1010	ss10
+   1011	ss11
+   1012	ss12
+   1013	ss13
+   1014	ss14
+   1015	ss15
+   1016	ss16
+   ```
+
+   ```mysql
+   -- 创建分桶表
+   create table stu_buck(id int, name string)
+   clustered by(id)
+   into 4 buckets
+   row format delimited fields terminated by '\t';
+   -- 查看表结构
+   desc formatted stu_buck;
+   -- 导入数据到分桶表中
+   load data local inpath 'opt/module/datas/student.txt' into table stu_buck;
+   # web界面查看分桶表中是否分成四个桶 --并没有
+   ```
+
+2. 创建分桶表是，数据通过子查询的方式导入
+
+   ```mysql
+   -- 先建一个普通的stu表
+   create table stu(id int, name string)
+   row format delimited fields terminated by '\t';
+   -- 导入数据
+   load data local inpath '/opt/module/datas/student.txt' into table stu;
+   -- 清空stu_buck表中数据
+   truncate table stu_buck;
+   select * from stu_buck;
+   -- 导入数据到分桶表，通过子查询的方式
+   insert into table stu_buck
+   select id, name from stu;
+   # web端查看还是只有一个桶
+   -- 设置属性
+   set hive.enforce.bucketing=true;
+   set mapreduce.job.reduces=-1;
+   insert into table stu_buck
+   select id, name from stu;
+   # 再次查看发现数据已经分桶
+   -- 查询分桶中的数据
+   select * from stu_buck;
+   ```
+
+### 6.2 分桶抽样查询
+
+```mysql
+select * from stu_buck tablesample(bucket 1 out of 4 on id);
+```
+
+> **TABLESAMPLE(BUCKET x OUT OF y)** 
+> y必须是table总bucket数的倍数或者因子
+> hive根据y的大小，决定抽样的比例，抽取bucket个数为z/y，z为bucket总数。
+> x表示从哪个bucket开始抽取，如果需要多个分区，以后的分区号为当前分区号加上y。
+> x必须小于y，因为x+(z/y-1)≤z否则
+> FAILED: SemanticException [Error 10061]: Numerator should not be
+> bigger than denominator in sample clause for table stu_buck
+
+## 7.其他常用查询函数
+
+### 7.1 空字段赋值
+
+> **函数说明**
+> NVL:给值为null的数据赋值，他的格式是NVL(string 1, replace_with)，他的功能是如果string1为null，则nvl则nvl函数返回replace_with的值，否则返回string 1的值，如果两个参数为null，则返回null
+
+```mysql
+-- 如果comm为null，则用-1代替
+select nvl(comm,-1) from emp;
+-- 如果员工的comm为null，则用领导id代替
+select nvl(comm，mgr) from emp;
+-- 如果员工的comm为空显示他的领导id，如果领导id也是空，显示他的名字
+select nvl(comm, nvl(mgr,ename)) from emp;
+```
+
+### 7.2 case when
+
+1. 数据准备
+
+   | name | dept_id | sex  |
+   | ---- | ------- | ---- |
+   | 悟空 | A       | 男   |
+   | 大海 | A       | 男   |
+   | 宋宋 | B       | 男   |
+   | 凤姐 | A       | 女   |
+   | 婷姐 | B       | 女   |
+   | 婷婷 | B       | 女   |
+
+2. 需求
+   求出不同部门男女各多少人，结果如下:
+
+   ```
+   A     2       1
+   B     1       2
+   ```
+
+   
+
+3. 创建本地emp_sex.txt，导入数据
+
+   ```bash
+   vim emp_sex.txt # 将表中的数据写入到文件中
+   ```
+
+   ```
+   悟空	A	男
+   大海	A	男
+   宋宋	B	男
+   凤姐	A	女
+   婷姐	B	女
+   婷婷	B	女
+   ```
+
+4. 创建hive表并导入数据
+
+   ```mysql
+   create table emp_sex(
+   	name string,
+       dept_id string,
+       sex string)
+   row format delimited fields terminated by '\t';
+   load data local inpath '/opt/module/datas/emp_sex.txt' into table emp_sex;
+   ```
+
+5. 按需求查询数据
+
+   ```mysql
+   select 
+   	dept_id,
+   	sum(case sex when '男' then 1 else 0 end) male_count,
+   	sum(case sex when '女' then 1 else 0 end) female_count
+   from
+   	emp_sex
+   group bu
+   	dept_id;
+   ```
+
+### 7.3 行转列
+
+> **函数说明**
+> **concat(string A/col, string B/col, …)** 返回输入字符串连接后的结果，支持任意个输入字符串
+> **concat ws(separator, str1, str2,…)** 它是一个特殊形式的concat()，第一个参数剩余参数间的分隔符，分隔符可以是字符串，如果分隔符时null，返回值也将是null，这个函数会跳过分隔符参数后的任何null和空字符串，分隔符将被加到被连接的字符串之间
+> **collect_set(col)**函数只接受基本数据类型，他的主要作用是将某个字段的值进行去重汇总，产生array类型字段
+
+> **数据准备**
+
+| name   | constellation | blood_type |
+| ------ | ------------- | ---------- |
+| 孙悟空 | 白羊座        | A          |
+| 大海   | 射手座        | A          |
+| 宋宋   | 白羊座        | B          |
+| 猪八戒 | 白羊          | A          |
+| 凤姐   | 射手座        | A          |
+
+>**需求**
+>把星座和血型一样的人归类到一起，输出结果如下
+>
+>```
+>射手座,A            大海|凤姐
+>白羊座,A            孙悟空|猪八戒
+>白羊座,B            宋宋
+>```
+
+> **创建本地文件constellation.txt,并导入数据**
+>
+> ```bash
+> vim constellation.txt # 把上述表中的数据写入到文件中
+> ```
+>
+> ```
+> 孙悟空	白羊座	A
+> 大海	     射手座	A
+> 宋宋	     白羊座	B
+> 猪八戒    白羊座	A
+> 凤姐	     射手座	A
+> ```
+
+> **创建hive表并导入数据**
+>
+> ```mysql
+> create table person_info(
+> name string,
+> constellation string,
+> blood_type string)
+> row format delimited fields terminated by "\t";
+> load data local inpath "/opt/module/constellation.txt" into table person_info;
+> ```
+
+> **按需求查询数据**
+>
+> ```mysql
+> select
+> 	t1.base,
+> 	concat ws('|', conllect_set(t1.name)) name
+> from 
+> 	(select
+>     	name,
+>     	concat(constellation, ",", blood_type) base
+>     from
+>     	person_info) t1
+> group by
+> 	t1.base;
+> ```
+
+### 7.4 列转行
+
+> **函数说明**
+> **EXPLODE(col)**将hive一列中复杂的array或者map结构拆分成多行
+> **LATERVL VIEW**
+> 	用法:LATERVAL VIEW udtf(expression) tableAlias AS columnAlias
+> 	解释:用于和split，explode等UDTF一起使用，它能够将一列数据拆分成多行数据，在此基础上对查分后的数据惊醒聚合。
+
+> **数据准备**
+
+| movie           | category                 |
+| --------------- | ------------------------ |
+| 《疑犯追踪》    | 悬疑,动作,科幻,剧情      |
+| 《Lie   to me》 | 悬疑,警匪,动作,心理,剧情 |
+| 《战狼2》       | 战争,动作,灾难           |
+
+> **创建本地文件movie.txt导入数据**
+>
+> ```bash
+> vim movie.txt # 将上述表中的数据写入到文件中
+> ```
+>
+> ```
+> 《疑犯追踪》	悬疑,动作,科幻,剧情
+> 《Lie to me》	悬疑,警匪,动作,心理,剧情
+> 《战狼2》	战争,动作,灾难
+> ```
+
+> **创建hive表并导入数据**
+>
+> ```mysql
+> create table movie info(
+> 	movie string,
+> 	category array<string>)
+> row format delimited fields terminated by "\t"
+> collection items terminated by ",";
+> load data local inpath "/opt/module/datas/movie.txt" into table movie_info;
+> ```
+
+> **按需求查询数据**
+>
+> ```mysql
+> select
+> 	movie,
+> 	catagory_name
+> from
+> 	movie_info lateral view explode(category) table_tmp as category_name;
+> ```
+
+### 7.5 窗口函数
+
+> **函数说明**
+> **OVER()**：指定分析函数工作的数据窗口大小，这个数据窗口大小可能会随着行的变而变化
+> **CURRENT ROW**：当前行
+> **n PRECEDING**：往前n行数据
+> **n FOLLOWING**：往后n行数据
+> **UNBOUNDED**：起点，UNBOUNDED PRECEDING 表示从前面的起点， UNBOUNDED FOLLOWING表示到后面的终点
+> **LAG(col,n)**：往前第n行数据
+> **LEAD(col,n)**：往后第n行数据
+> **NTILE(n)**：把有序分区中的行分发到指定数据的组中，各个组有编号，编号从1开始，对于每一行，NTILE返回此行所属的组的编号。注意：n必须为int类型。
+
+> **数据准备** name, orderdate, cost
+>
+> ```
+> jack,2017-01-01,10
+> tony,2017-01-02,15
+> jack,2017-02-03,23
+> tony,2017-01-04,29
+> jack,2017-01-05,46
+> jack,2017-04-06,42
+> tony,2017-01-07,50
+> jack,2017-01-08,55
+> mart,2017-04-08,62
+> mart,2017-04-09,68
+> neil,2017-05-10,12
+> mart,2017-04-11,75
+> neil,2017-06-12,80
+> mart,2017-04-13,94
+> ```
+
+> **需求**
+> （1）查询在2017年4月份购买过的顾客及总人数
+> （2）查询顾客的购买明细及月购买总额
+> （3）上述的场景,要将cost按照日期进行累加
+> （4）查询顾客上次的购买时间
+> （5）查询前20%时间的订单信息
+
+> **创建本地文件business.txt导入数据**
+>
+> ```bash
+> vim business.txt # 写入数据到文件
+> ```
+
+> **创建hive表并导入数据**
+>
+> ```mysql
+> create table business(
+> name string,
+> orderdate string,
+> cost int)
+> row format delimited fields terminated by ',';
+> load data local inpath "/opt/module/datas/business.txt" into table business;
+> ```
+
+> **按需求查询数据**
+>
+> ```mysql
+> -- 查询在2017年4月购买过的顾客及总人数
+> select name, count(*) over() -- 使用over()后，count窗口个数
+> from business
+> where substring(orderdate,1,7) = '2017-04'
+> group by name; -- group by后窗口个数为分成的组数，
+> 
+> -- 查询顾客的购买明细及月购买总额
+> select name, orderdate, cost, sum(cost)
+> over(partition by month(orderdate))
+> from business;
+> 
+> -- 上述场景，将cost按照日期进行累加
+> select name, orderdate, cost
+> sum(cost) over() as sample1, -- 所有行累加
+> sum(cost) over(partition by name) as sample2, -- 按name分组，组内数据相加
+> sum(cost) over(partition by name order by orderdate) as sample3, -- 按name分组，组内数据累加
+> sum(cost) over(partition by name order by orderdate rows between UNBOUNDED PRECEDING and current row) as sample4, -- 和sample3一样，由七点到当前行的聚合
+> sum(cost) over(partition by name order by orderdate rows between 1 PRECEDING and current row) as sample5, -- 当前行和前面一行做聚合
+> sum(cost) over(partition by name order by orderdate rows between 1 PRECEDING AND 1 FOLLOWING) as sample6, -- 当前行和前边一行及后面一行
+> sum(cost) over(partition by name order by orderdate rows between current row and UNBOUNDED FOLLOWING) as sample7 -- 当前行及后面所有行
+> from business;
+> 
+> -- 查看顾客上次购买时间
+> select name, orderdate, cost,
+> lag(orderdate, 1, '1900-01-01') over(partition by name order by orderdate) as time1,
+> lag(orderdate, 2) over (partition by name order by orderdate) as time2
+> from business;
+> -- 查询前20%时间的订单信息
+> select * from  (
+> 	select name, orderdate, cost ntile(5) over(order by orderdate) sorted
+> 	from business) t
+> where sorted = 1;
+> ```
+
+### 7.6 Rank
+
+> **函数说明**
+> RANK() 排序相同时会重复，总数不会变
+> DENSE_RANK() 排序相同时会重复，总数会减少
+> ROW_NUMBER() 会根据顺序计算
+
+> **数据准备**
+
+| name   | subject | score |
+| ------ | ------- | ----- |
+| 孙悟空 | 语文    | 87    |
+| 孙悟空 | 数学    | 95    |
+| 孙悟空 | 英语    | 68    |
+| 大海   | 语文    | 94    |
+| 大海   | 数学    | 56    |
+| 大海   | 英语    | 84    |
+| 宋宋   | 语文    | 64    |
+| 宋宋   | 数学    | 86    |
+| 宋宋   | 英语    | 84    |
+| 婷婷   | 语文    | 65    |
+| 婷婷   | 数学    | 85    |
+| 婷婷   | 英语    | 78    |
+
+> **需求**
+> 计算每门学科成绩排名
+
+> **创建本地文件movie.txt，导入数据**
+>
+> ```bash
+> vim score.txt
+> ```
+
+> **创建hive表并导入数据**
+>
+> ```mysql
+> create table score(
+> name string,
+> subject string,
+> score int)
+> row format delimited fields terminated by "\t";
+> load data local inpath '/opt/module/datas/score.txt' into table score;
+> ```
+
+> **按需求查询数据**
+>
+> ```mysql
+> select name, subject, score,
+> rank() over(partition by subject order by score desc) rp,
+> dense rank() over(partition by subject order by score desc) drp,
+> row number() over(partition by subject order by score desc) rmp
+> from score;
+> ```
+
+> **输出结果**
+>
+> ```
+> name    subject score   rp      drp     rmp
+> 孙悟空  数学    95      1       1       1
+> 宋宋    数学    86      2       2       2
+> 婷婷    数学    85      3       3       3
+> 大海    数学    56      4       4       4
+> 宋宋    英语    84      1       1       1
+> 大海    英语    84      1       1       2
+> 婷婷    英语    78      3       2       3
+> 孙悟空  英语    68      4       3       4
+> 大海    语文    94      1       1       1
+> 孙悟空  语文    87      2       2       2
+> 婷婷    语文    65      3       3       3
+> 宋宋    语文    64      4       4       4
+> ```
+
 
 
 # 七、函数
+
+## 1.系统内置函数
+
+```mysql
+-- 查询系统自带的函数
+show functions;
+-- 显示自带的函数的用法
+desc function upper;
+-- 详细显示自带的函数的用法
+desc function extended upper;
+```
+
+## 2.自定义函数
+
+hive自带了一些函数，但是数量有限，当内置函数无法满足业务需求时，可以使用用户自定义函数
+
+> **(UDF:user-defined function)分类**
+> UDF(User-Defined-Function) 一进一出
+> UDAF(User-Defined Aggregation Function) 聚集函数，多进一出，类似count/max/min
+> UDTF(User-Defined Table-Generating Function) 一进一出，如lateral view explore
+
+[官方文档地址](https://cwiki.apache.org/confluence/display/Hive/HivePlugins)
+
+> **编程步骤**
+> 继承org.apache.hadoop.hive.ql.UDF
+> 需要实现evaluate函数;evaluate函数支持重载
+> 在hive的命令行窗口创建函数
+>
+> ```mysql
+> # 添加jar
+> add jar linux_jar_path
+> -- 创建function
+> create [temporary] function [dbname.]function_name AS class_name;
+> ```
+>
+> 在hive命令行窗口删除函数
+>
+> ```mysql
+> Drop [temporary] function [if exists] [dbname.]function_name;
+> ```
+
+> **注意事项**
+> UDF必须要有返回类型，可以返回null，但是返回类型不能为void
+
+## 3.自定义UDF函数
+
+**创建Maven工程Hive**
+
+**导入依赖**
+
+```xml
+<dependencies>
+		<!-- https://mvnrepository.com/artifact/org.apache.hive/hive-exec -->
+		<dependency>
+			<groupId>org.apache.hive</groupId>
+			<artifactId>hive-exec</artifactId>
+			<version>1.2.1</version>
+		</dependency>
+</dependencies>
+```
+
+ **创建一个类**
+
+```java
+package com.tian.hive;
+import org.apache.hadoop.hive.ql.exec.UDF;
+
+public class Lower extends UDF {
+
+	public String evaluate (final String s) {
+		
+		if (s == null) {
+			return null;
+		}
+		
+		return s.toLowerCase();
+	}
+}
+```
+
+**打成jar包上传到服务器/opt/module/jars/udf.jar**
+
+```mysql
+-- 将jar包添加到hive的classpath
+add jar /opt/module/datas/udf.jar
+-- 创建临时函数与开发好的java class关联
+create temporary function mylower as "com.tian.hive.lower";
+-- 在hql中使用自定义的函数strip
+select ename, mylower(ename) lowername from emp;
+```
+
 
 
 # 八、压缩和存储
