@@ -30,7 +30,7 @@ set noerrorbells
 set visualbell
 set history=1000
 set autoread
-# set number
+" set number
 ```
 
 ```bash
