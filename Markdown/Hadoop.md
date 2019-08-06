@@ -1005,7 +1005,7 @@ at javax.security.auth.Subject.doAs(Subject.java:415)
 主机名称不要起hadoop  hadoop000等特殊名称
 
 #### DataNode和NameNode进程同时只能工作一个。
- 
+
 #### 执行命令不生效，粘贴word中命令时，遇到-和长–没区分开。导致命令失效
 **解决办法**尽量不要粘贴word中代码。
 
@@ -1029,3 +1029,4 @@ vim /etc/hosts
 #127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4
 #::1         hadoop102
 ```
+

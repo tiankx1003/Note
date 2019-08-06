@@ -18,7 +18,6 @@ set cindent
 set tabstop=4
 set shiftwidth=4
 set softtabstop=4
-set number
 set cursorline
 set linebreak
 set wrapmargin=0
@@ -31,6 +30,7 @@ set noerrorbells
 set visualbell
 set history=1000
 set autoread
+# set number
 ```
 
 ```bash
