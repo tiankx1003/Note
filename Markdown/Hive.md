@@ -1,5 +1,6 @@
 # TODO
 * [ ] -
+* [ ] **分区表** *2019-8-6 20:34:05*
 * [ ] 小表、大表join *2019-8-5 11:49:07*
 * [ ] *hive中文字符编码问题  *2019-8-5 11:49:29*
 * [ ] hive自定义函数java函数命名限制 *2019-8-5 09:20:24*
@@ -1010,7 +1011,7 @@ select * from student;
 
 # 将查询的结果导出到hdfs上(没有local)
 insert overwrite directory '/user/tian/student2'
-row farmat delimited fields terminated by '\t'
+row format delimited fields terminated by '\t'
 select * from student;
 ```
 
@@ -1078,7 +1079,7 @@ SELECT [ALL | DISTINCT] select_expr, select_expr, ...
 # 全表查询
 select * from emp;
 # 选择特定列查询
-select empno, ename, from emp;
+select empno, ename from emp;
 ```
 
 > **注意**
@@ -1125,7 +1126,7 @@ select avg(sal) avg_sal from emp;
 ### 1.5 limit语句
 
 ```mysql
-select * from emp limit 5; -- 用于限制返回的行数
+select * from emp limit 5; -- 用于限制返回的行数 isFlag
 ```
 
 ## 2.where语句
@@ -2273,8 +2274,6 @@ insert into table log_orc_none select * from log_text ;
 dfs -du -h /user/hive/warehouse/log_orc_none/ ;
 # 7.7 M  /user/hive/warehouse/log_orc_none/000000_0
 ```
-
-
 
 **创建Snappy压缩的ORC存储方式**
 
