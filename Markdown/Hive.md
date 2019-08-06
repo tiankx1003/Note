@@ -482,13 +482,13 @@ bin/hdfs dfs -chmod g+w /user/hive/warehouse
 1）在hive-site.xml文件中添加如下配置信息，就可以实现显示当前数据库，以及查询表的头信息配置。
 ```xml
 <property>
-<name>hive.cli.print.header</name>
-<value>true</value>
+    <name>hive.cli.print.header</name>
+    <value>true</value>
 </property>
 
 <property>
-<name>hive.cli.print.current.db</name>
-<value>true</value>
+    <name>hive.cli.print.current.db</name>
+    <value>true</value>
 </property>
 ```
 2）重新启动hive，对比配置前后差异。
@@ -672,11 +672,11 @@ hive> show databases like 'db_hive*';
 # 显示数据库信息
 hive> desc database db_hive;
 # OK
-# db_hive		hdfs://hadoop102:9000/user/hive/warehouse/db_hive.db	atguiguUSER	
+# db_hive		hdfs://hadoop102:9000/user/hive/warehouse/db_hive.db		
 # 显示数据库详细信息，extended
 hive> desc database extended db_hive;
 # OK
-# db_hive		hdfs://hadoop102:9000/user/hive/warehouse/db_hive.db	atguiguUSER	
+# db_hive		hdfs://hadoop102:9000/user/hive/warehouse/db_hive.db		
 # 切换当前数据库
 hive (default)> use db_hive;
 # 切换当前数据库
@@ -691,7 +691,7 @@ hive (default)> alter database db_hive set dbproperties('createtime'='20170830')
 # 在hive中查看修改结果
 hive> desc database extended db_hive;
 # db_name comment location        owner_name      owner_type      parameters
-# db_hive         hdfs://hadoop102:8020/user/hive/warehouse/db_hive.db    atguigu USER    {createtime=20170830}
+# db_hive         hdfs://hadoop102:8020/user/hive/warehouse/db_hive.db    tian USER    {createtime=20170830}
 ```
 
 ## 4.删除数据库
@@ -1916,36 +1916,67 @@ public class Lower extends UDF {
 
 ```mysql
 -- 将jar包添加到hive的classpath
-add jar /opt/module/datas/udf.jar
+add jar /opt/module/jars/udf.jar
 -- 创建临时函数与开发好的java class关联
-create temporary function mylower as "com.tian.hive.lower";
+create temporary function mylower as "com.tian.hive.Lower";
 -- 在hql中使用自定义的函数strip
 select ename, mylower(ename) lowername from emp;
 ```
 
 ## 4.常用函数
 
-### 4.1 日期
+> **日期**
+>
+> unix_timestamp:返回当前或指定时间的时间戳	
+> from_unixtime：将时间戳转为日期格式
+> current_date：当前日期
+> current_timestamp：当前的日期加时间
+> to_date：抽取日期部分
+> year：获取年
+> month：获取月
+> day：获取日
+> hour：获取时
+> minute：获取分
+> second：获取秒
+> weekofyear：当前时间是一年中的第几周
+> dayofmonth：当前时间是一个月中的第几天
+> months_between： 两个日期间的月份
+> add_months：日期加减月
+> datediff：两个日期相差的天数
+> date_add：日期加天数
+> date_sub：日期减天数
+> last_day：日期的当月的最后一天
 
+> **字符串**
+>
+> upper： 转大写
+> lower： 转小写
+> length： 长度
+> trim：  前后去空格
+> lpad： 向左补齐，到指定长度
+> rpad：  向右补齐，到指定长度
+> regexp_replace： SELECT regexp_replace('100-200', '(\d+)', 'num')='num-num
+> 	使用正则表达式匹配目标字符串，匹配成功后替换！
 
+> **取整**
+>
+> round： 四舍五入
+> ceil：  向上取整
+> floor： 向下取整
 
-
-
-### 4.2 字符串
-
-
-
-
-
-### 4.3 集合
-
-
+> **集合**
+>
+> size： 集合中元素的个数
+> map_keys： 返回map中的key
+> map_values: 返回map中的value
+> array_contains: 判断array中是否包含某个元素
+> sort_array： 将array中的元素排序
 
 # 八、压缩和存储
 
 ## 1.Hadoop源码编译支持Snappy压缩
 
-
+*略*
 
 ## 2.Hadoop压缩配置
 
@@ -2799,8 +2830,530 @@ hive (default)> explain extended select * from emp;
 hive (default)> explain extended select deptno, avg(sal) avg_sal from emp group by deptno;
 ```
 
-
 # 十、Hive实战
+
+## 1.需求描述
+
+> **统计硅谷影音视频网站的常规指标，各种TopN指标：**
+> --统计视频观看数Top10
+> --统计视频类别热度Top10
+> --统计视频观看数Top20所属类别
+> --统计视频观看数Top50所关联视频的所属类别Rank
+> --统计每个类别中的视频热度Top10
+> --统计每个类别中视频流量Top10
+> --统计上传视频最多的用户Top10以及他们上传的视频
+> --统计每个类别视频观看数Top10
+
+## 2.项目
+
+### 2.1 数据结构
+
+**视频表**
+
+| 字段        | 备注       | 详细描述               |
+| ----------- | ---------- | ---------------------- |
+| video id    | 视频唯一id | 11位字符串             |
+| uploader    | 视频上传者 | 上传视频的用户名String |
+| age         | 视频年龄   | 视频在平台上的整数天   |
+| category    | 视频类别   | 上传视频指定的视频分类 |
+| length      | 视频长度   | 整形数字标识的视频长度 |
+| views       | 观看次数   | 视频被浏览的次数       |
+| rate        | 视频评分   | 满分5分                |
+| ratings     | 流量       | 视频的流量，整型数字   |
+| conments    | 评论数     | 一个视频的整数评论数   |
+| related ids | 相关视频id | 相关视频的id，最多20个 |
+
+**用户表**
+
+| 字段     | 备注         | 字段类型 |
+| -------- | ------------ | -------- |
+| uploader | 上传者用户名 | string   |
+| videos   | 上传视频数   | int      |
+| friends  | 朋友数量     | int      |
+
+### 2.2 ETL
+
+通过观察原始数据形式，可以发现，视频可以有多个所属分类，每个所属分类用&符号分割，且分割的两边有空格字符，同时相关视频也是可以有多个元素，多个相关视频又用“\t”进行分割。为了分析数据时方便对存在多个子元素的数据进行操作，我们首先进行数据重组清洗操作。即：将所有的类别用“&”分割，同时去掉两边空格，多个相关视频id也使用“&”进行分割。
+
+```java
+package com.tian.etl;
+
+import java.io.IOException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.util.Tool;
+import org.apache.hadoop.util.ToolRunner;
+
+public class VideoETLRunner implements Tool {
+	private Configuration conf = null;
+
+	@Override
+	public void setConf(Configuration conf) {
+		this.conf = conf;
+	}
+
+	@Override
+	public Configuration getConf() {
+		return this.conf;
+	}
+
+	@Override
+	public int run(String[] args) throws Exception {
+		conf = this.getConf();
+		conf.set("inpath", args[0]);
+		conf.set("outpath", args[1]);
+
+		Job job = Job.getInstance(conf);
+		
+		job.setJarByClass(VideoETLRunner.class);
+		
+		job.setMapperClass(VideoETLMapper.class);
+		job.setMapOutputKeyClass(NullWritable.class);
+		job.setMapOutputValueClass(Text.class);
+		job.setNumReduceTasks(0);
+		
+		this.initJobInputPath(job);
+		this.initJobOutputPath(job);
+		
+		return job.waitForCompletion(true) ? 0 : 1;
+	}
+
+	private void initJobOutputPath(Job job) throws IOException {
+		Configuration conf = job.getConfiguration();
+		String outPathString = conf.get("outpath");
+		
+		FileSystem fs = FileSystem.get(conf);
+		
+		Path outPath = new Path(outPathString);
+		if(fs.exists(outPath)){
+			fs.delete(outPath, true);
+		}
+		
+		FileOutputFormat.setOutputPath(job, outPath);
+		
+	}
+
+	private void initJobInputPath(Job job) throws IOException {
+		Configuration conf = job.getConfiguration();
+		String inPathString = conf.get("inpath");
+		
+		FileSystem fs = FileSystem.get(conf);
+		
+		Path inPath = new Path(inPathString);
+		if(fs.exists(inPath)){
+			FileInputFormat.addInputPath(job, inPath);
+		}else{
+			throw new RuntimeException("HDFS中该文件目录不存在：" + inPathString);
+		}
+	}
+
+	public static void main(String[] args) {
+		try {
+			int resultCode = ToolRunner.run(new VideoETLRunner(), args);
+			if(resultCode == 0){
+				System.out.println("Success!");
+			}else{
+				System.out.println("Fail!");
+			}
+			System.exit(resultCode);
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+	}
+}
+```
+
+```java
+package com.tian.etl;
+
+import java.io.IOException;
+import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.io.NullWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
+
+import com.tian.util.ETLUtil;
+
+public class VideoETLMapper extends Mapper<Object, Text, NullWritable, Text> {
+	Text text = new Text();
+
+	@Override
+	protected void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+		String etlString = ETLUtil.oriString2ETLString(value.toString());
+
+		if (StringUtils.isBlank(etlString))
+			return;
+
+		text.set(etlString);
+		context.write(NullWritable.get(), text);
+	}
+}
+```
+
+```java
+package com.tian.util;
+
+public class ETLUtil {
+	public static String oriString2ETLString(String ori) {
+		StringBuilder etlString = new StringBuilder();
+		String[] splits = ori.split("\t");
+		if (splits.length < 9)
+			return null;
+		splits[3] = splits[3].replace(" ", "");
+		for (int i = 0; i < splits.length; i++) {
+			if (i < 9) {
+				if (i == splits.length - 1) {
+					etlString.append(splits[i]);
+				} else {
+					etlString.append(splits[i] + "\t");
+				}
+			} else {
+				if (i == splits.length - 1) {
+					etlString.append(splits[i]);
+				} else {
+					etlString.append(splits[i] + "&");
+				}
+			}
+		}
+
+		return etlString.toString();
+	}
+}
+```
+
+```bash
+# ETL
+hadoop jar /opt/module/jars/udf.jar/ com.tian.etl.VideoETLRunner /guli/video/ /guli/output/video/
+# 或者使用yarn
+yarn jar /opt/module/jars/udf.jar/ com.tian.etl.VideoETLRunner /guli/video/ /guli/output/vidio/
+```
+
+## 3.准备工作
+
+### 3.1 创建表
+
+```mysql
+-- gulivideo_ori
+create table gulivideo_ori(
+    videoId string, 
+    uploader string, 
+    age int, 
+    category array<string>, 
+    length int, 
+    views int, 
+    rate float, 
+    ratings int, 
+    comments int,
+    relatedId array<string>)
+row format delimited 
+fields terminated by "\t"
+collection items terminated by "&"
+stored as textfile;
+
+-- gulivideo_user_ori
+create table gulivideo_user_ori(
+    uploader string,
+    videos int,
+    friends int)
+row format delimited 
+fields terminated by "\t" 
+stored as textfile;
+
+create table gulivideo_orc(
+    videoId string, 
+    uploader string, 
+    age int, 
+    category array<string>, 
+    length int, 
+    views int, 
+    rate float, 
+    ratings int, 
+    comments int,
+    relatedId array<string>)
+clustered by (uploader) into 8 buckets 
+row format delimited fields terminated by "\t" 
+collection items terminated by "&" 
+stored as orc;
+
+-- gulivideo_orc
+create table gulivideo_orc(
+    videoId string, 
+    uploader string, 
+    age int, 
+    category array<string>, 
+    length int, 
+    views int, 
+    rate float, 
+    ratings int, 
+    comments int,
+    relatedId array<string>)
+clustered by (uploader) into 8 buckets 
+row format delimited fields terminated by "\t" 
+collection items terminated by "&" 
+stored as orc;
+
+-- gulivideo_user_orc
+create table gulivideo_user_orc(
+    uploader string,
+    videos int,
+    friends int)
+row format delimited 
+fields terminated by "\t" 
+stored as orc;
+```
+
+### 3.2 导入ETL后的数据
+
+```mysql
+load data inpath "/gulivideo/output/video/2008/0222" into table gulivideo_ori;
+load data inpath "/gulivideo/user/2008/0903" into table gulivideo_user_ori;
+```
+
+### 3.3 向ORC表插入数据
+
+```mysql
+insert into table gulivideo_orc select * from gulivideo_ori;
+insert into table gulivideo_user_orc select * from gulivideo_user_ori;
+```
+
+## 4.业务分析
+
+### 4.1 统计视频观看数Top10
+
+```mysql
+-- 思路，order by排序取前十
+select *
+from gulivideo_orc
+order by views desc
+limit 10;
+```
+
+### 4.2 统计视频类别热度Top10
+
+```mysql
+-- a. 炸开视频类别
+select videoId, category_name 
+from gulivideo_orc 
+lateral view explode(category) category_t as category_name    ==>t1 
+
+-- b. 按照类别分组，并count当前类别下视频的总个数
+
+select t1.category_name, count(*) hot
+from t1
+group by t1.category_name
+order by hot desc    ==>t2 
+
+-- c. Top10 
+
+select  t2.category_name ,t2.hot
+from t2 
+limit 10 ;
+
+
+-- 结果: 
+-- 格式化:
+
+SELECT t2.category_name, t2.hot
+FROM (
+	SELECT t1.category_name, COUNT(*) AS hot
+	FROM (
+		SELECT videoId, category_name
+		FROM gulivideo_orc
+			LATERAL VIEW explode(category) category_t AS category_name
+	) t1
+	GROUP BY t1.category_name
+	ORDER BY hot DESC
+) t2
+LIMIT 10;
+```
+
+### 4.3 统计出视频观看数最高的20个视频的所属类别以及类别包含的Top20视频的个数
+
+```mysql
+-- a. 视频观看数最高的20个视频的类别
+select videoId , views  , category
+from gulivideo_orc 
+order by views desc  limit  20    ==>t1
+
+-- b. 炸开每个视频的类别 
+
+select  videoId, category_name 
+from t1 
+lateral view explode(category) category_t as category_name   ==>t2
+
+-- c.按照类别分组，并统计视频的个数
+
+select t2.category_name ,count(*) hot  
+from t2 
+group by t2.category_name 
+order by hot desc 
+
+
+-- 结果:
+select t2.category_name ,count(*) hot  
+from  (select  videoId, category_name 
+from (select videoId , views  , category
+from gulivideo_orc 
+order by views desc  limit  20)t1 
+lateral view explode(category) category_t as category_name)t2 
+group by t2.category_name 
+order by hot desc ;
+```
+
+### 4.4 统计视频观看数Top50所关联视频的所属类别的Rank
+
+```mysql
+-- a. 统计视频观看数Top50  (一个视频对应多个关联视频(array))
+
+select videoId, views , relatedId
+from gulivideo_orc 
+order by views desc limit 50   ==>t1
+
+-- b.炸开每个视频的关联视频
+
+select relatedId_Id 
+from t1 
+lateral view explode(relatedId) relatedId_t as relatedId_Id   ==t2
+
+
+-- c. t2  与 gulivedio_orc进行join, 拿到每个视频对应的类别 
+
+select t2.relatedId_Id ,t3.category 
+from t2 join gulivideo_orc t3 
+on t2.relatedId_Id = t3.videoId    ==>t4 
+
+-- d. 炸开每个视频的类别
+
+select category_name 
+from t4 
+lateral view explode(category) category_t as category_name  ==>t5 
+
+-- e. 根据类别分组，统计每个组的总个数
+
+select category_name , count(*) hot
+from t5 
+group by category_name   ==t6
+
+-- f. 按照hot排序， 计算排名
+select category_name , hot , row_number() over( order by hot desc )
+from t6 
+
+
+-- 结果:
+select category_name , hot , row_number() over(order by hot desc )
+from (select category_name , count(*) hot
+from (select category_name 
+from (select t2.relatedId_Id ,t3.category 
+from (select relatedId_Id 
+from (select videoId, views , relatedId
+from gulivideo_orc 
+order by views desc limit 50)t1 
+lateral view explode(relatedId) relatedId_t as relatedId_Id)t2 join gulivideo_orc t3 
+on t2.relatedId_Id = t3.videoId)t4 
+lateral view explode(category) category_t as category_name)t5 
+group by category_name )t6 ;
+```
+
+### 4.5 统计每个类别的视频热度Top10，以Music为例
+
+```mysql
+-- a. 炸开每个视频的类别
+select videoId , views , category_name 
+from gulivideo_orc 
+lateral view explode(category) category_t as category_name   ==>t1
+
+-- b. 按照类别分区，观看数排序
+
+select videoId,  category_name ,views , 
+row_number() over(distribute by category_name sort by views desc ) rn
+from t1     ==>t2
+
+-- c. Top10 
+select  videoId, category_name, views ,rn 
+from t2 
+where t2.rn <=10 ;
+
+-- 结果:
+
+select  videoId, category_name, views ,rn 
+from (select videoId,  category_name ,views , 
+row_number() over(distribute by category_name sort by views desc ) rn
+from (select videoId , views , category_name 
+from gulivideo_orc 
+lateral view explode(category) category_t as category_name)t1 )t2 
+where t2.rn <=10 ;
+```
+
+### 4.6 统计每个类别中视频流量Top10，以Music为例
+
+```mysql
+-- a. 炸开每个视频的类别
+select videoId , ratings , category_name 
+from gulivideo_orc 
+lateral view explode(category) category_t as category_name   ==>t1
+
+-- b. 按照类别分区，观看数排序
+
+select videoId,  category_name ,ratings , 
+row_number() over(distribute by category_name sort by ratings desc ) rn
+from t1     ==>t2
+
+-- c. Top10 
+select  videoId, category_name, ratings ,rn 
+from t2 
+where t2.rn <=10 ;
+
+-- 结果:
+
+select  videoId, category_name, ratings ,rn 
+from (select videoId,  category_name ,ratings , 
+row_number() over(distribute by category_name sort by ratings desc ) rn
+from (select videoId , ratings , category_name 
+from gulivideo_orc 
+lateral view explode(category) category_t as category_name)t1 )t2 
+where t2.rn <=10 ;
+```
+
+### 4.7 统计上传视频最多的用户Top10以及他们上传的观看次数在前20的视频
+
+```mysql
+-- a. 上传视频最多的用户Top10
+select  uploader ,videos
+from gulivideo_user_orc 
+order by videos desc 
+limit 10    ==>t1
+
+-- b. 找到10个人上传的所有的视频 
+
+select  t1.uploader , t2.videoId ,t2.views 
+from t1  join gulivideo_orc t2 
+on t1.uploader = t2.uploader     ==>t3
+
+-- c. 根据views排序， Top20
+
+select  t3.uploader,t3.videoId, t3.views
+from t3 
+order by views desc limit 20 ;
+
+
+-- 结果: 
+
+select  t3.uploader,t3.videoId, t3.views
+from  (select  t1.uploader , t2.videoId ,t2.views 
+from  (select  uploader ,videos
+from gulivideo_user_orc 
+order by videos desc 
+limit 10 )t1  join gulivideo_orc t2 
+on t1.uploader = t2.uploader)t3 
+order by views desc limit 50 ;
+```
 
 
 
