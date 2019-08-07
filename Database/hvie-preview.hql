@@ -237,8 +237,37 @@ select *
 from emp
 limit 5; -- 限制返回行数
 
+select * 
+from emp
+where sal>1000;
 
+-- like & rlike
+select * from emp where sal=5000;
+select * from emp where sal between 5000 and 10000;
+select * from emp where comm is null;
+select * from emp where sal in (1500,5000);
 
+select * from emp where sal like '2%';
+select * from emp where sal like '_2%';
+select * from emp where sal rlike '[2]'; -- 查找薪水中含有2的员工信息
+
+-- group by
+select t.deptno, avg(t.sal) avg_sal 
+from emp t 
+group by t.deptno;
+
+select t.deptno, t.job, max(t.sal) max_sal
+from emp t
+group by t.deptno, t.job; -- 每个部门中每个岗位的最高薪水
+
+-- haveing
+select deptno, avg(sal) from emp group by deptno;
+select deptno, avg(sal) avg_sal
+from emp
+group by deptno
+having avg_sal>2000;
+
+-- join
 
 
 

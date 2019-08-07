@@ -1126,7 +1126,7 @@ select avg(sal) avg_sal from emp;
 ### 1.5 limit语句
 
 ```mysql
-select * from emp limit 5; -- 用于限制返回的行数 isFlag
+select * from emp limit 5; -- 用于限制返回的行数
 ```
 
 ## 2.where语句
@@ -1213,7 +1213,7 @@ group by t.deptno, t.job;
 
 ```mysql
 -- 每个部门的平均薪水
-select deptno, avg(sal) from emp group bu deptno;
+select deptno, avg(sal) from emp group by deptno;
 -- 每个部门的平均薪水大于2000的部门
 ```
 
@@ -1228,7 +1228,7 @@ select deptno, avg(sal) from emp group bu deptno;
 select e.empno, e.ename, d.deptno, d.dname
 from emp e
 join dept d 
-on e.deptno = d.deptno;
+on e.deptno = d.deptno;isFlag
 ```
 
 ### 4.2 表的别名
