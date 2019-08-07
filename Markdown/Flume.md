@@ -154,7 +154,7 @@ vim flume-env.sh
 ># one source may bind many channels
 >a1.sources.r1.channels = c1 
 >one sink can only bind one channel
->a1.sinks.k1.channel = c1 # 
+>a1.sinks.k1.channel = c1
 >```
 >因为一个flume中可能有多个source和sink，所以需要指定source，sink分别与channel的关系。
 >一个source可以对应多个channel
