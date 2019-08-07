@@ -124,7 +124,7 @@ vim flume-env.sh
 ># 添加如下内容
 >```
 >
->```conf
+>```properties
 ># Name the components on this agent
 >a1.sources = r1
 >a1.sinks = k1
@@ -200,7 +200,7 @@ vim flume-env.sh
 > vim flume-file-hdfs.conf
 > ```
 >
-> ```
+> ```properties
 > # Name the components on this agent
 > a2.sources = r2
 > a2.sinks = k2
@@ -266,7 +266,7 @@ vim flume-env.sh
 > vim dir-hdfs.conf
 > ```
 >
-> ```
+> ```properties
 > a3.sources = r3
 > a3.sinks = k3
 > a3.channels = c3
@@ -339,7 +339,7 @@ Exec source适用于监控一个实时追加的文件，但不能保证数据不
 > vim taildir-hdfs.conf
 > ```
 >
-> ```
+> ```properties
 > a3.sources = r3
 > a3.sinks = k3
 > a3.channels = c3
@@ -399,7 +399,7 @@ Exec source适用于监控一个实时追加的文件，但不能保证数据不
 
 ​    Taildir Source维护了一个json格式的position File，其会定期的往position File中更新每个文件读取到的最新的位置，因此能够实现断点续传。Position File的格式如下：
 
-```
+```json
 {"inode":2496272,"pos":12,"file":"/opt/module/flume/files/file1.txt"}
 {"inode":2496275,"pos":12,"file":"/opt/module/flume/files/file2.txt"}
 ```
