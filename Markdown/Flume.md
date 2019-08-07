@@ -131,21 +131,30 @@ vim flume-env.sh
 >a1.channels = c1
 >
 ># Describe/configure the source
->a1.sources.r1.type = netcat
->a1.sources.r1.bind = localhost
->a1.sources.r1.port = 4444
+># The component type name, needs to be netcat
+>a1.sources.r1.type = netcat 
+># Host name or IP address to bind to
+>a1.sources.r1.bind = hadoop201 
+># Port # to bind to
+>a1.sources.r1.port = 4444 
 >
 ># Describe the sink
->a1.sinks.k1.type = logger
+># The component type name, needs to be logger
+>a1.sinks.k1.type = logger 
 >
 ># Use a channel which buffers events in memory
->a1.channels.c1.type = memory
->a1.channels.c1.capacity = 10000
->a1.channels.c1.transactionCapacity = 1000
+># The component type name, needs to be memory
+>a1.channels.c1.type = memory 
+># The maximum number of events stored in the channel
+>a1.channels.c1.capacity = 10000 
+># The maximum number of events the channel will take from a source or give to a sink per transaction
+>a1.channels.c1.transactionCapacity = 1000 
 >
 ># Bind the source and sink to the channel
->a1.sources.r1.channels = c1
->a1.sinks.k1.channel = c1
+># one source may bind many channels
+>a1.sources.r1.channels = c1 
+>one sink can only bind one channel
+>a1.sinks.k1.channel = c1 # 
 >```
 >因为一个flume中可能有多个source和sink，所以需要指定source，sink分别与channel的关系。
 >一个source可以对应多个channel
@@ -207,31 +216,48 @@ vim flume-env.sh
 > a2.channels = c2
 > 
 > # Describe/configure the source
+> # The component type name, needs to be exec
 > a2.sources.r2.type = exec
+> # The command to execute
 > a2.sources.r2.command = tail -F /opt/module/datas/data.log
+> # A shell invocation used to run the command. e.g. /bin/sh -c. 
+> # Required only for commands relying on shell features like wildcards, 
+> # back ticks, pipes etc.
 > a2.sources.r2.shell = /bin/bash -c
 > 
 > # Describe the sink
+> # The component type name, needs to be hdfs
 > a2.sinks.k2.type = hdfs
-> a2.sinks.k2.hdfs.path = hdfs://hadoop101:9000/flume/%Y%m%d/%H/%M
-> #上传文件的前缀
+> # HDFS directory path
+> a2.sinks.k2.hdfs.path = hdfs://hadoop201:9000/flume/%Y%m%d/%H/%M
+> # Name prefixed to files created by Flume in hdfs directory
 > a2.sinks.k2.hdfs.filePrefix = logs-
-> #是否按照时间滚动文件夹
+> # Should the timestamp be rounded down 
+> # (if true, affects all time based escape sequences except %t)
 > a2.sinks.k2.hdfs.round = true
-> #多少时间单位创建一个新的文件夹
-> a2.sinks.k2.hdfs.roundValue = 1
-> #重新定义时间单位
+> # Rounded down to the highest multiple of this 
+> # (in the unit configured using hdfs.roundUnit), less than cur
+> a2.sinks.k2.hdfs.roundValue = 5
+> # The unit of the round down value - second, minute or hour
 > a2.sinks.k2.hdfs.roundUnit = minute
-> #是否使用本地时间戳
+> # Use the local time (instead of the timestamp from the event header) 
+> # while replacing the escape sequence
 > a2.sinks.k2.hdfs.useLocalTimeStamp = true
-> #积攒多少个Event才flush到HDFS一次
+> # number of events written to file before it is flushed to HDFS
 > a2.sinks.k2.hdfs.batchSize = 100
-> #多久生成一个新的文件
-> a2.sinks.k2.hdfs.rollInterval = 60
-> #设置每个文件的滚动大小
-> a2.sinks.k2.hdfs.rollSie = 134217700
-> #文件的滚动与Event数量无关
+> # Number of seconds to wait before rolling current file 
+> # (0 = never roll based on time interval)
+> a2.sinks.k2.hdfs.rollInterval = 10
+> # Number of events written to file before it rolled 
+> # (0 = never roll based on number of events)
+> a2.sinks.k2.hdfs.rollSie = 134217700 # 128MB
+> # File size to trigger roll, in bytes 
+> # (0: never roll based on file size)
 > a2.sinks.k2.hdfs.rollCount = 0
+> # File format: currently SequenceFile, DataStream or CompressedStream 
+> # (1)DataStream will not compress output file and please don’t set codeC 
+> # (2)CompressedStream requires set hdfs.codeC with an available codeC
+> a2.sinks.k2.hdfs.fileType = DataStream
 > 
 > # Use a channel which buffers events in memory
 > a2.channels.c2.type = memory
@@ -267,39 +293,43 @@ vim flume-env.sh
 > ```
 >
 > ```properties
+> # Name the components on this agent
 > a3.sources = r3
 > a3.sinks = k3
 > a3.channels = c3
 > 
 > # Describe/configure the source
+> # The component type name, needs to be spooldir.
 > a3.sources.r3.type = spooldir
-> a3.sources.r3.spoolDir = /opt/module/flume/upload
+> # The directory from which to read files from.
+> a3.sources.r3.spoolDir = /opt/module/datas/flume/upload
 > a3.sources.r3.fileSuffix = .COMPLETED
-> #忽略所有以.tmp结尾的文件，不上传
+> # Regular expression specifying which files to include. 
+> # It can used together with ignorePattern. 
+> # a3.sources.r3.includePattern = \\S*\\.tmp
+> # Regular expression specifying which files to ignore (skip). 
+> # It can used together with includePattern. 
+> # If a file matches both ignorePattern and includePattern regex, 
+> # the file is ignored.
 > a3.sources.r3.ignorePattern = \\S*\\.tmp
+> 
+> # Directory to store metadata related to processing of files. 
+> # If this path is not an absolute path, 
+> # then it is interpreted as relative to the spoolDir.
+> a3.sources.r3.trackerDir = .flumespool
 > 
 > # Describe the sink
 > a3.sinks.k3.type = hdfs
-> a3.sinks.k3.hdfs.path = hdfs://hadoop102:9000/flume/upload/%Y%m%d/%H/%M/%S
-> #上传文件的前缀
+> a3.sinks.k3.hdfs.path = hdfs://hadoop201:9000/flume/upload/%Y%m%d/%H/%M
 > a3.sinks.k3.hdfs.filePrefix = upload-
-> #是否按照时间滚动文件夹
 > a3.sinks.k3.hdfs.round = true
-> #多少时间单位创建一个新的文件夹
-> a3.sinks.k3.hdfs.roundValue = 60
-> #重新定义时间单位
-> a3.sinks.k3.hdfs.roundUnit = second
-> #是否使用本地时间戳
+> a3.sinks.k3.hdfs.roundValue = 5
+> a3.sinks.k3.hdfs.roundUnit = minute
 > a3.sinks.k3.hdfs.useLocalTimeStamp = true
-> #积攒多少个Event才flush到HDFS一次
-> a3.sinks.k3.hdfs.batchSize = 1
-> #设置文件类型，可支持压缩
+> a3.sinks.k3.hdfs.batchSize = 100
 > a3.sinks.k3.hdfs.fileType = DataStream
-> #多久生成一个新的文件
 > a3.sinks.k3.hdfs.rollInterval = 10
-> #设置每个文件的滚动大小大概是128M
 > a3.sinks.k3.hdfs.rollSize = 134217700
-> #文件的滚动与Event数量无关
 > a3.sinks.k3.hdfs.rollCount = 0
 > 
 > # Use a channel which buffers events in memory
@@ -340,59 +370,59 @@ Exec source适用于监控一个实时追加的文件，但不能保证数据不
 > ```
 >
 > ```properties
-> a3.sources = r3
-> a3.sinks = k3
-> a3.channels = c3
+> # Name the components on this agent
+> a4.sources = r4
+> a4.sinks = k4
+> a4.channels = c4
 > 
 > # Describe/configure the source
-> a3.sources.r3.type = TAILDIR
-> a3.sources.r3.positionFile = /opt/module/flume/tail_dir.json
-> a3.sources.r3.filegroups = f1
-> a3.sources.r3.filegroups.f1 = /opt/module/flume/files/file.*
+> # The component type name, needs to be TAILDIR.
+> a4.sources.r4.type = TAILDIR
+> # File in JSON format to record the inode, 
+> # the absolute path and the last position of each tailing file.
+> a4.sources.r4.positionFile = /opt/module/datas/flume/tail_dir.json
+> # Space-separated list of file groups. 
+> # Each file group indicates a set of files to be tailed.
+> a4.sources.r4.filegroups = f1
+> # Absolute path of the file group. 
+> # Regular expression (and not file system patterns) can be used for filename only.
+> a4.sources.r4.filegroups.f1 = /opt/module/datas/flume/upload/file.*
 > 
 > # Describe the sink
 > a3.sinks.k3.type = hdfs
-> a3.sinks.k3.hdfs.path = hdfs://hadoop102:9000/flume/upload/%Y%m%d/%H/%M/%S
-> #上传文件的前缀
+> a3.sinks.k3.hdfs.path = hdfs://hadoop201:9000/flume/upload/%Y%m%d/%H/%M
 > a3.sinks.k3.hdfs.filePrefix = upload-
-> #是否按照时间滚动文件夹
 > a3.sinks.k3.hdfs.round = true
-> #多少时间单位创建一个新的文件夹
-> a3.sinks.k3.hdfs.roundValue = 30
-> #重新定义时间单位
-> a3.sinks.k3.hdfs.roundUnit = second
-> #是否使用本地时间戳
+> a3.sinks.k3.hdfs.roundValue = 5
+> a3.sinks.k3.hdfs.roundUnit = minute
 > a3.sinks.k3.hdfs.useLocalTimeStamp = true
-> #积攒多少个Event才flush到HDFS一次
-> a3.sinks.k3.hdfs.batchSize = 3
-> #设置文件类型，可支持压缩
+> a3.sinks.k3.hdfs.batchSize = 100
 > a3.sinks.k3.hdfs.fileType = DataStream
-> #多久生成一个新的文件
 > a3.sinks.k3.hdfs.rollInterval = 10
-> #设置每个文件的滚动大小大概是128M
 > a3.sinks.k3.hdfs.rollSize = 134217700
-> #文件的滚动与Event数量无关
 > a3.sinks.k3.hdfs.rollCount = 0
 > 
 > # Use a channel which buffers events in memory
-> a3.channels.c3.type = memory
-> a3.channels.c3.capacity = 10000
-> a3.channels.c3.transactionCapacity = 1000
+> a4.channels.c4.type = memory
+> a4.channels.c4.capacity = 10000
+> a4.channels.c4.transactionCapacity = 1000
 > 
 > # Bind the source and sink to the channel
-> a3.sources.r3.channels = c3
-> a3.sinks.k3.channel = c3
+> a4.sources.r4.channels = c4
+> a4.sinks.k4.channel = c4
 > ```
->
-> ```bash
-> flume-ng agent -c conf/ -n a3 -f job/taildir-hdfs.conf
-> ```
->
-> ```bash
-> # 创建文件并持续追加
 > 
+> ```bash
+>flume-ng agent -c conf/ -n a4 -f job/taildir-hdfs.conf
+> ```
+> 
+> ```bash
+># 创建文件并持续追加
+> mkdir upload
+> echo hello >> upload/file1.txt
+> echo hello >> upload/file1.txt
+> echo hello >> upload/file1.txt
 > # HDFS上查看数据
-> 
 > ```
 
 **Taildir说明**
