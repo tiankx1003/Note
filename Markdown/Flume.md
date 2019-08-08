@@ -507,7 +507,7 @@ a1.sources.r1.selector.type = replicating
 
 # Describe/configure the source
 a1.sources.r1.type = exec
-a1.sources.r1.command = tail -F /opt/module/hive/logs/hive.log
+a1.sources.r1.command = tail -F /opt/module/datas/data.log
 a1.sources.r1.shell = /bin/bash -c
 
 # Describe the sink
@@ -541,33 +541,22 @@ a2.sinks = k1
 a2.channels = c1
 
 # Describe/configure the source
-# source端的avro是一个数据接收服务
 a2.sources.r1.type = avro
-a2.sources.r1.bind = hadoop102
+a2.sources.r1.bind = hadoop101
 a2.sources.r1.port = 4141
 
 # Describe the sink
 a2.sinks.k1.type = hdfs
-a2.sinks.k1.hdfs.path = hdfs://hadoop101:9000/flume2/%Y%m%d/%H
-#上传文件的前缀
+a2.sinks.k1.hdfs.path = hdfs://hadoop101:9000/flume2/%Y%m%d/%H/%M
 a2.sinks.k1.hdfs.filePrefix = flume2-
-#是否按照时间滚动文件夹
 a2.sinks.k1.hdfs.round = true
-#多少时间单位创建一个新的文件夹
-a2.sinks.k1.hdfs.roundValue = 1
-#重新定义时间单位
-a2.sinks.k1.hdfs.roundUnit = hour
-#是否使用本地时间戳
+a2.sinks.k1.hdfs.roundValue = 5
+a2.sinks.k1.hdfs.roundUnit = minute
 a2.sinks.k1.hdfs.useLocalTimeStamp = true
-#积攒多少个Event才flush到HDFS一次
 a2.sinks.k1.hdfs.batchSize = 100
-#设置文件类型，可支持压缩
 a2.sinks.k1.hdfs.fileType = DataStream
-#多久生成一个新的文件
-a2.sinks.k1.hdfs.rollInterval = 600
-#设置每个文件的滚动大小大概是128M
+a2.sinks.k1.hdfs.rollInterval = 10
 a2.sinks.k1.hdfs.rollSize = 134217700
-#文件的滚动与Event数量无关
 a2.sinks.k1.hdfs.rollCount = 0
 
 # Describe the channel
@@ -588,12 +577,13 @@ a3.channels = c2
 
 # Describe/configure the source
 a3.sources.r1.type = avro
-a3.sources.r1.bind = hadoop102
+a3.sources.r1.bind = hadoop101
 a3.sources.r1.port = 4142
 
 # Describe the sink
 a3.sinks.k1.type = file_roll
-a3.sinks.k1.sink.directory = /opt/module/data/flume3
+# 提示：输出的本地目录必须是已经存在的目录，如果该目录不存在，并不会创建新的目录。
+a3.sinks.k1.sink.directory = /opt/module/datas/flume2
 
 # Describe the channel
 a3.channels.c2.type = memory
@@ -608,7 +598,7 @@ a3.sinks.k1.channel = c2
 ```bash
 flume-ng agent --conf conf/ --name a3 --conf-file job/group1/dir-flume.conf
 flume-ng agent --conf conf/ --name a2 --conf-file job/group1/hdfs-flume.conf
-flume-ng agent --conf conf/ --name a1 --conf-file job/group1/file-flume.con
+flume-ng agent --conf conf/ --name a1 --conf-file job/group1/file-flume.conf
 start-dfs.sh
 start-yarn.sh
 java -jar /opt/module/jars/data-producer.jar /opt/module/datas/data.log
@@ -641,8 +631,8 @@ a1.sinks = k1 k2
 
 # Describe/configure the source
 a1.sources.r1.type = netcat
-a1.sources.r1.bind = localhost
-a1.sources.r1.port = 44444
+a1.sources.r1.bind = hadoop101
+a1.sources.r1.port = 4444
 
 a1.sinkgroups.g1.processor.type = failover
 a1.sinkgroups.g1.processor.priority.k1 = 5
@@ -651,11 +641,11 @@ a1.sinkgroups.g1.processor.maxpenalty = 10000
 
 # Describe the sink
 a1.sinks.k1.type = avro
-a1.sinks.k1.hostname = hadoop102
+a1.sinks.k1.hostname = hadoop101
 a1.sinks.k1.port = 4141
 
 a1.sinks.k2.type = avro
-a1.sinks.k2.hostname = hadoop102
+a1.sinks.k2.hostname = hadoop101
 a1.sinks.k2.port = 4142
 
 # Describe the channel
@@ -678,7 +668,7 @@ a2.channels = c1
 
 # Describe/configure the source
 a2.sources.r1.type = avro
-a2.sources.r1.bind = hadoop102
+a2.sources.r1.bind = hadoop101
 a2.sources.r1.port = 4141
 
 # Describe the sink
@@ -694,7 +684,7 @@ a2.sources.r1.channels = c1
 a2.sinks.k1.channel = c1
 ```
 
-```prop
+```properties
 # Name the components on this agent
 a3.sources = r1
 a3.sinks = k1
@@ -702,7 +692,7 @@ a3.channels = c2
 
 # Describe/configure the source
 a3.sources.r1.type = avro
-a3.sources.r1.bind = hadoop102
+a3.sources.r1.bind = hadoop101
 a3.sources.r1.port = 4142
 
 # Describe the sink
@@ -716,14 +706,13 @@ a3.channels.c2.transactionCapacity = 100
 # Bind the source and sink to the channel
 a3.sources.r1.channels = c2
 a3.sinks.k1.channel = c2
-
 ```
 
 ```bash
-flume-ng agent --conf conf/ --name a3 --conf-file job/group2/flume-flume-console2.conf -Dflume.root.logger=INFO,console
-flume-ng agent --conf conf/ --name a2 --conf-file job/group2/flume-flume-console1.conf -Dflume.root.logger=INFO,console
-flume-ng agent --conf conf/ --name a1 --conf-file job/group2/flume-netcat-flume.conf
-nc localhost 4444
+flume-ng agent --conf conf/ --name a3 --conf-file job/group2/flume-console2.conf -Dflume.root.logger=INFO,console
+flume-ng agent --conf conf/ --name a2 --conf-file job/group2/flume-console1.conf -Dflume.root.logger=INFO,console
+flume-ng agent --conf conf/ --name a1 --conf-file job/group2/netcat-flume.conf
+nc hadoop101 4444
 # 查看console1和console2的打印日志
 # killconsole2观察console3的控制台打印情况
 jps -ml # 查看flume3进程
@@ -742,13 +731,13 @@ Flume-1与Flume-2将数据发送给hadoop104上的Flume-3，Flume-3将最终数�
 **实现步骤**
 
 ```bash
-xsync /opt/module/flume/
 mkdir job/group3 # 101
 mkdir job/group3 # 102
 mkdir job/group3 # 103
 vim logger-flume1.conf
 vim logger-flume2.conf
 vim logger-flume3.conf
+xsync /opt/module/flume/
 ```
 
 ```properties
@@ -759,12 +748,12 @@ a1.channels = c1
 
 # Describe/configure the source
 a1.sources.r1.type = exec
-a1.sources.r1.command = tail -F /opt/module/group.log
+a1.sources.r1.command = tail -F /opt/module/datas/group.log
 a1.sources.r1.shell = /bin/bash -c
 
 # Describe the sink
 a1.sinks.k1.type = avro
-a1.sinks.k1.hostname = hadoop104
+a1.sinks.k1.hostname = hadoop103
 a1.sinks.k1.port = 4141
 
 # Describe the channel
@@ -785,12 +774,12 @@ a2.channels = c1
 
 # Describe/configure the source
 a2.sources.r1.type = netcat
-a2.sources.r1.bind = hadoop103
+a2.sources.r1.bind = hadoop102
 a2.sources.r1.port = 44444
 
 # Describe the sink
 a2.sinks.k1.type = avro
-a2.sinks.k1.hostname = hadoop104
+a2.sinks.k1.hostname = hadoop103
 a2.sinks.k1.port = 4141
 
 # Use a channel which buffers events in memory
@@ -811,10 +800,9 @@ a3.channels = c1
 
 # Describe/configure the source
 a3.sources.r1.type = avro
-a3.sources.r1.bind = hadoop104
+a3.sources.r1.bind = hadoop103
 a3.sources.r1.port = 4141
 
-# Describe the sink
 # Describe the sink
 a3.sinks.k1.type = logger
 
@@ -829,9 +817,9 @@ a3.sinks.k1.channel = c1
 ```
 
 ```bash
-flume-ng agent --conf conf/ --name a3 --conf-file job/group3/flume3-flume-logger.conf -Dflume.root.logger=INFO,console # 103
-flume-ng agent --conf conf/ --name a2 --conf-file job/group3/flume1-logger-flume.conf # 101
-flume-ng agent --conf conf/ --name a1 --conf-file job/group3/flume2-netcat-flume.conf # 102
+flume-ng agent --conf conf/ --name a3 --conf-file job/group3/logger-flume3.conf -Dflume.root.logger=INFO,console # 103
+flume-ng agent --conf conf/ --name a2 --conf-file job/group3/logger-flume1.conf # 101
+flume-ng agent --conf conf/ --name a1 --conf-file job/group3/logger-flume2.conf # 102
 echo hello >> group.log # 102
 telnet hadoop101 4444 # 101
 # 检查hadoop103数据

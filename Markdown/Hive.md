@@ -1263,7 +1263,7 @@ on e.deptno = d.deptno;
 ### 4.5 右外连接
 
 ```mysql
-# join操作符右边表中符合where字句的u偶有记录将会被返回
+# join操作符右边表中符合where字句的所有记录将会被返回
 select e.empno, e.name, d.deptno
 from emp e
 right join dept d 
@@ -1273,7 +1273,7 @@ on e.deptno = d.deptno;
 ### 4.6 满外连接
 
 ```mysql
-# 返回所有表中符合where语句条件的所有记录，如果任一表的指定字段咩有符合条件的值的话，那么就使用null替代
+# 返回所有表中符合where语句条件的所有记录，如果任一表的指定字段没有符合条件的值的话，那么就使用null替代
 select e.empno, e.ename, d.deptno
 from emp e
 full join dept d
@@ -1429,7 +1429,7 @@ sort by deptno; -- 和第一条语句相同
    -- 查看表结构
    desc formatted stu_buck;
    -- 导入数据到分桶表中
-   load data local inpath 'opt/module/datas/student.txt' into table stu_buck;
+   load data local inpath '/opt/module/datas/student.txt' into table stu_buck;
    # web界面查看分桶表中是否分成四个桶 --并没有
    ```
 
@@ -1502,7 +1502,7 @@ select nvl(comm, nvl(mgr,ename)) from emp;
    | 婷婷 | B       | 女   |
 
 2. 需求
-   求出不同部门男女各多少人，结果如下:
+   求出不同部门男女各多少人，结果如下:idFlag
 
    ```
    A     2       1

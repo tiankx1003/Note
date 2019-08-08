@@ -268,11 +268,147 @@ group by deptno
 having avg_sal>2000;
 
 -- join
+-- 等值join
+select e.empno, e.ename, d.deptno, d.dname
+from emp e
+join dept d
+on e.deptno = d.deptno;
 
+-- 别名
+select e.empno, e.ename, d.deptno
+from emp e 
+join dept d 
+on e.deptno = d.deptno
 
+-- 内连接，保留两表都存在且符合条件的内容
+select e.empno, e.name, d.deptno
+from emp e 
+join dept d
+on d.deptno = d.deptno;
 
+-- 左外连接，左边表中符合where自居的所有记录将会返回
+select e.empno, e.ename, d.deptno
+from emp e
+left join dept d
+on e.deptno = d.deptno;
 
+-- 右外连接，右边表中符合where条件的所有记录被返回
+select e.empno, e.name, d.deptno
+from emp e
+right join dept d
+on e.deptno = d.deptno;
 
+-- 满外连接，返回表中符合where语句条件的所有记录，如果任一表的指定字段没有符合条件的值的话，那么就使用null替代
+select e.empno, e.ename, d.deptno
+from emp e
+full join dept d
+on e.deptno = d.deptno;
+
+-- 多表连接
+-- TODO
+
+-- 连接谓词不支持or
+select e.empno, e.name, d.deptno
+from emp e
+join dept d
+on e.deptno = d.deptno or e.ename = d.ename; -- 错误示范
+
+/*
+    排序
+*/
+
+-- 全局排序(order by)
+
+select *
+from emp
+order by sal;
+
+select * 
+from emp
+order by sal desc;
+
+select ename, sal*2 double_sal
+from emp
+order by double_sal;
+
+select ename, deptno, sal
+from emp
+order by deptno, sal;
+
+set mapreduce.job.reduces=3; -- 设置reduce个数
+select *
+from emp
+sort by empno desc;
+
+insert overwrite local directory '/opt/module/datas/sortby-result'
+select * from emp sort by deptno desc; -- 将查询结果导入到文件中
+
+-- 分区排序(Distribute by)
+set mapreduce.job.reduces=3;
+insert overwrite local directory '/opt/module/datas/distribute-result'
+select * fro emp
+distribute by deptno
+sort by empno desc;
+
+-- Cluster by,当distribute by和sort by字段相同时，可以用cluster by替代
+select * 
+from emp
+cluster by deptno;
+select *
+from emp
+distribute by deptno
+sort by deptno;
+
+/*
+    分桶与抽样查询
+*/
+-- 建立分桶表
+create table stu_buck(
+    id int, name string
+)
+clustered by(id)
+into 4 buckets
+row format delimited fields terminated by '\t';
+-- 导入数据
+load data local inpath '/opt/module/datas/student.txt' into table stu_buck;
+
+-- 建立分桶表，数据通过子查询的方式导入
+create table stu(
+    id int, name string
+)
+row format delimited fileds terminated by '\t';
+load data local inpath '/opt/module/datas/student.txt' into table stu;
+truncate table stu_buck;
+select * from stu_buck;
+insert into table stu_buck
+select id, name from stu;
+set hive.enforce.bucketing=true;
+set mapreduce.job.reduces=-1;
+insert into table stu_buck
+select id, name from stu;
+select * from stu_buck;
+
+-- 分桶抽样查询
+select * from stu_buck tablesample(buck 1 out of 4 on id);
+
+/*
+    其他常用函数
+*/
+-- 空字段赋值
+select nvl(comm,-1) from emp; -- 如果comm为null，则用-1代替
+select nvl(comm, mgr) from emp; -- comm为null时，使用领导id代替
+select nvl(comm,nvl(mgr,ename)) from emp; -- 当comm为null时用mgr代替，若mgr也为null，使用ename代替
+
+-- case when
+create table emp_sex(
+    name string,
+    dept_id string,
+    sex string
+)
+row format delimited fields terminated by '\t';
+load data local inpath '/opt/module/datas/emp_sex.txt' into table emp_sex;
+
+-- 
 
 
 
