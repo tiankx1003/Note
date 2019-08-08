@@ -389,18 +389,18 @@ Exec source适用于监控一个实时追加的文件，但不能保证数据不
 > a4.sources.r4.filegroups.f1 = /opt/module/datas/flume/upload/file.*
 > 
 > # Describe the sink
-> a3.sinks.k3.type = hdfs
-> a3.sinks.k3.hdfs.path = hdfs://hadoop201:9000/flume/upload/%Y%m%d/%H/%M
-> a3.sinks.k3.hdfs.filePrefix = upload-
-> a3.sinks.k3.hdfs.round = true
-> a3.sinks.k3.hdfs.roundValue = 5
-> a3.sinks.k3.hdfs.roundUnit = minute
-> a3.sinks.k3.hdfs.useLocalTimeStamp = true
-> a3.sinks.k3.hdfs.batchSize = 100
-> a3.sinks.k3.hdfs.fileType = DataStream
-> a3.sinks.k3.hdfs.rollInterval = 10
-> a3.sinks.k3.hdfs.rollSize = 134217700
-> a3.sinks.k3.hdfs.rollCount = 0
+> a4.sinks.k4.type = hdfs
+> a4.sinks.k4.hdfs.path = hdfs://hadoop201:9000/flume/upload/%Y%m%d/%H/%M
+> a4.sinks.k4.hdfs.filePrefix = upload-
+> a4.sinks.k4.hdfs.round = true
+> a4.sinks.k4.hdfs.roundValue = 5
+> a4.sinks.k4.hdfs.roundUnit = minute
+> a4.sinks.k4.hdfs.useLocalTimeStamp = true
+> a4.sinks.k4.hdfs.batchSize = 100
+> a4.sinks.k4.hdfs.fileType = DataStream
+> a4.sinks.k4.hdfs.rollInterval = 10
+> a4.sinks.k4.hdfs.rollSize = 134217700
+> a4.sinks.k4.hdfs.rollCount = 0
 > 
 > # Use a channel which buffers events in memory
 > a4.channels.c4.type = memory
