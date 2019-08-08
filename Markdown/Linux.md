@@ -310,6 +310,19 @@ date -d 'yesterday' #显示昨天
 date -s <时间> #设置系统时间
 
 cal #日历,后跟参数可显示指定时间点的日历
+
+
+# Open the terminal or login over the ssh session. You must login as as the root user. Type the following yum command to install ntp
+yum install ntp ntpdate ntp-doc
+
+# Turn on service, enter:
+chkconfig ntpd on
+
+# Synchronize the system clock with 0.pool.ntp.org server (use this command only once or as required):
+ntpdate pool.ntp.org
+
+# Start the NTP server. The following will continuously adjusts system time from upstream NTP server. No need to run ntpdate:
+/etc/init.d/ntpd start
 ```
 
 ### 4.用户管理
