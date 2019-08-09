@@ -827,8 +827,8 @@ a3.sinks.k1.channel = c1
 
 ```bash
 flume-ng agent --conf conf/ --name a3 --conf-file job/group3/logger-flume3.conf -Dflume.root.logger=INFO,console # 203
-flume-ng agent --conf conf/ --name a2 --conf-file job/group3/logger-flume1.conf # 202
-flume-ng agent --conf conf/ --name a1 --conf-file job/group3/logger-flume2.conf # 201
+flume-ng agent --conf conf/ --name a2 --conf-file job/group3/logger-flume2.conf # 202
+flume-ng agent --conf conf/ --name a1 --conf-file job/group3/logger-flume1.conf # 201
 echo hello >> group.log # 201
 nc hadoop201 4444 # 202
 # 检查hadoop203数据
