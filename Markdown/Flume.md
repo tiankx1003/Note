@@ -861,29 +861,44 @@ package com.tian.flume.interceptor;
 import org.apache.flume.Context;
 import org.apache.flume.Event;
 import org.apache.flume.interceptor.Interceptor;
+
 import java.util.List;
 
-public class CustomInterceptor implements Interceptor {
-
-
+/**
+ * 以端口数据模拟日志，以数字（单个）和字母（单个）模拟不同类型的日志，
+ * 自定义interceptor区分数字和字母，
+ * 将其分别发往不同的分析系统（Channel）。
+ */
+public class MyInterceptor implements Interceptor {
     @Override
     public void initialize() {
 
     }
 
+    /**
+     * 业务逻辑:
+     * 根据event内容给header的键值对赋值
+     *
+     * @param event
+     * @return
+     */
     @Override
     public Event intercept(Event event) {
-
         byte[] body = event.getBody();
-        if (body[0] < 'z' && body[0] > 'a') {
-            event.getHeaders().put("type", "letter");
-        } else if (body[0] > '0' && body[0] < '9') {
+        if (body[0] >= '1' && body[0] <= '9') {
             event.getHeaders().put("type", "number");
+        } else if (body[0] >= 'a' && body[0] <= 'z') {
+            event.getHeaders().put("type", "letter");
         }
         return event;
-
     }
 
+    /**
+     * 循环调用intercept(Event event)方法
+     *
+     * @param events
+     * @return
+     */
     @Override
     public List<Event> intercept(List<Event> events) {
         for (Event event : events) {
@@ -899,16 +914,30 @@ public class CustomInterceptor implements Interceptor {
 
     public static class Builder implements Interceptor.Builder {
 
+        /**
+         * 返回一个外部类对象
+         *
+         * @return
+         */
         @Override
         public Interceptor build() {
-            return new CustomInterceptor();
+            return new MyInterceptor();
         }
 
         @Override
         public void configure(Context context) {
+
         }
     }
 }
+```
+
+```bash
+mkdir job/interceptor/
+vim job/interceptor/flume1.conf
+vim job/interceptor/flume2.conf
+vim job/interceptor/flume3.conf
+xsync /opt/module/flume/job/interceptor/
 ```
 
 ```properties
@@ -922,18 +951,18 @@ a1.sources.r1.type = netcat
 a1.sources.r1.bind = hadoop201
 a1.sources.r1.port = 4444
 a1.sources.r1.interceptors = i1
-a1.sources.r1.interceptors.i1.type = com.tian.flume.interceptor.CustomInterceptor$Builder
+a1.sources.r1.interceptors.i1.type = com.tian.flume.interceptor.MyInterceptor.Builder
 a1.sources.r1.selector.type = multiplexing
 a1.sources.r1.selector.header = type
 a1.sources.r1.selector.mapping.letter = c1
 a1.sources.r1.selector.mapping.number = c2
 # Describe the sink
 a1.sinks.k1.type = avro
-a1.sinks.k1.hostname = hadoop103
+a1.sinks.k1.hostname = hadoop202
 a1.sinks.k1.port = 4141
 
 a1.sinks.k2.type=avro
-a1.sinks.k2.hostname = hadoop104
+a1.sinks.k2.hostname = hadoop203
 a1.sinks.k2.port = 4242
 
 # Use a channel which buffers events in memory
@@ -959,7 +988,7 @@ a1.sinks = k1
 a1.channels = c1
 
 a1.sources.r1.type = avro
-a1.sources.r1.bind = hadoop103
+a1.sources.r1.bind = hadoop202
 a1.sources.r1.port = 4141
 
 a1.sinks.k1.type = logger
@@ -978,7 +1007,7 @@ a1.sinks = k1
 a1.channels = c1
 
 a1.sources.r1.type = avro
-a1.sources.r1.bind = hadoop104
+a1.sources.r1.bind = hadoop203
 a1.sources.r1.port = 4242
 
 a1.sinks.k1.type = logger
@@ -990,6 +1019,13 @@ a1.channels.c1.transactionCapacity = 1000
 a1.sinks.k1.channel = c1
 a1.sources.r1.channels = c1
 ```
+
+```bash
+flume-ng agent -n a1 -c conf/ -f job/interceptor/flume2.conf -Dflume.root.logger=INFO,console # hadoop202
+flume-ng agent -n a1 -c conf/ -f job/interceptor/flume3.conf -Dflume.root.logger=INFO,console # hadoop203
+flume-ng agent -n a1 -c conf/ -f job/interceptor/flume1.conf # hadoop201
+```
+
 
 ## 3.6 自定义Source
 
@@ -1091,7 +1127,7 @@ a1.sinks = k1
 a1.channels = c1
 
 # Describe/configure the source
-a1.sources.r1.type = com.tian.MySource
+a1.sources.r1.type = com.tian.flume.source.MyPollalbeSource
 a1.sources.r1.delay = 1000
 #a1.sources.r1.field = tian
 
