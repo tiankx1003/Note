@@ -1,8 +1,10 @@
 # TODO
 
 * [ ] -
+* [ ] 递归 *2019-8-9 10:37:23*
+* [ ] 自定义拦截器 *2019-8-9 10:26:35*
 * [ ] flume配置文件正则 *2019-8-7 14:31:54*
-* [ ] hive-hfds 官网参数 *2019-8-7 11:16:24*
+* [x] hive-hfds 官网参数 *2019-8-7 11:16:24*
 * [ ] netcase 使用 *2019-8-7 10:03:11*
 
 
@@ -503,6 +505,7 @@ vim job/group/dir-flume.conf
 a1.sources = r1
 a1.sinks = k1 k2
 a1.channels = c1 c2
+# The component type name, needs to be replicating (default)
 a1.sources.r1.selector.type = replicating
 
 # Describe/configure the source
@@ -511,6 +514,7 @@ a1.sources.r1.command = tail -F /opt/module/datas/data.log
 a1.sources.r1.shell = /bin/bash -c
 
 # Describe the sink
+# The component type name, needs to be avro.
 a1.sinks.k1.type = avro
 a1.sinks.k1.hostname = hadoop101
 a1.sinks.k1.port = 4141
@@ -581,8 +585,10 @@ a3.sources.r1.bind = hadoop101
 a3.sources.r1.port = 4142
 
 # Describe the sink
+# The component type name, needs to be file_roll.
 a3.sinks.k1.type = file_roll
-# 提示：输出的本地目录必须是已经存在的目录，如果该目录不存在，并不会创建新的目录。
+# The directory where files will be stored，
+# the directory must be exists.
 a3.sinks.k1.sink.directory = /opt/module/datas/flume2
 
 # Describe the channel
@@ -716,6 +722,7 @@ nc hadoop101 4444
 # 查看console1和console2的打印日志
 # killconsole2观察console3的控制台打印情况
 jps -ml # 查看flume3进程
+# 重新开启优先级高的进程，观察工作情况
 ```
 
 ### 3.4.3 聚合
@@ -731,9 +738,9 @@ Flume-1与Flume-2将数据发送给hadoop104上的Flume-3，Flume-3将最终数�
 **实现步骤**
 
 ```bash
-mkdir job/group3 # 101
-mkdir job/group3 # 102
-mkdir job/group3 # 103
+mkdir job/group3 # 201
+mkdir job/group3 # 202
+mkdir job/group3 # 203
 vim logger-flume1.conf
 vim logger-flume2.conf
 vim logger-flume3.conf
@@ -753,7 +760,7 @@ a1.sources.r1.shell = /bin/bash -c
 
 # Describe the sink
 a1.sinks.k1.type = avro
-a1.sinks.k1.hostname = hadoop103
+a1.sinks.k1.hostname = hadoop203
 a1.sinks.k1.port = 4141
 
 # Describe the channel
@@ -774,12 +781,12 @@ a2.channels = c1
 
 # Describe/configure the source
 a2.sources.r1.type = netcat
-a2.sources.r1.bind = hadoop102
-a2.sources.r1.port = 44444
+a2.sources.r1.bind = hadoop202
+a2.sources.r1.port = 4444
 
 # Describe the sink
 a2.sinks.k1.type = avro
-a2.sinks.k1.hostname = hadoop103
+a2.sinks.k1.hostname = hadoop203
 a2.sinks.k1.port = 4141
 
 # Use a channel which buffers events in memory
@@ -800,7 +807,7 @@ a3.channels = c1
 
 # Describe/configure the source
 a3.sources.r1.type = avro
-a3.sources.r1.bind = hadoop103
+a3.sources.r1.bind = hadoop203
 a3.sources.r1.port = 4141
 
 # Describe the sink
@@ -817,23 +824,408 @@ a3.sinks.k1.channel = c1
 ```
 
 ```bash
-flume-ng agent --conf conf/ --name a3 --conf-file job/group3/logger-flume3.conf -Dflume.root.logger=INFO,console # 103
-flume-ng agent --conf conf/ --name a2 --conf-file job/group3/logger-flume1.conf # 101
-flume-ng agent --conf conf/ --name a1 --conf-file job/group3/logger-flume2.conf # 102
-echo hello >> group.log # 102
-telnet hadoop101 4444 # 101
-# 检查hadoop103数据
+flume-ng agent --conf conf/ --name a3 --conf-file job/group3/logger-flume3.conf -Dflume.root.logger=INFO,console # 203
+flume-ng agent --conf conf/ --name a2 --conf-file job/group3/logger-flume1.conf # 202
+flume-ng agent --conf conf/ --name a1 --conf-file job/group3/logger-flume2.conf # 201
+echo hello >> group.log # 201
+nc hadoop201 4444 # 202
+# 检查hadoop203数据
 ```
 
 ## 3.5 自定义Interceptor
 
+> **需求**
+> 使用Flume采集服务器本地日志，需要按照日志类型的不同，将不同种类的日志发往不同的分析系统。
 
+> **需求分析**
+> 在实际的开发中，一台服务器产生的日志类型可能有很多种，不同类型的日志可能需要发送到不同的分析系统。此时会用到Flume拓扑结构中的Multiplexing结构，Multiplexing的原理是，根据event中Header的某个key的值，将不同的event发送到不同的Channel中，所以我们需要自定义一个Interceptor，为不同类型的event的Header中的key赋予不同的值。
+> 在该案例中，我们以端口数据模拟日志，以数字（单个）和字母（单个）模拟不同类型的日志，我们需要自定义interceptor区分数字和字母，将其分别发往不同的分析系统（Channel）。
+
+![](E:\Git\Note\Markdown\img\flume-interceptor.png)
+
+> **实现步骤**
+
+```xml
+<dependency>
+    <groupId>org.apache.flume</groupId>
+    <artifactId>flume-ng-core</artifactId>
+    <version>1.7.0</version>
+</dependency>
+```
+
+```java
+package com.tian.flume.interceptor;
+
+import org.apache.flume.Context;
+import org.apache.flume.Event;
+import org.apache.flume.interceptor.Interceptor;
+import java.util.List;
+
+public class CustomInterceptor implements Interceptor {
+
+
+    @Override
+    public void initialize() {
+
+    }
+
+    @Override
+    public Event intercept(Event event) {
+
+        byte[] body = event.getBody();
+        if (body[0] < 'z' && body[0] > 'a') {
+            event.getHeaders().put("type", "letter");
+        } else if (body[0] > '0' && body[0] < '9') {
+            event.getHeaders().put("type", "number");
+        }
+        return event;
+
+    }
+
+    @Override
+    public List<Event> intercept(List<Event> events) {
+        for (Event event : events) {
+            intercept(event);
+        }
+        return events;
+    }
+
+    @Override
+    public void close() {
+
+    }
+
+    public static class Builder implements Interceptor.Builder {
+
+        @Override
+        public Interceptor build() {
+            return new CustomInterceptor();
+        }
+
+        @Override
+        public void configure(Context context) {
+        }
+    }
+}
+```
+
+```properties
+# Name the components on this agent
+a1.sources = r1
+a1.sinks = k1 k2
+a1.channels = c1 c2
+
+# Describe/configure the source
+a1.sources.r1.type = netcat
+a1.sources.r1.bind = hadoop201
+a1.sources.r1.port = 4444
+a1.sources.r1.interceptors = i1
+a1.sources.r1.interceptors.i1.type = com.tian.flume.interceptor.CustomInterceptor$Builder
+a1.sources.r1.selector.type = multiplexing
+a1.sources.r1.selector.header = type
+a1.sources.r1.selector.mapping.letter = c1
+a1.sources.r1.selector.mapping.number = c2
+# Describe the sink
+a1.sinks.k1.type = avro
+a1.sinks.k1.hostname = hadoop103
+a1.sinks.k1.port = 4141
+
+a1.sinks.k2.type=avro
+a1.sinks.k2.hostname = hadoop104
+a1.sinks.k2.port = 4242
+
+# Use a channel which buffers events in memory
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 1000
+
+# Use a channel which buffers events in memory
+a1.channels.c2.type = memory
+a1.channels.c2.capacity = 10000
+a1.channels.c2.transactionCapacity = 1000
+
+
+# Bind the source and sink to the channel
+a1.sources.r1.channels = c1 c2
+a1.sinks.k1.channel = c1
+a1.sinks.k2.channel = c2
+```
+
+```properties
+a1.sources = r1
+a1.sinks = k1
+a1.channels = c1
+
+a1.sources.r1.type = avro
+a1.sources.r1.bind = hadoop103
+a1.sources.r1.port = 4141
+
+a1.sinks.k1.type = logger
+
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 10000
+
+a1.sinks.k1.channel = c1
+a1.sources.r1.channels = c1
+```
+
+```properties
+a1.sources = r1
+a1.sinks = k1
+a1.channels = c1
+
+a1.sources.r1.type = avro
+a1.sources.r1.bind = hadoop104
+a1.sources.r1.port = 4242
+
+a1.sinks.k1.type = logger
+
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 1000
+
+a1.sinks.k1.channel = c1
+a1.sources.r1.channels = c1
+```
 
 ## 3.6 自定义Source
+
+> **介绍**
+> Source是负责接收数据到Flume Agent的组件。Source组件可以处理各种类型、各种格式的日志数据，包括avro、thrift、exec、jms、spooling directory、netcat、sequence generator、syslog、http、legacy。官方提供的source类型已经很多，但是有时候并不能满足实际开发当中的需求，此时我们就需要根据实际需求自定义某些source。
+> [官方说明](https://flume.apache.org/FlumeDeveloperGuide.html#source)
+> 根据官方说明自定义MySource需要继承AbstractSource类并实现Configurable和PollableSource接口。
+> 实现相应方法getBackOffSleepIncrement()//暂不用
+> getMaxBackOffSleepInterval()//暂不用
+> configure(Context context)//初始化context（读取配置文件内容）
+> process()//获取数据封装成event并写入channel，这个方法将被循环调用。
+> 使用场景：读取MySQL数据或者其他文件系统。
+
+> **需求**
+> 使用flume接收数据，并给每条数据添加前缀，输出到控制台。前缀可从flume配置文件中配置。
+
+![](E:\Git\Note\Markdown\img\flume-source.png)
+
+![](E:\Git\Note\Markdown\img\flume-source2.png)
+
+> **编码**
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>org.apache.flume</groupId>
+        <artifactId>flume-ng-core</artifactId>
+        <version>1.7.0</version>
+	</dependency>
+</dependencies>
+```
+
+```java
+package com.tian;
+
+import org.apache.flume.Context;
+import org.apache.flume.EventDeliveryException;
+import org.apache.flume.PollableSource;
+import org.apache.flume.conf.Configurable;
+import org.apache.flume.event.SimpleEvent;
+import org.apache.flume.source.AbstractSource;
+
+import java.util.HashMap;
+
+public class MySource extends AbstractSource implements Configurable, PollableSource {
+
+    //定义配置文件将来要读取的字段
+    private Long delay;
+    private String field;
+
+    //初始化配置信息
+    @Override
+    public void configure(Context context) {
+        delay = context.getLong("delay");
+        field = context.getString("field", "Hello!");
+    }
+
+    @Override
+    public Status process() throws EventDeliveryException {
+
+        try {
+            //创建事件头信息
+            HashMap<String, String> hearderMap = new HashMap<>();
+            //创建事件
+            SimpleEvent event = new SimpleEvent();
+            //循环封装事件
+            for (int i = 0; i < 5; i++) {
+                //给事件设置头信息
+                event.setHeaders(hearderMap);
+                //给事件设置内容
+                event.setBody((field + i).getBytes());
+                //将事件写入channel
+                getChannelProcessor().processEvent(event);
+                Thread.sleep(delay);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Status.BACKOFF;
+        }
+        return Status.READY;
+    }
+
+    @Override
+    public long getBackOffSleepIncrement() {
+        return 0;
+    }
+
+    @Override
+    public long getMaxBackOffSleepInterval() {
+        return 0;
+    }
+}
+```
+
+```properties
+# Name the components on this agent
+a1.sources = r1
+a1.sinks = k1
+a1.channels = c1
+
+# Describe/configure the source
+a1.sources.r1.type = com.tian.MySource
+a1.sources.r1.delay = 1000
+#a1.sources.r1.field = tian
+
+# Describe the sink
+a1.sinks.k1.type = logger
+
+# Use a channel which buffers events in memory
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 1000
+
+# Bind the source and sink to the channel
+a1.sources.r1.channels = c1
+a1.sinks.k1.channel = c1
+```
 
 
 
 ## 3.7 自定义Sink
+
+> **介绍**Sink不断地轮询Channel中的事件且批量地移除它们，并将这些事件批量写入到存储或索引系统、或者被发送到另一个Flume Agent。
+> Sink是完全事务性的。在从Channel批量删除数据之前，每个Sink用Channel启动一个事务。批量事件一旦成功写出到存储系统或下一个Flume Agent，Sink就利用Channel提交事务。事务一旦被提交，该Channel从自己的内部缓冲区删除事件。
+> Sink组件目的地包括hdfs、logger、avro、thrift、ipc、file、null、HBase、solr、自定义。官方提供的Sink类型已经很多，但是有时候并不能满足实际开发当中的需求，此时我们就需要根据实际需求自定义某些Sink。
+> [官方说明](https://flume.apache.org/FlumeDeveloperGuide.html#sink)
+> 根据官方说明自定义MySink需要继承AbstractSink类并实现Configurable接口。
+> 实现相应方法：
+> configure(Context context)//初始化context（读取配置文件内容）
+> process()//从Channel读取获取数据（event），这个方法将被循环调用。
+> 使用场景：读取Channel数据写入MySQL或者其他文件系统。
+
+> **需求**
+> 使用flume接收数据，并在Sink端给每条数据添加前缀和后缀，输出到控制台。前后缀可在flume任务配置文件中配置。
+
+![](E:\Git\Note\Markdown\img\flume-sink.png)
+
+> **编码**
+
+```java
+package com.tian;
+
+import org.apache.flume.*;
+import org.apache.flume.conf.Configurable;
+import org.apache.flume.sink.AbstractSink;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public class MySink extends AbstractSink implements Configurable {
+
+    //创建Logger对象
+    private static final Logger LOG = LoggerFactory.getLogger(AbstractSink.class);
+
+    private String prefix;
+    private String suffix;
+
+    @Override
+    public Status process() throws EventDeliveryException {
+
+        //声明返回值状态信息
+        Status status;
+
+        //获取当前Sink绑定的Channel
+        Channel ch = getChannel();
+
+        //获取事务
+        Transaction txn = ch.getTransaction();
+
+        //声明事件
+        Event event;
+
+        //开启事务
+        txn.begin();
+
+        //读取Channel中的事件，直到读取到事件结束循环
+        while (true) {
+            event = ch.take();
+            if (event != null) {
+                break;
+            }
+        }
+        try {
+            //处理事件（打印）
+            LOG.info(prefix + new String(event.getBody()) + suffix);
+
+            //事务提交
+            txn.commit();
+            status = Status.READY;
+        } catch (Exception e) {
+
+            //遇到异常，事务回滚
+            txn.rollback();
+            status = Status.BACKOFF;
+        } finally {
+
+            //关闭事务
+            txn.close();
+        }
+        return status;
+    }
+
+    @Override
+    public void configure(Context context) {
+
+        //读取配置文件内容，有默认值
+        prefix = context.getString("prefix", "hello:");
+
+        //读取配置文件内容，无默认值
+        suffix = context.getString("suffix");
+    }
+}
+```
+
+```properties
+# Name the components on this agent
+a1.sources = r1
+a1.sinks = k1
+a1.channels = c1
+
+# Describe/configure the source
+a1.sources.r1.type = netcat
+a1.sources.r1.bind = localhost
+a1.sources.r1.port = 44444
+
+# Describe the sink
+a1.sinks.k1.type = com.tian.MySink
+#a1.sinks.k1.prefix = tian:
+a1.sinks.k1.suffix = :tian
+
+# Use a channel which buffers events in memory
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 10000
+a1.channels.c1.transactionCapacity = 1000
+
+# Bind the source and sink to the channel
+a1.sources.r1.channels = c1
+a1.sinks.k1.channel = c1
+```
 
 
 
