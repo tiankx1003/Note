@@ -1,6 +1,8 @@
 # TODO
 
 * [ ] -
+* [ ] 自定义sink *2019-8-9 15:42:26*
+* [ ] 自定义source两种方式 *2019-8-9 15:19:14*
 * [ ] 递归 *2019-8-9 10:37:23*
 * [ ] 自定义拦截器 *2019-8-9 10:26:35*
 * [ ] flume配置文件正则 *2019-8-7 14:31:54*
@@ -1110,7 +1112,8 @@ a1.sinks.k1.channel = c1
 
 ## 3.7 自定义Sink
 
-> **介绍**Sink不断地轮询Channel中的事件且批量地移除它们，并将这些事件批量写入到存储或索引系统、或者被发送到另一个Flume Agent。
+> **介绍**
+> Sink不断地轮询Channel中的事件且批量地移除它们，并将这些事件批量写入到存储或索引系统、或者被发送到另一个Flume Agent。
 > Sink是完全事务性的。在从Channel批量删除数据之前，每个Sink用Channel启动一个事务。批量事件一旦成功写出到存储系统或下一个Flume Agent，Sink就利用Channel提交事务。事务一旦被提交，该Channel从自己的内部缓冲区删除事件。
 > Sink组件目的地包括hdfs、logger、avro、thrift、ipc、file、null、HBase、solr、自定义。官方提供的Sink类型已经很多，但是有时候并不能满足实际开发当中的需求，此时我们就需要根据实际需求自定义某些Sink。
 > [官方说明](https://flume.apache.org/FlumeDeveloperGuide.html#sink)
@@ -1227,17 +1230,103 @@ a1.sources.r1.channels = c1
 a1.sinks.k1.channel = c1
 ```
 
-
-
 ## 3.8 Flume数据流监控
 
 ### 3.8.1 Ganglia的安装与部署
 
+```bash
+sudo yum -y install httpd php
+sudo yum -y install rrdtool perl-rrdtool rrdtool-devel
+sudo yum -y install apr-devel
+sudo rpm -Uvh http://dl.fedoraproject.org/pub/epel/6/x86_64/epel-release-6-8.noarch.rpm
+sudo yum -y install ganglia-gmetad 
+sudo yum -y install ganglia-web
+sudo yum install -y ganglia-gmond
+sudo vim /etc/ganglia/gmetad.conf
+sudo vim /etc/selinux/config
+```
 
+```properties
+cluster {
+  name = "hadoop102"
+  owner = "unspecified"
+  latlong = "unspecified"
+  url = "unspecified"
+}
+udp_send_channel {
+  #bind_hostname = yes # Highly recommended, soon to be default.
+                       # This option tells gmond to use a source address
+                       # that resolves to the machine's hostname.  Without
+                       # this, the metrics may appear to come from any
+                       # interface and the DNS names associated with
+                       # those IPs will be used to create the RRDs.
+  # mcast_join = 239.2.11.71
+  host = 192.168.1.102
+  port = 8649
+  ttl = 1
+}
+udp_recv_channel {
+  # mcast_join = 239.2.11.71
+  port = 8649
+  bind = 192.168.1.102
+  retry_bind = true
+  # Size of the UDP buffer. If you are handling lots of metrics you really
+  # should bump it up to e.g. 10MB or even higher.
+  # buffer = 10485760
+}
+```
+
+```properties
+# This file controls the state of SELinux on the system.
+# SELINUX= can take one of these three values:
+#     enforcing - SELinux security policy is enforced.
+#     permissive - SELinux prints warnings instead of enforcing.
+#     disabled - No SELinux policy is loaded.
+SELINUX=disabled
+# SELINUXTYPE= can take one of these two values:
+#     targeted - Targeted processes are protected,
+#     mls - Multi Level Security protection.
+SELINUXTYPE=targeted
+```
+
+```bash
+# selinux本次生效关闭必须重启，如果此时不想重启，可以临时生效之
+sudo setenforce 0
+sudo service httpd start
+sudo service gmetad start
+sudo service gmond start
+sudo chmod -R 777 /var/lib/ganglia
+```
+
+[**ganglia页面**](http://192.168.1.102/ganglia)
+
+```bash
+# 如果完成以上操作依然出现权限不足错误，请修改/var/lib/ganglia目录的权限
+sudo chmod -R 777 /var/lib/ganglia
+```
 
 ### 3.8.2 操作Flume测试监控
 
+**1)** **修改/opt/module/flume/conf目录下的flume-env.sh配置：**
 
+```properties
+JAVA_OPTS="-Dflume.monitoring.type=ganglia
+-Dflume.monitoring.hosts=192.168.1.102:8649
+-Xms100m
+-Xmx200m"
+```
+
+**2)** **启动Flume任务**
+
+```bash
+bin/flume-ng agent -c conf/ -n a1 \ -f job/flume-netcat-logger.conf -Dflume.root.logger==INFO,console -Dflume.monitoring.type=ganglia -Dflume.monitoring.hosts=192.168.1.102:8649
+```
+
+**3)** **发送数据观察ganglia监测图**
+
+```bash
+nc localhost 4444
+```
 
 | 字段（图表名称）      | 字段含义                            |
 | --------------------- | ----------------------------------- |
@@ -1259,7 +1348,7 @@ a1.sinks.k1.channel = c1
 
 ## 4.2 Flume的Source，Sink，Channel的作用？你们Source是什么类型？
 
-​       1、作用
+1、作用
 
 （1）Source组件是专门用来收集数据的，可以处理各种类型、各种格式的日志数据，包括avro、thrift、exec、jms、spooling directory、netcat、sequence generator、syslog、http、legacy
 
@@ -1269,25 +1358,23 @@ a1.sinks.k1.channel = c1
 
 2、我公司采用的Source类型为：
 
-（1）监控后台日志：exec
+（1）监控后台日志：taildir
 
-（2）监控后台产生日志的端口：netcat
-
-Exec  spooldir
+（2）监控后台产生日志的端口：netcat **Exec** **spooldir**
 
 ## 4.3 Flume的Channel Selectors
 
-   
+   ![](E:\Git\Note\Markdown\img\flume-channel-selector.png)
 
 ## 4.4 Flume参数调优
 
-\1. Source
+1. Source
 
 增加Source个（使用Tair Dir Source时可增加FileGroups个数）可以增大Source的读取数据的能力。例如：当某一个目录产生的文件过多时需要将这个文件目录拆分成多个文件目录，同时配置好多个Source 以保证Source有足够的能力获取到新产生的数据。
 
 batchSize参数决定Source一次批量运输到Channel的event条数，适当调大这个参数可以提高Source搬运Event到Channel时的性能。
 
-\2. Channel 
+2. Channel 
 
 type 选择memory时Channel的性能最好，但是如果Flume进程意外挂掉可能会丢失数据。type选择file时Channel的容错性更好，但是性能上会比memory channel差。
 
@@ -1295,7 +1382,7 @@ type 选择memory时Channel的性能最好，但是如果Flume进程意外挂掉
 
 Capacity 参数决定Channel可容纳最大的event条数。transactionCapacity 参数决定每次Source往channel里面写的最大event条数和每次Sink从channel里面读的最大event条数。**transactionCapacity需要大于Source和Sink的batchSize参数。**
 
-\3. Sink 
+3. Sink 
 
 增加Sink的个数可以增加Sink消费event的能力。Sink也不是越多越好够用就行，过多的Sink会占用系统资源，造成系统资源不必要的浪费。
 
