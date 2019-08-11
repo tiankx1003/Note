@@ -1,0 +1,10 @@
+producer.send(new ProducerRecord<String, String>("first", Integer.toString(i), Integer.toString(i), new Callback() {
+
+                @Override
+                public void onCompletion(RecordMetadata metadata, Exception exception) {
+                    if (exception == null)
+                        System.out.println("success->" + metadata.offset());
+                    else
+                        exception.printStackTrace();
+                }
+            });
