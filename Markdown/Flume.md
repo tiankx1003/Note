@@ -2,9 +2,9 @@
 
 * [ ] -
 * [ ] 自定义sink *2019-8-9 15:42:26*
-* [ ] 自定义source两种方式 *2019-8-9 15:19:14*
-* [ ] 递归 *2019-8-9 10:37:23*
-* [ ] 自定义拦截器 *2019-8-9 10:26:35*
+* [x] 自定义source两种方式 *2019-8-9 15:19:14*
+* [x] 递归 *2019-8-9 10:37:23*
+* [x] 自定义拦截器 *2019-8-9 10:26:35*
 * [ ] flume配置文件正则 *2019-8-7 14:31:54*
 * [x] hive-hfds 官网参数 *2019-8-7 11:16:24*
 * [ ] netcase 使用 *2019-8-7 10:03:11*
@@ -1248,11 +1248,11 @@ a1.channels = c1
 
 # Describe/configure the source
 a1.sources.r1.type = netcat
-a1.sources.r1.bind = localhost
-a1.sources.r1.port = 44444
+a1.sources.r1.bind = hadoop101
+a1.sources.r1.port = 4444
 
 # Describe the sink
-a1.sinks.k1.type = com.tian.MySink
+a1.sinks.k1.type = com.tian.flume.sink.MySink
 #a1.sinks.k1.prefix = tian:
 a1.sinks.k1.suffix = :tian
 
@@ -1284,7 +1284,7 @@ sudo vim /etc/selinux/config
 
 ```properties
 cluster {
-  name = "hadoop102"
+  name = "hadoop101"
   owner = "unspecified"
   latlong = "unspecified"
   url = "unspecified"
@@ -1297,14 +1297,14 @@ udp_send_channel {
                        # interface and the DNS names associated with
                        # those IPs will be used to create the RRDs.
   # mcast_join = 239.2.11.71
-  host = 192.168.1.102
+  host = 192.168.2.101
   port = 8649
   ttl = 1
 }
 udp_recv_channel {
   # mcast_join = 239.2.11.71
   port = 8649
-  bind = 192.168.1.102
+  bind = 192.168.2.101
   retry_bind = true
   # Size of the UDP buffer. If you are handling lots of metrics you really
   # should bump it up to e.g. 10MB or even higher.

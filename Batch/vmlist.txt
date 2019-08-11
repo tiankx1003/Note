@@ -1,0 +1,3 @@
+C:\vmware\hadoop101\hadoop101.vmx
+C:\vmware\hadoop102\hadoop102.vmx
+C:\vmware\hadoop103\hadoop103.vmx
