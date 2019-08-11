@@ -1,6 +1,7 @@
 # TODO
 
 * [ ] -
+* [ ] kafka-zk *2019-8-10 16:47:05*
 * [ ] Exactly once语义 视频15 *2019-8-10 16:14:21*
 * [ ] 幂等机制 *2019-8-10 16:10:11*
 * [ ] kafka文件存储机制 index和log文件位置确定 *2019-8-10 14:30:38*
@@ -381,7 +382,7 @@ Kafka的Producer发送消息采用的是**异步发送**的方式。在消息发
 ```
 
 ```java
-package com.atguigu.kafka;
+package com.tian.kafka;
 
 import org.apache.kafka.clients.producer.*;
 
@@ -413,7 +414,7 @@ public class CustomProducer {
 ```
 
 ```java
-package com.atguigu.kafka;
+package com.tian.kafka;
 
 import org.apache.kafka.clients.producer.*;
 
@@ -464,7 +465,7 @@ public class CustomProducer {
 ### 4.1.2 同步发送API
 
 ```java
-package com.atguigu.kafka;
+package com.tian.kafka;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -528,7 +529,7 @@ Consumer消费数据时的可靠性是很容易保证的，因为数据在Kafka�
 **auto.commit.interval.ms**：自动提交offset的时间间隔
 
 ```java
-package com.atguigu.kafka;
+package com.tian.kafka;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -569,7 +570,7 @@ public class CustomConsumer {
 由于同步提交offset有失败重试机制，故更加可靠，以下为同步提交offset的示例
 
 ```java
-package com.atguigu.kafka.consumer;
+package com.tian.kafka.consumer;
 
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -610,7 +611,7 @@ public class CustomComsumer {
 虽然同步提交offset更可靠一些，但是由于其会阻塞当前线程，直到提交成功。因此吞吐量会收到很大的影响，因此更多的情况下，会选用异步提交offset的方式。
 
 ```java
-package com.atguigu.kafka.consumer;
+package com.tian.kafka.consumer;
 
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.TopicPartition;
@@ -668,7 +669,7 @@ Offset的维护是相当繁琐的，因为需要考虑到消费者的Rebalace。
 要实现自定义存储offset，需要借助ConsumerRebalanceListener，以下为示例代码，其中提交和获取offset的方法，需要根据所选的offset存储系统自行实现。
 
 ```java
-package com.atguigu.kafka.consumer;
+package com.tian.kafka.consumer;
 
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.TopicPartition;
@@ -755,7 +756,7 @@ Producer拦截器(interceptor)是在Kafka 0.10版本被引入的，主要用于�
 ![]()
 
 ```java
-package com.atguigu.kafka.interceptor;
+package com.tian.kafka.interceptor;
 import java.util.Map;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -790,7 +791,7 @@ public class TimeInterceptor implements ProducerInterceptor<String, String> {
 ```
 
 ```java
-package com.atguigu.kafka.interceptor;
+package com.tian.kafka.interceptor;
 import java.util.Map;
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -832,7 +833,7 @@ public class CounterInterceptor implements ProducerInterceptor<String, String>{
 ```
 
 ```java
-package com.atguigu.kafka.interceptor;
+package com.tian.kafka.interceptor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -859,7 +860,7 @@ public class InterceptorProducer {
 		
 		// 2 构建拦截链
 		List<String> interceptors = new ArrayList<>();
-		interceptors.add("com.atguigu.kafka.interceptor.TimeInterceptor"); 	interceptors.add("com.atguigu.kafka.interceptor.CounterInterceptor"); 
+		interceptors.add("com.tian.kafka.interceptor.TimeInterceptor"); 	interceptors.add("com.tian.kafka.interceptor.CounterInterceptor"); 
 		props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, interceptors);
 		 
 		String topic = "first";
