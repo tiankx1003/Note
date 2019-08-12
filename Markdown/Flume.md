@@ -951,7 +951,7 @@ a1.sources.r1.type = netcat
 a1.sources.r1.bind = hadoop201
 a1.sources.r1.port = 4444
 a1.sources.r1.interceptors = i1
-a1.sources.r1.interceptors.i1.type = com.tian.flume.interceptor.MyInterceptor.Builder
+a1.sources.r1.interceptors.i1.type = com.tian.flume.interceptor.MyInterceptor$Builder
 a1.sources.r1.selector.type = multiplexing
 a1.sources.r1.selector.header = type
 a1.sources.r1.selector.mapping.letter = c1
@@ -1021,9 +1021,9 @@ a1.sources.r1.channels = c1
 ```
 
 ```bash
-flume-ng agent -n a1 -c conf/ -f job/interceptor/flume2.conf -Dflume.root.logger=INFO,console # hadoop202
-flume-ng agent -n a1 -c conf/ -f job/interceptor/flume3.conf -Dflume.root.logger=INFO,console # hadoop203
-flume-ng agent -n a1 -c conf/ -f job/interceptor/flume1.conf # hadoop201
+flume-ng agent -n a1 -c conf/ -f job/wei/flume2.conf -Dflume.root.logger=INFO,console # hadoop202
+flume-ng agent -n a1 -c conf/ -f job/wei/flume3.conf -Dflume.root.logger=INFO,console # hadoop203
+flume-ng agent -n a1 -c conf/ -f job/wei/flume1.conf # hadoop201
 ```
 
 

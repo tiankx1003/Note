@@ -151,10 +151,10 @@ done
 
 ```bash
 # 查看当前服务器中的所有topic
-kafka-topics.sh --zookeeper hadoop201:2181 --list
+kafka-topics.sh --zookeeper hadoop101:2181 --list
 
 # 创建topic
-kafka-topics.sh --zookeeper hadoop201:2181 --create --replication-factor 3 --partitions 1 --topic first
+kafka-topics.sh --zookeeper hadoop101:2181 --create --replication-factor 3 --partitions 1 --topic first
 # 选项说明
 # --topic 定义topic名
 # --replication-factor 定义副本数
