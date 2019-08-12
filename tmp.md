@@ -54,3 +54,45 @@ sort by设置多个Reducer后把数据**随机**放入多个文件中
 
 
 
+**Kafka**
+自定义拦截器的close()方法在Producer的close()方法中调用时调用
+onSend()方法和onAcknowledgement()不在同一个线程，有共享数据注意线程安全
+注意拦截器链返回null值的问题
+
+flume-kafka.conf
+
+```properties
+# define
+a1.sources = r1
+a1.sinks = k1
+a1.channels = c1
+
+# source
+a1.sources.r1.type = exec
+a1.sources.r1.command = tail -F -c +0 /opt/module/datas/flume.log
+a1.sources.r1.shell = /bin/bash -c
+
+# sink
+a1.sinks.k1.type = org.apache.flume.sink.kafka.KafkaSink
+a1.sinks.k1.kafka.bootstrap.servers = hadoop101:9092,hadoop102:9092,hadoop103:9092
+a1.sinks.k1.kafka.topic = first
+a1.sinks.k1.kafka.flumeBatchSize = 20
+# other configure
+a1.sinks.k1.kafka.producer.acks = 1
+a1.sinks.k1.kafka.producer.linger.ms = 1
+
+# channel
+a1.channels.c1.type = memory
+a1.channels.c1.capacity = 1000
+a1.channels.c1.transactionCapacity = 100
+
+# bind
+a1.sources.r1.channels = c1
+a1.sinks.k1.channel = c1
+```
+
+**需求**
+多种日志分类放入不同的topic
+event的header键值对中的键为topic
+
+exactly once语义

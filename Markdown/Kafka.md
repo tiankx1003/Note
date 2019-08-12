@@ -1,6 +1,10 @@
 # TODO
 
 * [ ] -
+* [ ] 验证API *2019-8-12 19:41:48*
+* [ ] 日志分类到多topic案例 *2019-8-12 14:45:36*
+* [ ] 维护offset *2019-8-12 11:38:45*
+* [ ] offset *2019年8月12日 10:13:02*
 * [ ] kafka-zk *2019-8-10 16:47:05*
 * [ ] Exactly once语义 视频15 *2019-8-10 16:14:21*
 * [ ] 幂等机制 *2019-8-10 16:10:11*
@@ -361,7 +365,7 @@ Controller的管理工作都是依赖于Zookeeper的。
 
 Kafka的Producer发送消息采用的是**异步发送**的方式。在消息发送的过程中，涉及到了**两个线程——main线程和Sender线程，**以及**一个线程共享变量——****RecordAccumulator**。main线程将消息发送给RecordAccumulator，Sender线程不断从RecordAccumulator中拉取消息发送到Kafka broker。
 
-![]()
+![](E:\Git\Note\Markdown\img\kafka-produce.png)
 
 > **相关参数：**
 > **batch.size**：只有数据积累到batch.size之后，sender才会发送数据。
@@ -382,31 +386,37 @@ Kafka的Producer发送消息采用的是**异步发送**的方式。在消息发
 ```
 
 ```java
-package com.tian.kafka;
+package com.tian.kafka.producer;
 
-import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.util.Properties;
-import java.util.concurrent.ExecutionException;
+
 /**
-不带回调函数的API
-*/
-public class CustomProducer {
-
-    public static void main(String[] args) throws ExecutionException, InterruptedException {
+ * 不带回调函数的异步Producer API
+ */
+public class AsyncProducer {
+    public static void main(String[] args) {
         Properties props = new Properties();
-        props.put("bootstrap.servers", "hadoop102:9092");//kafka集群，broker-list
-        props.put("acks", "all");
-        props.put("retries", 1);//重试次数
-        props.put("batch.size", 16384);//批次大小
-        props.put("linger.ms", 1);//等待时间
-        props.put("buffer.memory", 33554432);//RecordAccumulator缓冲区大小
-        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                "hadoop101:9092,hadoop102:9092,hadoop103:9092");
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                StringSerializer.class.getName());
+        props.put(ProducerConfig.ACKS_CONFIG, "all");
+        props.put(ProducerConfig.RETRIES_CONFIG, 1);
+        props.put(ProducerConfig.LINGER_MS_CONFIG, 1);
+        //配置拦截器
 
-        Producer<String, String> producer = new KafkaProducer<>(props);
-        for (int i = 0; i < 100; i++) {
-            producer.send(new ProducerRecord<String, String>("first", Integer.toString(i), Integer.toString(i)));
+        //通过配置创建KafkaProducer对象
+        KafkaProducer<String, String> producer = new KafkaProducer<>(props);
+        for (int i = 0; i < 1000; i++) {
+            ProducerRecord<String, String> record = new ProducerRecord<>("first", "message" + i);
+            producer.send(record);
         }
         producer.close();
     }
@@ -414,48 +424,42 @@ public class CustomProducer {
 ```
 
 ```java
-package com.tian.kafka;
+package com.tian.kafka.producer;
 
 import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.util.Properties;
-import java.util.concurrent.ExecutionException;
-/*
-带回调函数的API
-*/
+
 /**
-回调函数会在producer收到ack时调用，为异步调用，该方法有两个参数，分别是RecordMetadata和Exception，如果Exception为null，说明消息发送成功，如果Exception不为null，说明消息发送失败。
-注意：消息发送失败会自动重试，不需要我们在回调函数中手动重试。
-*/
-public class CustomProducer {
-
-    public static void main(String[] args) throws ExecutionException, InterruptedException {
+ * 带回调函数的异步Producer API
+ */
+public class CallbackProducer {
+    public static void main(String[] args) {
         Properties props = new Properties();
-        props.put("bootstrap.servers", "hadoop102:9092");//kafka集群，broker-list
-        props.put("acks", "all");
-        props.put("retries", 1);//重试次数
-        props.put("batch.size", 16384);//批次大小
-        props.put("linger.ms", 1);//等待时间
-        props.put("buffer.memory", 33554432);//RecordAccumulator缓冲区大小
-        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-
-        Producer<String, String> producer = new KafkaProducer<>(props);
-        for (int i = 0; i < 100; i++) {
-            producer.send(new ProducerRecord<String, String>("first", Integer.toString(i), Integer.toString(i)), new Callback() {
-
-                //回调函数，该方法会在Producer收到ack时调用，为异步调用
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                "hadoop101:9092,hadoop102:9092,hadoop103:9092");
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                StringSerializer.class.getName());
+        props.put(ProducerConfig.ACKS_CONFIG, "all");
+        props.put(ProducerConfig.RETRIES_CONFIG, 1);
+        KafkaProducer<String, String> producer = new KafkaProducer<>(props);
+        for (int i = 0; i < 1000; i++) {
+            ProducerRecord<String, String> record = new ProducerRecord<>("first", "message" + i);
+            producer.send(record, new Callback() {
                 @Override
-                public void onCompletion(RecordMetadata metadata, Exception exception) {
-                    if (exception == null) {
-                        System.out.println("success->" + metadata.offset());
-                    } else {
-                        exception.printStackTrace();
-                    }
+                public void onCompletion(RecordMetadata recordMetadata, Exception e) {
+                    if (e == null)
+                        System.out.println("success:" + recordMetadata.topic() +
+                                "-" + recordMetadata.partition() +
+                                "-" + recordMetadata.offset());
+                    else e.printStackTrace();
                 }
             });
+            producer.close();
         }
-        producer.close();
     }
 }
 ```
@@ -465,36 +469,42 @@ public class CustomProducer {
 ### 4.1.2 同步发送API
 
 ```java
-package com.tian.kafka;
+package com.tian.kafka.producer;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
+
 /**
-同步发送的意思就是，一条消息发送之后，会阻塞当前线程，直至返回ack。
-由于send方法返回的是一个Future对象，根据Futrue对象的特点，我们也可以实现同步发送的效果，只需在调用Future对象的get方发即可。
-*/	
-public class CustomProducer {
-
+ * 同步Producer API
+ */
+public class SyncProducer {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
+        //创建properties对象用于存放配置
         Properties props = new Properties();
-        props.put("bootstrap.servers", "hadoop102:9092");//kafka集群，broker-list
-        props.put("acks", "all");
-        props.put("retries", 1);//重试次数
-        props.put("batch.size", 16384);//批次大小
-        props.put("linger.ms", 1);//等待时间
-        props.put("buffer.memory", 33554432);//RecordAccumulator缓冲区大小
-        props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-
-        Producer<String, String> producer = new KafkaProducer<>(props);
+        //添加配置
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "hadoop101:9092,hadoop102:9092,hadoop103:9092");
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+        props.put(ProducerConfig.ACKS_CONFIG, "all");
+        props.put(ProducerConfig.RETRIES_CONFIG, 1); //重试次数
+        props.put(ProducerConfig.LINGER_MS_CONFIG, 500);
+        //通过已有配置创建kafkaProducer对象
+        KafkaProducer<String, String> producer = new KafkaProducer<>(props);
+        //循环调用send方法不断发送数据
         for (int i = 0; i < 100; i++) {
-            producer.send(new ProducerRecord<String, String>("first", Integer.toString(i), Integer.toString(i))).get();
+            ProducerRecord<String, String> record = new ProducerRecord<>("first", "message" + i);
+            RecordMetadata metadata = producer.send(record).get();//通过get()方法实现同步效果
+            if (metadata != null)
+                System.out.println("success:" + metadata.topic() + "-" +
+                        metadata.partition() + "-" + metadata.offset());
         }
-        producer.close();
+        producer.close(); //关闭生产者对象
     }
 }
 ```
@@ -529,31 +539,43 @@ Consumer消费数据时的可靠性是很容易保证的，因为数据在Kafka�
 **auto.commit.interval.ms**：自动提交offset的时间间隔
 
 ```java
-package com.tian.kafka;
+package com.tian.kafka.consumer;
 
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.util.Arrays;
 import java.util.Properties;
 
-public class CustomConsumer {
-
+/**
+ * 自动提交offset
+ */
+public class AutoCommitOffset {
     public static void main(String[] args) {
         Properties props = new Properties();
-        props.put("bootstrap.servers", "hadoop102:9092");
-        props.put("group.id", "test");
-        props.put("enable.auto.commit", "true");
-        props.put("auto.commit.interval.ms", "1000");
-        props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
+                "hadoop101:9092,hadoop102:9092,hadoop103:9092");
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                StringDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                StringDeserializer.class.getName());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG,"tian"); // groupid
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG,"earliest");
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG,true); //自动提交
         KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props);
-        consumer.subscribe(Arrays.asList("first"));
-        while (true) {
-            ConsumerRecords<String, String> records = consumer.poll(100);
-            for (ConsumerRecord<String, String> record : records)
-                System.out.printf("offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value());
+        consumer.subscribe(Arrays.asList("first")); //添加需要消费的topic
+        try {
+            while(true){
+                ConsumerRecords<String, String> records = consumer.poll(100);
+                for (ConsumerRecord<String, String> record : records) {
+                    System.out.println(record.value());
+                }
+            }
+        } finally {
+            consumer.close();//在死循环中无法调用close方法，所以需要使用finally
         }
     }
 }
@@ -658,7 +680,7 @@ public class CustomConsumer {
 **数据漏消费和重复消费分析**
 无论是同步提交还是异步提交offset，都有可能会造成数据的漏消费或者重复消费。先提交offset后消费，有可能造成数据的漏消费;而先消费后提交offset，有可能会造成数据的重复消费。
 
-![]()
+![](E:\Git\Note\Markdown\img\kafka-offset.png)
 
 ### 4.2.3 自定义存储offset
 
@@ -753,7 +775,7 @@ Producer拦截器(interceptor)是在Kafka 0.10版本被引入的，主要用于�
 > **需求**
 > 实现一个简单的双interceptor组成的拦截链。第一个interceptor会在消息发送前将时间戳信息加到消息value的最前部；第二个interceptor会在消息发送后更新成功发送消息数或失败发送消息数。
 
-![]()
+![](E:\Git\Note\Markdown\img\kafka-interceptor.png)
 
 ```java
 package com.tian.kafka.interceptor;
@@ -944,17 +966,68 @@ echo hello >> /opt/module/datas/flume.log
 
 ## 6.1 Kafka Monitor
 
+```bash
+mkdir /opt/module/kafka-offset-console
+# 上传jar包，KafkaOffsetMonitor-assembly-0.4.6.jar 到新建目录
+# 在新建目录下编写脚本
+vim start.sh
+# 在目录下新建文件夹
+mkdir /opt/module/kafka-offset-console/mobile/logs
+./start.sh # 启动
+# hadoop101:8086端口查看详情
+```
 
+```shell
+#!/bin/bash
+java -cp KafkaOffsetMonitor-assembly-0.4.6-SNAPSHOT.jar \
+com.quantifind.kafka.offsetapp.OffsetGetterWeb \
+--offsetStorage kafka \
+--kafkaBrokers hadoop101:9092,hadoop102:9092,hadoop103:9092 \
+--kafkaSecurityProtocol PLAINTEXT \
+--zk hadoop101:2181,hadoop102:2181,hadoop103:2181 \
+--port 8086 \
+--refresh 10.seconds \
+--retain 2.days \
+--dbName offsetapp_kafka &
+```
 
 ## 6.2 Kafka Manager
 
+```bash
+# 上传压缩包kafka-manager-1.3.3.15.zip到集群
+unzip kafka-manager-1.3.3.15.zip -d /opt/module
+vim conf/application.conf
+bin/kafka.manager # 启动
+# hadoop102:9000查看详细信息，如果启动了hdfs发生了端口号冲突，可通过命令重新指定kafka-manager的端口号
+```
 
+```properties
+# kafka-manager.zkhosts="kafka-manager-zookeeper:2181"
+# 修改为
+kafka-manager.zkhosts="hadoop101:2181,hadoop102:2181,hadoop103:2181"
+```
 
 # 第7章 Kafka面试题
 
-## 7.1 面试问题
-
-
-
-## 7.2 参考答案
+**1.Kafka中的ISR、AR、OR分别代表什么**
+**2.Kafka中的HW、LEO分别代表什么**
+**3.Kafka中时怎么体现消息顺序性的**
+**4.Kafka中的分区器、序列化器、拦截器的理解，他们之间的处理顺序**
+**5.Kafka生产者客户端的整体结构是什么样子，使用了几个线程处理，分别是什么-**
+**6.消费者组中的消费者个数如果超过topic的分区，是不是就会有消费者消费不到数据**
+**7.消费者提交消费位移时提交的是当前消费到的最新消息的offset还是offset+1**
+**8.哪些情形会造成重复消费**
+**9.哪些情形会造成消息漏消费**
+**10.当你使用kafka-topics.sh创建(删除)了一个topic后，Kafka背会的执行逻辑是什么**
+**11.topic的分区数能不能增加，如果能怎么增加，如果不可以，为什么**
+**12.topic的分区能不能减少，如果能怎么减少，如果不可以，为什么**
+**13.Kafka有内部的topic吗，如果有是什么，有什么作用**
+**14.Kafka分区分配的概念**
+**15.简述Kafka的日志目录结构**
+**16.如果我指定了一个offset，Kafka Controller怎么查找到对应的消息**
+**17.Kafka Controller的作用**
+**18.Kafka中有哪些地方需要选举，这些地方的选举策略有哪些**
+**19.失效副本指什么，有哪些应对措施**
+**20.Kafka的哪些设计让它有如此高的性能**
+**21.Kafka是如何做到exactly once的**
 
