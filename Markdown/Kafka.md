@@ -557,7 +557,7 @@ public class AutoCommitOffset {
     public static void main(String[] args) {
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
-                "hadoop101:9092,hadoop102:9092,hadoop103:9092");
+                "hadoop101:9092,hadoop102:9092");
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
                 StringDeserializer.class.getName());
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
@@ -637,39 +637,40 @@ package com.tian.kafka.consumer;
 
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Properties;
 
 /**
- * @author liubo
+ * 异步手动提交offset
+ *
+ * @author JARVIS
+ * @date 2019/8/12 21:18
  */
-public class CustomConsumer {
-
+public class AsyncManualCommitOffset {
     public static void main(String[] args) {
-
         Properties props = new Properties();
-        props.put("bootstrap.servers", "hadoop102:9092");//Kafka集群
-        props.put("group.id", "test");//消费者组，只要group.id相同，就属于同一个消费者组
-        props.put("enable.auto.commit", "false");//关闭自动提交offset
-        props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-        props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
-
-        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props);
-        consumer.subscribe(Arrays.asList("first"));//消费者订阅主题
-
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "hadoop101:9092");
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "tian");
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
+                StringDeserializer.class.getName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                StringDeserializer.class.getName());
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<String,String>(props);
+        consumer.subscribe(Arrays.asList("first"));
         while (true) {
-            ConsumerRecords<String, String> records = consumer.poll(100);//消费者拉取数据
+            ConsumerRecords<String, String> records = consumer.poll(100);
             for (ConsumerRecord<String, String> record : records) {
-                System.out.printf("offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value());
+                System.out.println("offset:" + record.offset() +
+                        "key:" + record.key() + "value" + record.value());
             }
             consumer.commitAsync(new OffsetCommitCallback() {
-                @Override
-                public void onComplete(Map<TopicPartition, OffsetAndMetadata> offsets, Exception exception) {
-                    if (exception != null) {
-                        System.err.println("Commit failed for" + offsets);
-                    }
+                public void onComplete(Map<TopicPartition, OffsetAndMetadata> map, Exception e) {
+                    if (e != null)
+                        System.out.println("commit failed for " + map);
                 }
             });//异步提交
         }
@@ -779,125 +780,151 @@ Producer拦截器(interceptor)是在Kafka 0.10版本被引入的，主要用于�
 
 ```java
 package com.tian.kafka.interceptor;
-import java.util.Map;
+
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+
+import java.util.Map;
+
 /**
-增加时间戳拦截器
-*/
-public class TimeInterceptor implements ProducerInterceptor<String, String> {
+ * 增加时间戳
+ * @author Friday
+ * @date 2019/8/13 0:08
+ */
+public class TimeInterceptor implements ProducerInterceptor<String,String> {
+    /**
+     * 返回一个新的recorder，把时间戳写入消息体的最前部
+     * @param record
+     * @return
+     */
+    @Override
+    public ProducerRecord<String, String> onSend(ProducerRecord<String, String> record) {
+        return new ProducerRecord(record.topic(),record.partition(),record.timestamp(),
+                record.key(),System.currentTimeMillis() + "," + record.value().toString());
+    }
 
-	@Override
-	public void configure(Map<String, ?> configs) {
+    @Override
+    public void onAcknowledgement(RecordMetadata recordMetadata, Exception e) {
 
-	}
+    }
 
-	@Override
-	public ProducerRecord<String, String> onSend(ProducerRecord<String, String> record) {
-		// 创建一个新的record，把时间戳写入消息体的最前部
-		return new ProducerRecord(record.topic(), record.partition(), record.timestamp(), record.key(),
-				System.currentTimeMillis() + "," + record.value().toString());
-	}
+    @Override
+    public void close() {
 
-	@Override
-	public void onAcknowledgement(RecordMetadata metadata, Exception exception) {
+    }
 
-	}
+    @Override
+    public void configure(Map<String, ?> map) {
 
-	@Override
-	public void close() {
-
-	}
+    }
 }
 ```
 
 ```java
 package com.tian.kafka.interceptor;
-import java.util.Map;
+
 import org.apache.kafka.clients.producer.ProducerInterceptor;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+
+import java.util.Map;
+
 /**
-统计发送消息成功和发送失败消息数，并在producer关闭时打印这两个计数器
-*/
-public class CounterInterceptor implements ProducerInterceptor<String, String>{
+ * 统计发送消息成功和发送消息失败数，
+ * 并在producer关闭时打印这连个计时器
+ * @author Friday
+ * @date 2019/8/13 0:14
+ */
+public class CountInterceptor implements ProducerInterceptor<String,String> {
     private int errorCounter = 0;
     private int successCounter = 0;
 
-	@Override
-	public void configure(Map<String, ?> configs) {
-		
-	}
+    /**
+     * 直接返回传入的参量
+     * @param producerRecord
+     * @return producerRecord
+     */
+    @Override
+    public ProducerRecord<String, String> onSend(ProducerRecord<String, String> producerRecord) {
+        return producerRecord;
+    }
 
-	@Override
-	public ProducerRecord<String, String> onSend(ProducerRecord<String, String> record) {
-		 return record;
-	}
-
-	@Override
-	public void onAcknowledgement(RecordMetadata metadata, Exception exception) {
-		// 统计成功和失败的次数
-        if (exception == null) {
+    /**
+     * 统计成功和失败的次数
+     * @param recordMetadata
+     * @param e
+     */
+    @Override
+    public void onAcknowledgement(RecordMetadata recordMetadata, Exception e) {
+        if(e == null)
             successCounter++;
-        } else {
+        else
             errorCounter++;
-        }
-	}
+    }
 
-	@Override
-	public void close() {
-        // 保存结果
-        System.out.println("Successful sent: " + successCounter);
-        System.out.println("Failed sent: " + errorCounter);
-	}
+    /**
+     * 打印结果
+     */
+    @Override
+    public void close() {
+        System.out.println("Successful sent:" + successCounter);
+        System.out.println("Failed sent:" + errorCounter);
+    }
+
+    @Override
+    public void configure(Map<String, ?> map) {
+
+    }
 }
 ```
 
 ```java
 package com.tian.kafka.interceptor;
+
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.codehaus.jackson.map.ser.std.StringSerializer;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
-/**
-produce主程序
-*/
-public class InterceptorProducer {
 
-	public static void main(String[] args) throws Exception {
-		// 1 设置配置信息
-		Properties props = new Properties();
-		props.put("bootstrap.servers", "hadoop102:9092");
-		props.put("acks", "all");
-		props.put("retries", 0);
-		props.put("batch.size", 16384);
-		props.put("linger.ms", 1);
-		props.put("buffer.memory", 33554432);
-		props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-		props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-		
-		// 2 构建拦截链
-		List<String> interceptors = new ArrayList<>();
-		interceptors.add("com.tian.kafka.interceptor.TimeInterceptor"); 	interceptors.add("com.tian.kafka.interceptor.CounterInterceptor"); 
-		props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, interceptors);
-		 
-		String topic = "first";
-		Producer<String, String> producer = new KafkaProducer<>(props);
-		
-		// 3 发送消息
-		for (int i = 0; i < 10; i++) {
-			
-		    ProducerRecord<String, String> record = new ProducerRecord<>(topic, "message" + i);
-		    producer.send(record);
-		}
-		 
-		// 4 一定要关闭producer，这样才会调用interceptor的close方法
-		producer.close();
-	}
+/**
+ * 主程序
+ * @author Friday
+ * @date 2019/8/13 0:21
+ */
+public class InterceptorProducer {
+    public static void main(String[] args) {
+        //配置信息
+        Properties props = new Properties();
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,"hadoop101:9092");
+        props.put(ProducerConfig.ACKS_CONFIG,"all");
+        props.put(ProducerConfig.RETRIES_CONFIG,0);
+        props.put(ProducerConfig.BATCH_SIZE_CONFIG,16384);
+        props.put(ProducerConfig.LINGER_MS_CONFIG,1);
+        props.put(ProducerConfig.BUFFER_MEMORY_CONFIG,33664432);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,
+                StringSerializer.class.getName());
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,
+                StringSerializer.class.getName());
+        //构建拦截链
+        List<String> interceptors = new ArrayList<String>();
+        interceptors.add("com.tian.kafka.interceptor.TimeInterceptor");
+        interceptors.add("com.tian.kafka.interceptor.CountInterceptor");
+        props.put(ProducerConfig.INTERCEPTOR_CLASSES_CONFIG, interceptors);
+        String topic = "first";
+        KafkaProducer<String, String> producer = new KafkaProducer<>(props);
+        //发送消息
+        for (int i = 0; i < 100; i++) {
+            ProducerRecord<String, String> record = new ProducerRecord<>(topic, "message" + 1);
+            producer.send(record);
+        }
+        //关闭producer
+        producer.close();
+    }
 }
 ```
 
