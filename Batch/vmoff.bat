@@ -9,4 +9,5 @@ for %%i in (vmlist.txt) do (
 )
 for /f "delims=" %%a in (vmlist.txt) do (
      vmrun -T ws stop "%%a" nogui
-    )
+)
+del /F /Q vmlist.txt

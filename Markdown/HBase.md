@@ -232,7 +232,7 @@ scan 'student',{VERSIONS => 2} -- 返回两个版本
 put 'student','1001','info:name','wangwu'
 scan 'student',{VERSIONS => 2} -- 返回最新两个版本
 scan 'student',{VERSIONS => 10} -- 返回最新两个版本
-scan 'student',{VERSIONS => 10,RAW => TRUE} -- 返回底层还没真正删除的数据(最终会删除)
+scan 'student',{VERSIONS => 10,RAW => TRUE} # 返回底层还没真正删除的数据(最终会删除)
 delete 'student','1001','info:name'
 scan 'student',{VERSIONS => 10}
 scan 'student',{VERSIONS => 10,RAW => TRUE}
