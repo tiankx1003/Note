@@ -623,7 +623,7 @@ public class CustomComsumer {
             for (ConsumerRecord<String, String> record : records) {
                 System.out.printf("offset = %d, key = %s, value = %s%n", record.offset(), record.key(), record.value());
             }
-            consumer.commitSync();//同步提交，当前线程会阻塞知道offset提交成功
+            consumer.commitSync();//同步提交，当前线程会阻塞直到offset提交成功
         }
     }
 }
