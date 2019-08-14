@@ -195,7 +195,7 @@ vim flume-env.sh
 
 > **需求分析**
 
-![](E:\Git\Note\Markdown\img\flume-hive.png)
+![](img\flume-hive.png)
 
 > **实现步骤**
 > 拷贝jar包到/opt/module/flume/lib/
@@ -288,7 +288,7 @@ vim flume-env.sh
 
 > **需求分析**
 
-![](E:\Git\Note\Markdown\img\flume-dir.png)
+![](img\flume-dir.png)
 
 > **实现步骤**
 >
@@ -365,7 +365,7 @@ Exec source适用于监控一个实时追加的文件，但不能保证数据不
 
 > **需求分析**
 
-![](E:\Git\Note\Markdown\img\flume-sqooldir.png)
+![](img\flume-sqooldir.png)
 
 > **实现步骤**
 >
@@ -459,25 +459,25 @@ Exec source适用于监控一个实时追加的文件，但不能保证数据不
 
 ### 3.3.1 简单串联
 
-![](E:\Git\Note\Markdown\img\flume-simple-conn.png)
+![](img\flume-simple-conn.png)
 
 这种模式是将多个flume顺序连接起来了，从最初的source开始到最终sink传送的目的存储系统。此模式不建议桥接过多的flume数量， flume数量过多不仅会影响传输速率，而且一旦传输过程中某个节点flume宕机，会影响整个传输系统。
 
 ### 3.3.2 复制和多路复用
 
-![](E:\Git\Note\Markdown\img\flume-sel.png)
+![](img\flume-sel.png)
 
 Flume支持将事件流向一个或者多个目的地。这种模式可以将相同数据复制到多个channel中，或者将不同数据分发到不同的channel中，sink可以选择传送到不同的目的地。
 
 ### 3.3.3 负载均衡和故障转移
 
-![](E:\Git\Note\Markdown\img\flume-failover-balance.png)
+![](img\flume-failover-balance.png)
 
 Flume支持使用将多个sink逻辑上分到一个sink组，sink组配合不同的SinkProcessor可以实现负载均衡和错误恢复的功能。
 
 ### 3.3.4 聚合
 
-![](E:\Git\Note\Markdown\img\flume-merge.png)
+![](img\flume-merge.png)
 
 这种模式是我们最常见的，也非常实用，日常web应用通常分布在上百个服务器，大者甚至上千个、上万个服务器。产生的日志，处理起来也非常麻烦。用flume的这种组合方式能很好的解决这一问题，每台服务器部署一个flume采集日志，传送到一个集中收集日志的flume，再由此flume上传到hdfs、hive、hbase等，进行日志分析。
 
@@ -490,7 +490,7 @@ Flume支持使用将多个sink逻辑上分到一个sink组，sink组配合不同
 
 **案例分析**
 
-![](E:\Git\Note\Markdown\img\flume-emp-case1.png)
+![](img\flume-emp-case1.png)
 
 **实验步骤**
 
@@ -619,7 +619,7 @@ java -jar /opt/module/jars/data-producer.jar /opt/module/datas/data.log
 使用Flume1监控一个端口，其sink组中的sink分别对接Flume2和Flume3，采用FailoverSinkProcessor，实现故障转移的功能。
 
 **需求分析**
-![](E:\Git\Note\Markdown\img\flume-emp-case2.png)
+![](img\flume-emp-case2.png)
 
 **实现步骤**
 
@@ -735,7 +735,7 @@ hadoop103上的Flume-2监控某一个端口的数据流，
 Flume-1与Flume-2将数据发送给hadoop104上的Flume-3，Flume-3将最终数据打印到控制台。
 
 **案例分析**
-![](E:\Git\Note\Markdown\img\flume-emp-case3.png)
+![](img\flume-emp-case3.png)
 
 **实现步骤**
 
@@ -843,7 +843,7 @@ nc hadoop201 4444 # 202
 > 在实际的开发中，一台服务器产生的日志类型可能有很多种，不同类型的日志可能需要发送到不同的分析系统。此时会用到Flume拓扑结构中的Multiplexing结构，Multiplexing的原理是，根据event中Header的某个key的值，将不同的event发送到不同的Channel中，所以我们需要自定义一个Interceptor，为不同类型的event的Header中的key赋予不同的值。
 > 在该案例中，我们以端口数据模拟日志，以数字（单个）和字母（单个）模拟不同类型的日志，我们需要自定义interceptor区分数字和字母，将其分别发往不同的分析系统（Channel）。
 
-![](E:\Git\Note\Markdown\img\flume-interceptor.png)
+![](img\flume-interceptor.png)
 
 > **实现步骤**
 
@@ -1042,9 +1042,9 @@ flume-ng agent -n a1 -c conf/ -f job/wei/flume1.conf # hadoop201
 > **需求**
 > 使用flume接收数据，并给每条数据添加前缀，输出到控制台。前缀可从flume配置文件中配置。
 
-![](E:\Git\Note\Markdown\img\flume-source.png)
+![](img\flume-source.png)
 
-![](E:\Git\Note\Markdown\img\flume-source2.png)
+![](img\flume-source2.png)
 
 > **编码**
 
@@ -1162,7 +1162,7 @@ a1.sinks.k1.channel = c1
 > **需求**
 > 使用flume接收数据，并在Sink端给每条数据添加前缀和后缀，输出到控制台。前后缀可在flume任务配置文件中配置。
 
-![](E:\Git\Note\Markdown\img\flume-sink.png)
+![](img\flume-sink.png)
 
 > **编码**
 
@@ -1400,7 +1400,7 @@ nc localhost 4444
 
 ## 4.3 Flume的Channel Selectors
 
-   ![](E:\Git\Note\Markdown\img\flume-channel-selector.png)
+   ![](img\flume-channel-selector.png)
 
 ## 4.4 Flume参数调优
 

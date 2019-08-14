@@ -54,13 +54,13 @@ Cell row key , column family, column qualifier timestamp和value共同确定的�
 
 ### 2.1 逻辑架构
 
-![](E:\Git\Note\Markdown\img\hbase-logic-struc.png)
+![](img\hbase-logic-struc.png)
 
 
 
 ### 2.2 物理存储结构
 
-![](E:\Git\Note\Markdown\img\hbase-physics-struc.png)
+![](img\hbase-physics-struc.png)
 
 
 
@@ -88,7 +88,7 @@ Cell row key , column family, column qualifier timestamp和value共同确定的�
 
 ## 3.HBase基本架构
 
-![](E:\Git\Note\Markdown\img\hbase-simple-struc.png)
+![](img\hbase-simple-struc.png)
 
 ### 架构角色
 
@@ -242,7 +242,7 @@ scan 'student',{VERSIONS => 10,RAW => TRUE}
 
 ## 1.RegionServer架构
 
-![](E:\Git\Note\Markdown\img\hbase-struc.png)
+![](img\hbase-struc.png)
 
 **详细架构**
 RegionServer先把数据写到wal，再写入store中的MemStore(内存)，达到一定数量后在刷写到StoreFile，
@@ -268,7 +268,7 @@ BlockCache，读缓存，和MemStore(写缓存)相对应
 
 ## 2.写流程
 
-![](E:\Git\Note\Markdown\img\hbase-write.png)
+![](img\hbase-write.png)
 
 1. Client先访问zk，获取hbase:meta表位于哪个Region Server
 2. 访问对应的Region Server，获取hbase:meta表，根据读请求的namespce:table/rowkey,查询出目标数据位于哪个Region Server中的哪个Region中，并将该table的region信息以及meta表的位置信息缓存在客户端的meta cache，便于下次访问
@@ -280,7 +280,7 @@ BlockCache，读缓存，和MemStore(写缓存)相对应
 
 ## 3.MemStore Flush
 
-![](E:\Git\Note\Markdown\img\hbase-memstore-flush.png)
+![](img\hbase-memstore-flush.png)
 
 ### MemStore刷写时机
 
@@ -295,11 +295,11 @@ BlockCache，读缓存，和MemStore(写缓存)相对应
 
 ### 4.1 整体流程
 
-![](E:\Git\Note\Markdown\img\hbase-read.png)
+![](img\hbase-read.png)
 
 ### 4.2 Merge细节
 
-![](E:\Git\Note\Markdown\img\hbase-merge.png)
+![](img\hbase-merge.png)
 
 ### 4.3 读流程详述
 
@@ -317,7 +317,7 @@ HFile中的数据不是按照实际数据插入的顺序存放，…
 由于memstore每次刷写都会生成一个新的HFile，且同一个字段的不同版本（timestamp）和不同类型（Put/Delete）有可能会分布在不同的HFile中，因此查询时需要遍历所有的HFile。为了减少HFile的个数，以及清理掉过期和删除的数据，会进行StoreFile Compaction。
 Compaction分为两种，分别是==$Minor Compaction$==和==$Major Compaction$==。Minor Compaction会将临近的若干个较小的HFile合并成一个较大的HFile，并==清理掉部分过期和删除的数据==。Major Compaction会将一个Store下的所有的HFile合并成一个大HFile，并且==会清理掉所有过期和删除的数据==。
 
-![](E:\Git\Note\Markdown\img\hbase-storefile-compaction.png)
+![](img\hbase-storefile-compaction.png)
 
 RegionServer合并HFile，并删除标记为删除的数据和超过版本数的数据
 Minor Compaction不会合并所有的HFile，选3-10个较小的相邻的HFile，合并成一个更大的HFile，并执行==**部分**==物理删除
@@ -339,6 +339,6 @@ Major Compaction会合并所有的HFile并删除数据，并对整体HFile中的
 > 第四次split: $4^3 * 256 = 16384MB > 10GB$ 因此取较小的值10GB
 > 其后的每次split的size都是10GB
 
-![](E:\Git\Note\Markdown\img\hbase-region-split.png)
+![](img\hbase-region-split.png)
 
 # 四、HBase API

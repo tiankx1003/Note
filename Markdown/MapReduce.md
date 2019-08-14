@@ -4014,7 +4014,7 @@ CompressionCode有连个办法可以轻松的压缩或解压缩数据
 |  bzip2   | org.apache.hadoop.io.compress.BZip2Codec   |
 
 ```java
-package com.atguigu.mapreduce.compress;
+package com.tian.mapreduce.compress;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -4096,7 +4096,7 @@ public class TestCompress {
 
 按照业务逻辑编写Mapper和Reducer子类，不需要额外变更
 ```java
-package com.atguigu.mapreduce.compress;
+package com.tian.mapreduce.compress;
 import java.io.IOException;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
@@ -4126,7 +4126,7 @@ k.set(word);
 }
 ```
 ```java
-package com.atguigu.mapreduce.compress;
+package com.tian.mapreduce.compress;
 import java.io.IOException;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.Text;
@@ -4156,7 +4156,7 @@ public class WordCountReducer extends Reducer<Text, IntWritable, Text, IntWritab
 ```
 Driver如下
 ```java
-package com.atguigu.mapreduce.compress;
+package com.tian.mapreduce.compress;
 import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -4207,7 +4207,7 @@ public class WordCountDriver {
 基于WordCount案例，Mapper和Reducer子类同上
 修改驱动
 ```java
-package com.atguigu.mapreduce.compress;
+package com.tian.mapreduce.compress;
 import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -4448,7 +4448,7 @@ B-D	A E
 **代码实现**
 （1）第一次Mapper类
 ```java
-package com.atguigu.mapreduce.friends;
+package com.tian.mapreduce.friends;
 import java.io.IOException;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
@@ -4481,7 +4481,7 @@ public class OneShareFriendsMapper extends Mapper<LongWritable, Text, Text, Text
 ```
 （2）第一次Reducer类
 ```java
-package com.atguigu.mapreduce.friends;
+package com.tian.mapreduce.friends;
 import java.io.IOException;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -4505,7 +4505,7 @@ public class OneShareFriendsReducer extends Reducer<Text, Text, Text, Text>{
 ```
 （3）第一次Driver类
 ```java
-package com.atguigu.mapreduce.friends;
+package com.tian.mapreduce.friends;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
@@ -4549,7 +4549,7 @@ public class OneShareFriendsDriver {
 ```
 （4）第二次Mapper类
 ```java
-package com.atguigu.mapreduce.friends;
+package com.tian.mapreduce.friends;
 import java.io.IOException;
 import java.util.Arrays;
 import org.apache.hadoop.io.LongWritable;
@@ -4584,7 +4584,7 @@ public class TwoShareFriendsMapper extends Mapper<LongWritable, Text, Text, Text
 ```
 （5）第二次Reducer类
 ```java
-package com.atguigu.mapreduce.friends;
+package com.tian.mapreduce.friends;
 import java.io.IOException;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Reducer;
@@ -4604,7 +4604,7 @@ public class TwoShareFriendsReducer extends Reducer<Text, Text, Text, Text>{
 	}
 }
 （6）第二次Driver类
-package com.atguigu.mapreduce.friends;
+package com.tian.mapreduce.friends;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;

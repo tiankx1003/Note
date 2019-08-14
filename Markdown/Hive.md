@@ -50,7 +50,7 @@ Hive的效率比较低
 
 ## 3.架构原理
 
-![Hive架构原理](E:\Git\Note\Markdown\img\hive-stru.png)
+![Hive架构原理](img\hive-stru.png)
 
 1．用户接口：Client
 CLI（hive shell）、JDBC/ODBC(java访问hive)、WEBUI（浏览器访问hive）
@@ -65,7 +65,7 @@ CLI（hive shell）、JDBC/ODBC(java访问hive)、WEBUI（浏览器访问hive）
 （3）优化器（Query Optimizer）：对逻辑执行计划进行优化。
 （4）执行器（Execution）：把逻辑执行计划转换成可以运行的物理计划。对于Hive来说，就是MR/Spark。
 
-![Hive运行机制](E:\Git\Note\Markdown\img\hive-run.png)
+![Hive运行机制](img\hive-run.png)
 
 Hive通过给用户提供的一系列交互接口，接收到用户的指令(SQL)，使用自己的Driver，结合元数据(MetaStore)，将这些指令翻译成MapReduce，提交到Hadoop中执行，最后，将执行返回的结果输出到用户交互接口。
 
@@ -2074,7 +2074,7 @@ Hive支持的存储数的格式主要有：**TEXTFILE** 、**SEQUENCEFILE**、**
 
 ### 5.1 列式存储和行式存储
 
-![行式存储和列式存储](E:\Git\Note\Markdown\img\col-row.png)
+![行式存储和列式存储](img\col-row.png)
 
 **行式存储的特点**
 查询满足条件的一整行数据的时候，列存储则需要去每个聚集的字段找到对应的每个列的值，行存储只需要找到其中一个值，其余的值都在相邻地方，所以此时行存储查询的速度更快。
@@ -2096,7 +2096,7 @@ Orc (Optimized Row Columnar)是Hive 0.11版里引入的新的存储格式。
 
 每个Orc文件由1个或多个stripe组成，每个stripe250MB大小，这个Stripe实际相当于RowGroup概念，不过大小由4MB->250MB，这样应该能提升顺序读的吞吐率。每个Stripe里有三部分组成，分别是Index Data，Row Data，Stripe Footer。
 
-![](E:\Git\Note\Markdown\img\orc-format.png)
+![](img\orc-format.png)
 
 > **Index Data**
 > 一个轻量级的index，默认是每隔1W行做一个索引。
@@ -2116,7 +2116,7 @@ Orc (Optimized Row Columnar)是Hive 0.11版里引入的新的存储格式。
 
 Parquet是面向分析型业务的列式存储格式，由Twitter和Cloudera合作开发，2015年5月从Apache的孵化器里毕业成为Apache顶级项目。Parquet文件是以二进制方式存储的，所以是不可以直接读取的，文件中包括该文件的数据和元数据，因此Parquet格式文件是自解析的。通常情况下，在存储Parquet数据的时候会按照Block大小设置行组的大小，由于一般情况下每一个Mapper任务处理数据的最小单位是一个Block，这样可以把每一个行组由一个Mapper任务处理，增大任务执行并行度。
 
-![](E:\Git\Note\Markdown\img\paquet-format.png)
+![](img\paquet-format.png)
 
 上图展示了一个Parquet文件的内容，一个文件中可以存储多个行组，文件的首位都是该文件的Magic Code，用于校验它是否是一个Parquet文件，Footer length记录了文件元数据的大小，通过该值和文件长度可以计算出元数据的偏移量，文件的元数据中包括每一个行组的元数据信息和该文件存储数据的Schema信息。除了文件中每一个行组的元数据，每一页的开始都会存储该页的元数据，在Parquet中，有三种类型的页：数据页、字典页和索引页。数据页用于存储当前行组中该列的值，字典页存储该列值的编码字典，每一个列块中最多包含一个字典页，索引页用来存储当前行组下该列的索引，目前Parquet中还不支持索引页。
 
@@ -2479,7 +2479,7 @@ n left join ori b on n.id=b.id;
 
 结果如图，发生了数据倾斜
 
-![](E:\Git\Note\Markdown\img\null-key.png)
+![](img\null-key.png)
 
 ### 3.3 MapJoin
 
@@ -2493,7 +2493,7 @@ set hive.auto.convert.join=true; -- 默认为true
 set hive.mapjoin.smalltable.filesize=25000000;
 ```
 
-![MapJoin工作机制](E:\Git\Note\Markdown\img\mapjoin-work.png)
+![MapJoin工作机制](img\mapjoin-work.png)
 
 **实操**
 
@@ -2624,9 +2624,9 @@ create table ori_partitioned(id bigint, time bigint, uid string, keyword string,
 partitioned by (p_time bigint) 
 row format delimited fields terminated by '\t';
 -- （2）加载数据到分区表中
-hive (default)> load data local inpath '/home/atguigu/ds1' into table
+hive (default)> load data local inpath '/home/tian/ds1' into table
  ori_partitioned partition(p_time='20111230000010') ;
-hive (default)> load data local inpath '/home/atguigu/ds2' into table ori_partitioned partition(p_time='20111230000011') ;
+hive (default)> load data local inpath '/home/tian/ds2' into table ori_partitioned partition(p_time='20111230000011') ;
 -- （3）创建目标分区表
 create table ori_partitioned_target(id bigint, time bigint, uid string,
  keyword string, url_rank int, click_num int, click_url string) PARTITIONED BY (p_time STRING) row format delimited fields terminated by '\t';
