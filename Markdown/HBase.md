@@ -342,3 +342,566 @@ Major Compaction会合并所有的HFile并删除数据，并对整体HFile中的
 ![](img\hbase-region-split.png)
 
 # 四、HBase API
+## 1.环境准备
+```xml
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-server</artifactId>
+            <version>1.3.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-client</artifactId>
+            <version>1.3.1</version>
+        </dependency>
+    </dependencies>
+```
+
+## 2.HBase API
+```java
+package com.tian.hbase.api;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.*;
+import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.filter.CompareFilter;
+import org.apache.hadoop.hbase.filter.FilterList;
+import org.apache.hadoop.hbase.filter.SingleColumnValueFilter;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.util.Bytes;
+
+import java.io.IOException;
+import java.util.Map;
+import java.util.Set;
+
+//TODO 创建命名空间
+
+/**
+ * HBase工具类，封装静态方法
+ *
+ * @author JARVIS
+ * @version 1.0
+ * 2019/8/14 9:00
+ */
+public class HBaseUtil {
+    private static Connection connection = null;
+
+    /*
+    静态代码块获取连接
+     */
+    static {
+        try {
+            Configuration conf = HBaseConfiguration.create();
+            //只需获取zk信息，就可以获取Region信息
+            conf.set("hbase.zookeeper.quorum", "hadoop101,hadoop102,hadoop102");
+            conf.set("hbase.zookeeper.property.clientPort", "2181"); //添加端口号配置
+            connection = ConnectionFactory.createConnection(conf); //赋值
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 创建表
+     *
+     * @param tableName 表名
+     * @param families  列族
+     * @throws IOException
+     */
+    public static void createTable(String tableName, String... families) throws IOException {
+        Admin admin = connection.getAdmin();
+        //判断表是否已经存在
+        if (admin.tableExists(TableName.valueOf(tableName))) {
+            System.err.println("table " + tableName + " was already exists!");
+            admin.close();
+            return;
+        }
+        HTableDescriptor tableDesc = new HTableDescriptor(TableName.valueOf(tableName));
+        //多个列族，循环调用
+        for (String family : families) {
+            HColumnDescriptor familyDesc = new HColumnDescriptor(family);//列族描述
+            tableDesc.addFamily(familyDesc);
+        }
+        admin.createTable(tableDesc);
+        //放回admin
+        admin.close();
+    }
+
+    /**
+     * 修改表最大版本数
+     *
+     * @param tableName 表名
+     * @param family    列族名
+     * @throws IOException none
+     */
+    public static void modifyTable(String tableName, String family) throws IOException {
+        Admin admin = connection.getAdmin();
+        //判断表是否不存在
+        if (!admin.tableExists(TableName.valueOf(tableName))) {
+            System.err.println("table " + tableName + " does not exists!");
+            admin.close();
+            return;
+        }
+        HColumnDescriptor familyDesc = new HColumnDescriptor(family);
+        familyDesc.setMaxVersions(3); //设置最大版本数
+        admin.modifyColumn(TableName.valueOf(tableName), familyDesc);
+        admin.close();
+    }
+
+    /**
+     * 删除表
+     *
+     * @param tableName
+     */
+    public static void dropTable(String tableName) throws IOException {
+        Admin admin = connection.getAdmin();
+        //判断表是否不存在
+        if (!admin.tableExists(TableName.valueOf(tableName))) {
+            System.err.println("table " + tableName + " does not exists!");
+            admin.close();
+            return;
+        }
+        admin.disableTable(TableName.valueOf(tableName)); //删除之前先disable
+        admin.deleteTable(TableName.valueOf(tableName));
+        admin.close();
+    }
+
+    /**
+     * 打印所有表
+     *
+     * @throws IOException
+     */
+    public static void listTables() throws IOException {
+        Admin admin = connection.getAdmin();
+        TableName[] tableNames = admin.listTableNames();
+        System.out.println("---------------- Tables ----------------");
+        for (TableName tableName : tableNames) {
+            System.out.println(tableName.getNameAsString());
+        }
+        System.out.println("----------------  done  ----------------");
+    }
+
+    /**
+     * 打印表的详细信息
+     *
+     * @param tableName
+     * @throws IOException
+     */
+    @Deprecated
+    public static void descTable(String tableName) throws IOException {
+        Admin admin = connection.getAdmin();
+        //判断表是否不存在
+        if (!admin.tableExists(TableName.valueOf(tableName))) {
+            System.err.println("table " + tableName + " does not exists!");
+            admin.close();
+            return;
+        }
+        HTableDescriptor tableDescriptor = admin.getTableDescriptor(TableName.valueOf(tableName));
+        Map<ImmutableBytesWritable, ImmutableBytesWritable> values = tableDescriptor.getValues();
+        Set<Map.Entry<ImmutableBytesWritable, ImmutableBytesWritable>> entries = values.entrySet();
+        for (Map.Entry<ImmutableBytesWritable, ImmutableBytesWritable> entry : entries) {
+            ImmutableBytesWritable value = entry.getValue();
+            System.out.println(value.toString());
+        }
+    }
+
+    /**
+     * 添加数据
+     *
+     * @param tableName
+     * @param rowKey
+     * @param family
+     * @param column
+     * @param value
+     * @throws IOException
+     */
+    public static void putCell(String tableName, String rowKey, String family, String column, String value)
+            throws IOException {
+        Table table = connection.getTable(TableName.valueOf(tableName));
+        Put put = new Put(Bytes.toBytes(rowKey));
+        //为put对象绑定一行数据对应的信息
+        put.addColumn(Bytes.toBytes(family), Bytes.toBytes(column), Bytes.toBytes(value));
+        table.put(put);
+        table.close();
+    }
+
+    /**
+     * 查看一行的数据
+     *
+     * @param tableName
+     * @param rowKey
+     * @throws IOException
+     */
+    public static void getRow(String tableName, String rowKey) throws IOException {
+        Table table = connection.getTable(TableName.valueOf(tableName));
+        Get get = new Get(Bytes.toBytes(rowKey));
+//        get.addColumn(); 获取某一列
+//        get.setMaxVersions(3); 设置返回最大版本数
+        Result result = table.get(get);
+        Cell[] cells = result.rawCells();
+        for (Cell cell : cells) {
+            /*
+            下面连个方法的返回值相同,并不能返回需要的内容
+             */
+            byte[] valueArray = cell.getValueArray();
+            byte[] familyArray = cell.getFamilyArray();
+            System.out.println(valueArray == familyArray); //验证返回值相同
+            byte[] valueBytes = CellUtil.cloneValue(cell);//获取value对应的字节数组
+            byte[] columnBytes = CellUtil.cloneQualifier(cell);//获取列名对应的字节数组
+            System.out.println(Bytes.toString(columnBytes) + "-" + Bytes.toString(valueBytes));
+        }
+        table.close();
+    }
+
+    /**
+     * 按范围获取指定行数据
+     *
+     * @param tableName
+     * @param startRow
+     * @param stopRow
+     * @throws IOException
+     */
+    public static void getRowsByRowRange(String tableName, String startRow, String stopRow) throws IOException {
+        Table table = connection.getTable(TableName.valueOf(tableName));
+        Scan scan = new Scan(Bytes.toBytes(startRow), Bytes.toBytes(stopRow));
+        ResultScanner scanner = table.getScanner(scan); //是一个连接，需要关闭，内容为结果集
+        for (Result result : scanner) {
+            Cell[] cells = result.rawCells();
+            for (Cell cell : cells) {
+                byte[] rowBytes = CellUtil.cloneRow(cell);
+                byte[] valueBytes = CellUtil.cloneValue(cell);//获取value对应的字节数组
+                byte[] columnBytes = CellUtil.cloneQualifier(cell);//获取列名对应的字节数组
+                System.out.println(Bytes.toString(rowBytes) + "-"
+                        + Bytes.toString(columnBytes) + "-"
+                        + Bytes.toString(valueBytes));
+            }
+        }
+        scanner.close(); //scanner需要关闭
+        table.close();
+    }
+
+    /**
+     * 通过过滤器查询指定行数据
+     *
+     * @param tableName
+     * @param family
+     * @param column
+     * @param value
+     * @throws IOException
+     */
+    public static void getRowByColumn(String tableName, String family, String column, String value)
+            throws IOException {
+        Table table = connection.getTable(TableName.valueOf(tableName));
+        Scan scan = new Scan();
+        SingleColumnValueFilter filter = new SingleColumnValueFilter(Bytes.toBytes(family),
+                Bytes.toBytes(column),
+                CompareFilter.CompareOp.EQUAL,
+                Bytes.toBytes(value));
+        SingleColumnValueFilter filter1 = new SingleColumnValueFilter(Bytes.toBytes(family),
+                Bytes.toBytes(column),
+                CompareFilter.CompareOp.EQUAL,
+                Bytes.toBytes(value));
+        filter.setFilterIfMissing(true); //如果没有该过滤条件则，直接过滤
+        FilterList filterList = new FilterList(FilterList.Operator.MUST_PASS_ALL);//连个过滤器为与的逻辑关系
+        filterList.addFilter(filter);
+        filterList.addFilter(filter1);
+//        scan.setFilter(filter);
+        scan.setFilter(filterList); //多过滤器时传入过滤器集合
+        ResultScanner scanner = table.getScanner(scan);
+        for (Result result : scanner) {
+            Cell[] cells = result.rawCells();
+            for (Cell cell : cells) {
+                byte[] rowBytes = CellUtil.cloneRow(cell);
+                byte[] valueBytes = CellUtil.cloneValue(cell);//获取value对应的字节数组
+                byte[] columnBytes = CellUtil.cloneQualifier(cell);//获取列名对应的字节数组
+                System.out.println(Bytes.toString(rowBytes) + "-"
+                        + Bytes.toString(columnBytes) + "-"
+                        + Bytes.toString(valueBytes));
+            }
+        }
+        scanner.close();
+        table.close();
+    }
+
+    /**
+     * 删除一行
+     *
+     * @param tableName
+     * @param rowKey
+     * @throws IOException
+     */
+    public static void deleteRow(String tableName, String rowKey) throws IOException {
+        Table table = connection.getTable(TableName.valueOf(tableName));
+        Delete delete = new Delete(Bytes.toBytes(rowKey));
+        table.delete(delete);
+        table.close();
+    }
+
+    /**
+     * 删除列(最新版本，所有版本)
+     * 删除列中指定时间戳的版本
+     * 删除最新版本，生成的时间戳和最新版本数据的时间戳一致
+     * 删除时指定时间戳就可以删除时间戳对应的指定版本
+     *
+     * @param tableName
+     * @param rowKey
+     * @throws IOException
+     */
+    public static void delete(String tableName, String rowKey,String family,String column) throws IOException {
+        Table table = connection.getTable(TableName.valueOf(tableName));
+        Delete delete = new Delete(Bytes.toBytes(rowKey));
+        delete.addColumn(Bytes.toBytes(family),Bytes.toBytes(column)); //
+        delete.addColumn(Bytes.toBytes(family),Bytes.toBytes(column),
+                new Long(100000)); //删除时指定时间戳就可以删除时间戳对应的指定版本
+//        delete.addColumns(Bytes.toBytes(family),Bytes.toBytes(column));//删除所有版本
+        table.delete(delete);
+        table.close();
+    }
+
+    /**
+     * main方法测试工具类方法
+     *
+     * @param args
+     */
+    public static void main(String[] args) throws IOException {
+//        createTable("class", "info");
+//        modifyTable("class","info");
+//        dropTable("class");
+//        listTables();
+//        descTable("class"); //TODO 待补充
+//        putCell("class", "1001", "info", "name", "0508");
+//        getRow("class","1001");
+//        getRowsByRowRange("student","1001","1004");
+//        getRowByColumn("student", "info", "name", "zs");
+        deleteRow("student", "1001");
+    }
+}
+```
+
+## 3.MapReduce
+### 3.1 HBase-MapReduce官方案例
+
+
+### 3.2 自定义HBase-MapReduce1
+**Mapper**
+```java
+package com.tian.hbase.mr;
+
+
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.hbase.util.Bytes;
+
+import java.io.IOException;
+
+/**
+ * 从HBase读取数据
+ * ImmutableBytesWritable实现了WritableComparable接口
+ * Put没有实现上述接口，HBase为我们提供了Put的序列化器，TODO 源码
+ *
+ * @author JARVIS
+ * @version 1.0
+ * 2019/8/14 15:29
+ */
+public class ReadMapper extends TableMapper<ImmutableBytesWritable, Put> {
+    /**
+     * 读取特定的列
+     * @param key rowKey
+     * @param value Result对象
+     * @param context
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    @Override
+    protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
+        Put put = new Put(key.get());
+        Cell[] cells = value.rawCells();
+        for (Cell cell : cells) {
+            if ("name".equals(Bytes.toString(CellUtil.cloneQualifier(cell))))
+//                put.addColumn();
+                put.add(cell);
+        }
+        context.write(key,put);
+    }
+}
+```
+**Reducer**
+```java
+package com.tian.hbase.mr;
+
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.TableReducer;
+import org.apache.hadoop.io.NullWritable;
+
+import java.io.IOException;
+
+/**
+ * @author JARVIS
+ * @version 1.0
+ * 2019/8/14 15:30
+ */
+public class WriteReducer extends TableReducer<ImmutableBytesWritable, Put, NullWritable> {
+    /**
+     * 归并相同的rowKey后直接写出
+     *
+     * @param key
+     * @param values
+     * @param context
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    @Override
+    protected void reduce(ImmutableBytesWritable key, Iterable<Put> values, Context context) throws IOException, InterruptedException {
+        for (Put value : values) {
+            context.write(NullWritable.get(), value);
+        }
+    }
+}
+```
+**Driver**
+```java
+package com.tian.hbase.mr;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Scan;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.HRegionPartitioner;
+import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
+import org.apache.hadoop.mapreduce.Job;
+
+import java.io.IOException;
+
+/**
+ * 将fruit表中的一部分数据，通过MR迁入到fruit_mr表中
+ * TODO 结果验证
+ * @author JARVIS
+ * @version 1.0
+ * 2019/8/14 15:30
+ */
+public class Driver {
+    public static void main(String[] args) throws IOException, ClassNotFoundException, InterruptedException {
+        Configuration conf = HBaseConfiguration.create();
+        conf.set("hadoop.zookeeper.quorum",
+                "hadoop101,hadoop102,hadoop103");
+        Job job = Job.getInstance(conf);
+        job.setJarByClass(Driver.class);
+        /*
+        使用HBase工具类初始化
+         */
+        Scan scan = new Scan();
+        TableMapReduceUtil.initTableMapperJob("fruit",scan,ReadMapper.class,
+                ImmutableBytesWritable.class,
+                Put.class,job);
+        job.setNumReduceTasks(100);
+        TableMapReduceUtil.initTableReducerJob("fruit_mr",WriteReducer.class,
+                job, HRegionPartitioner.class); //TODO 源码
+        job.waitForCompletion(true);
+    }
+}
+```
+### 3.3 自定义HBase-MapReduce2
+**Mapper**
+```java
+package com.tian.hbase.mr2;
+
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Mapper;
+
+import java.io.IOException;
+
+/**
+ * @author JARVIS
+ * @version 1.0
+ * 2019/8/14 16:29
+ */
+public class ReadMapper extends Mapper<Long, Text, ImmutableBytesWritable, Put> {
+    @Override
+    protected void map(Long key, Text value, Context context) throws IOException, InterruptedException {
+        String line = value.toString();
+        String[] split = line.split("\t");//split方法传入的参量是一个正则表达式
+        if (split.length<3)
+            return;
+        Put put = new Put(Bytes.toBytes(split[0])); //split[0]即rowKey
+        put.addColumn(Bytes.toBytes("info"),Bytes.toBytes("name"),Bytes.toBytes(split[1]));
+        put.addColumn(Bytes.toBytes("info"),Bytes.toBytes("color"),Bytes.toBytes(split[2]));
+        context.write(new ImmutableBytesWritable(Bytes.toBytes(split[0])),put);
+    }
+}
+```
+**Reducer**
+```java
+package com.tian.hbase.mr2;
+
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.TableReducer;
+import org.apache.hadoop.io.NullWritable;
+
+import java.io.IOException;
+
+/**
+ * @author JARVIS
+ * @version 1.0
+ * 2019/8/14 16:37
+ */
+public class WriteReducer extends TableReducer<ImmutableBytesWritable,Put,NullWritable> {
+    @Override
+    protected void reduce(ImmutableBytesWritable key, Iterable<Put> values, Context context)
+            throws IOException, InterruptedException {
+        for (Put value : values) {
+            context.write(NullWritable.get(),value);
+        }
+    }
+}
+```
+**Driver**
+```java
+package com.tian.hbase.mr2;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
+import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
+import org.apache.hadoop.mapreduce.Job;
+
+import java.io.IOException;
+
+/**
+ * @author JARVIS
+ * @version 1.0
+ * 2019/8/14 16:38
+ */
+public class Driver {
+    public static void main(String[] args) throws IOException, ClassNotFoundException,
+            InterruptedException {
+        Configuration conf = HBaseConfiguration.create();
+        conf.set("hadoop.zookeeper.quorum",
+                "hadoop101,hadoop102,hadoop103");
+        Job job = Job.getInstance(conf);
+        job.setJarByClass(com.tian.hbase.mr.Driver.class);
+        job.setMapperClass(ReadMapper.class);
+        job.setMapOutputKeyClass(ImmutableBytesWritable.class);
+        job.setMapOutputValueClass(Put.class);
+        TableMapReduceUtil.initTableReducerJob("fruit_mr",
+                WriteReducer.class,job);
+        job.setNumReduceTasks(1);
+        boolean isSuccess = job.waitForCompletion(true);
+//        if (!isSuccess)
+//            throw new IOException("Job running with error");
+//        return isSuccess ? 0:1;
+    }
+}
+```
