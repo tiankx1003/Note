@@ -1,4 +1,4 @@
-<p align="right"><b><i>2019-8-2</i></b></p>
+<p align="right"><b><i>▼2019-8-2</i></b></p>
 
 CentOS7安装mysql前卸载依赖**mariadb**
 
@@ -254,3 +254,27 @@ Region Split分裂后的Region在RegionServer中的具体存放与传输 视频
 
 
 LSM型数据库
+
+<p align="right"><b><i>2019-8-14</i></b></p>
+
+**HBase API**
+
+官网查看API说明文档
+创建连接(zk，RegionServer，Master)
+Connection连接线程安全，可只创建一个对象线程共享
+Table和Admin线程不安全，
+不推荐缓存和池
+Admin用于DDL操作 `Connection.getAdmin()`
+Table用于get,put,delete,scan ``
+
+添加依赖
+见maven工程
+
+**MapReduce**
+从HBase读数据的InputFormat
+往HBase写数据的OutputFormat
+配置环境
+
+hadoop-env.sh中添加`export HADOOP_CLASSPATH=$HADOOP_CLASSPATH:/opt/module/hbase/lib/*​`
+官方hbase-mapreduce
+自定义
