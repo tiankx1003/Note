@@ -213,6 +213,9 @@ put 'student','1001','info:age','18'
 put 'student','1002','info:name','ls'
 put 'student','1002','info:sex','femal'
 put 'student','1002','info:age','20'
+put 'student','1003','info:name','ww'
+put 'student','1003','info:sex','femal'
+put 'student','1003','info:age','22'
 -- 查数据
 get 'student','1001' -- 查一行数据
 get 'student','1001','info:name' -- 获取字段数据
@@ -222,6 +225,7 @@ scan 'student',{STARTROW => '1002',STOPROW => '1002!'} -- 范围左闭右开1002
 deleteall 'student','1001' -- 删除整行
 delete 'student','1002','info:name' -- 删除字段
 truncate 'student' -- 彻底清空数据
+drop_namespace 'weibo' # 删除命名空间
 
 -- 多版本
 alter 'student',{NAME => 'info',VERSIONS => 2}

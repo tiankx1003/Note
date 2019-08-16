@@ -52,7 +52,7 @@ having avg_sal > 2000;
 
 sort by设置多个Reducer后把数据**随机**放入多个文件中
 
-<p align="right"><b><i>2019-8-12</i></b></p>
+<p align="right"><b><i>▼2019-8-12</i></b></p>
 
 **Kafka**
 自定义拦截器的close()方法在Producer的close()方法中调用时调用
@@ -97,7 +97,7 @@ event的header键值对中的键为topic
 
 exactly once语义
 
-<p align="right"><i><b>2019-8-13</b></i></p>
+<p align="right"><i><b>▼2019-8-13</b></i></p>
 
 **NoSQL高扩展性**
 
@@ -255,7 +255,7 @@ Region Split分裂后的Region在RegionServer中的具体存放与传输 视频
 
 LSM型数据库
 
-<p align="right"><b><i>2019-8-14</i></b></p>
+<p align="right"><b><i>▼2019-8-14</i></b></p>
 
 **HBase API**
 
@@ -278,3 +278,76 @@ Table用于get,put,delete,scan ``
 hadoop-env.sh中添加`export HADOOP_CLASSPATH=$HADOOP_CLASSPATH:/opt/module/hbase/lib/*​`
 官方hbase-mapreduce
 自定义
+
+<p align="right"><b><i>▼2019-8-16</i></b></p>
+
+**谷粒微博**
+
+▼表的设计
+
+用户表user
+
+| id   | name | gender | age  |
+| ---- | ---- | ------ | ---- |
+|      |      |        |      |
+
+粉丝表fans
+
+| id   | name | gender | age  |
+| ---- | ---- | ------ | ---- |
+|      |      |        |      |
+
+明星表start
+
+| id   | name | gender | age  |
+| ---- | ---- | ------ | ---- |
+|      |      |        |      |
+
+中间表relation
+
+fans|start
+:-|:-
+ aa |XX
+ aa |YY
+ bb |XX
+ bb |YY
+
+微博表weibo
+
+id | content| time|user_id(foreign key)
+:-|:-|:-|:-
+| | | 
+
+user和weibo为一对多关系，weibo表端添加外键来建立关系
+fans和start为多对多关系，再建立一张中间表来建立关系
+
+非关系型数据库的设计
+
+weibo
+rowKey|content
+:-|:-
+user_id_time| |
+
+user
+rowKey|data(time)
+:-|:-
+ aa:follow:bb | 
+ aa:follow:cc | 
+ bb:follow:cc | 
+ cc:followedby:aa | 
+
+inbox
+rowKey| data(start) |
+:-|:-|--
+user_id| |
+
+
+
+user_id_time为user_id和时间戳的拼接，user_id能保证所有相同user_id在一块，time保证了天然排序
+weibo表通过用户名之间加连接符拼接成rowKey，连接符的不同表示关注与被关注
+当有关注发生时插入两条数据(关注，被关注)
+增加收件箱inbox表来增加查询速度，rowKey为user_id,列族为data，每个start为一个列，版本数来确定最新的几次微博内容
+这种inbox设置有过大的冗余，通过牺牲查询速度减少冗余，内个版本的数据内存放为微博表user_id_time
+
+weibo表方案二，rowKey为user_id，列族fans和star，每添加一个fans就在指定列族中添加一个列名，star同理
+
