@@ -147,7 +147,7 @@ bin/sqoop import \
 # # 提示：该过程分为两步，
 # 第一步将数据导入到HDFS，
 # 第二步将导入到HDFS的数据迁移到Hive仓库，
-# 第一步默认的临时目录是/user/atguigu/表名
+# 第一步默认的临时目录是/user/tian/表名
 ```
 ### 4.1.3 RDBMS到Hbase
 ```bash
