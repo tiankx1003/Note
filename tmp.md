@@ -351,3 +351,178 @@ weibo表通过用户名之间加连接符拼接成rowKey，连接符的不同表
 
 weibo表方案二，rowKey为user_id，列族fans和star，每添加一个fans就在指定列族中添加一个列名，star同理
 
+<p align="right"><b><i>▼2019-8-17</i></b></p>
+
+▼**Hive集成HBase**
+
+HBase无法进行复杂查询，数据存入HBase，Hive建表关联HBase，
+
+> **Hive**
+> 数据仓库，主要用于写sql语句转mr进行计算，使用于离线的数据分析。
+
+> **HBase**
+> NoSQL，面向列存储，而非列式存储
+> 用于存储结构化和非结构化的数据，只能做单表查询，不能做多表关联
+
+**jar包关联**
+重新编译，替换依赖，解决兼容性问题
+
+```bash
+# 添加软链接
+ln -s $HBASE_HOME/lib/hbase-common-1.3.1.jar  $HIVE_HOME/lib/hbase-common-1.3.1.jar
+ln -s $HBASE_HOME/lib/hbase-server-1.3.1.jar $HIVE_HOME/lib/hbase-server-1.3.1.jar
+ln -s $HBASE_HOME/lib/hbase-client-1.3.1.jar $HIVE_HOME/lib/hbase-client-1.3.1.jar
+ln -s $HBASE_HOME/lib/hbase-protocol-1.3.1.jar $HIVE_HOME/lib/hbase-protocol-1.3.1.jar
+ln -s $HBASE_HOME/lib/hbase-it-1.3.1.jar $HIVE_HOME/lib/hbase-it-1.3.1.jar
+ln -s $HBASE_HOME/lib/htrace-core-3.1.0-incubating.jar $HIVE_HOME/lib/htrace-core-3.1.0-incubating.jar
+ln -s $HBASE_HOME/lib/hbase-hadoop2-compat-1.3.1.jar $HIVE_HOME/lib/hbase-hadoop2-compat-1.3.1.jar
+ln -s $HBASE_HOME/lib/hbase-hadoop-compat-1.3.1.jar $HIVE_HOME/lib/hbase-hadoop-compat-1.3.1.jar
+```
+
+```xml
+<!-- hive-site.xml -->
+<property>
+    <name>hive.zookeeper.quorum</name>
+    <value>hadoop101,hadoop102,hadoop103</value>
+    <description>
+        The list of ZooKeeper servers to talk to. This is only needed for read/write locks.
+    </description>
+</property>
+<property>
+    <name>hive.zookeeper.client.port</name>
+    <value>2181</value>
+    <description>
+        The port of ZooKeeper servers to talk to. This is only needed for read/write locks.
+    </description>
+</property>
+```
+
+建表
+
+```mysql
+
+# 案例一 需求 建立Hive表，关联HBase表，插入数据到Hive表的同时能够影响HBase表
+# 建表
+CREATE TABLE hive_hbase_emp_table(
+empno int,
+ename string,
+job string,
+mgr int,
+hiredate string,
+sal double,
+comm double,
+deptno int)
+STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+WITH SERDEPROPERTIES ("hbase.columns.mapping" = ":key,info:ename,info:job,info:mgr,info:hiredate,info:sal,info:comm,info:deptno")
+TBLPROPERTIES ("hbase.table.name" = "hbase_emp_table");
+
+# 创建临时中间表
+CREATE TABLE emp(
+empno int,
+ename string,
+job string,
+mgr int,
+hiredate string,
+sal double,
+comm double,
+deptno int)
+row format delimited fields terminated by '\t';
+
+# 向中间表load数据
+load data local inpath '/home/admin/softwares/data/emp.txt' into table emp;
+
+# 通过insert将中间表中的数据导入到Hive关联的HBase表中
+insert into table hive_hbase_emp_table select * from emp;
+
+# 案例二 需求 在HBase中已经存储了某一张表hbase_emp_table，然后在Hive中创建一个外部表来关联HBase中的hbase_emp_table这张表，使之可以借助Hive来分析HBase这张表中的数据。
+# Hive中创建外部表
+CREATE EXTERNAL TABLE relevance_hbase_emp(
+empno int,
+ename string,
+job string,
+mgr int,
+hiredate string,
+sal double,
+comm double,
+deptno int)
+STORED BY 
+'org.apache.hadoop.hive.hbase.HBaseStorageHandler'
+WITH SERDEPROPERTIES ("hbase.columns.mapping" = 
+":key,info:ename,info:job,info:mgr,info:hiredate,info:sal,info:comm,info:deptno") 
+TBLPROPERTIES ("hbase.table.name" = "hbase_emp_table");
+
+# 关联后使用hive函数进行分析操作
+select * from relevance_hbase_emp;
+```
+
+
+
+插入数据，不能使用load(剪切)，使用insert
+
+
+
+**集成具体实现**
+建表时确定，row format 和stored as，行格式和文件格式
+或者使用stored by全类名的形式，并添加映射关系
+
+▼**HBase优化**
+
+重点:预分区，RowKey设计
+
+**HA配置**
+
+```bash
+touch conf/backup-masters # /opt/module/hbase/
+echo hadoop102 > conf/backup-masters
+xsync conf/backup-master
+# 测试，kill hadoop101的master后，hadoop102成为master，重启hadoop101，master仍为hadoop102
+# ha可以配置多个
+# 若是在hadoop102起hbase，ha节点也是hadoop102，则ha不生效
+```
+
+**预分区**
+
+```mysql
+# 手动设置预分区
+# 四个分区键把负无穷到正无穷分成五个区
+create 'staff1','info','partition1',SPLITS => ['1000','2000','3000','4000']
+
+# 指定分区个数和分区语法生成预分区，生成16进制序列预分区
+# rowKey设置好预分区规则要协调使用
+create 'staff2','info','partition2',{NUMREGIONS => 15, SPLITALGO => 'HexStringSplit'}
+
+# 按照文件中设置的规则预分区
+# HBase会自动对分区键进行排序
+# aaaa
+# bbbb
+# cccc
+# dddd
+create 'staff3','partition3',SPLITS_FILE => 'splits.txt'
+```
+
+```java
+// 使用API创建预分区
+//自定义算法，产生一系列Hash散列值存储在二维数组中
+byte[][] splitKeys = 某个散列值函数
+//创建HBaseAdmin实例
+HBaseAdmin hAdmin = new HBaseAdmin(HBaseConfiguration.create());
+//创建HTableDescriptor实例
+HTableDescriptor tableDesc = new HTableDescriptor(tableName);
+//通过HTableDescriptor实例和散列值二维数组创建带有预分区的HBase表
+hAdmin.createTable(tableDesc, splitKeys);
+```
+
+**RowKey设计** *视频*
+
+**内存优化**
+export HBASE_HEAPSIZE
+
+
+**基础优化**
+
+参数设置 *视频*
+
+
+▼**扩展**
+
+布隆过滤器
