@@ -1,6 +1,8 @@
 TODO
 
 * [ ] -
+* [ ] **布隆过滤器** *2019-8-18 16:48:34*
+* [ ] **集成Hive** *2019-8-18 16:48:19*
 * [ ] 读数据流程 *2019-8-13 19:17:01*
 * [ ] StoreFile Compaction *2019-8-13 19:17:22*
 * [ ] Region Split后Region在RegionServer中的具体存放与本地化 *2019-8-13 19:18:24*
@@ -1054,7 +1056,7 @@ xsync $HBASE_HOME/conf/
 
 查看页面[http://hadooo101:16010](http://hadoop101:16010)
 
-## 2.预分区 *视频*
+## 2.预分区
 
 每一个region维护着startRow与endRowKey，如果加入的数据符合某个region维护的rowKey范围，则该数据交给这个region维护。那么依照这个原则，我们可以将数据所要投放的分区提前大致的规划好，以提高HBase性能。
 
@@ -1088,9 +1090,51 @@ HTableDescriptor tableDesc = new HTableDescriptor(tableName);
 hAdmin.createTable(tableDesc, splitKeys);
 ```
 
+```java
+Admin admin = connection.getAdmin();
+HTableDescriptor tableDesc = new HTableDescriptor(TableName.valueOf("test"));
+tableDesc.addFamily(new HColumnDescriptor("info"));
+byte[][] splitKeys = new byte[3][];
+splitKeys[0] = Bytes.toBytes("aaa");
+splitKeys[1] = Bytes.toBytes("bbb");
+splitKeys[2] = Bytes.toBytes("ccc");
+admin.createTable(tableDesc,splitKeys);
+admin.close();
+```
+
 ## 3.RowKey设计 *视频*
 
+一条数据的唯一标识就是rowkey，那么这条数据存储于哪个分区，取决于rowkey处于哪个一个预分区的区间内，设计rowkey的主要目的
+，就是让数据均匀的分布于所有的region中，在一定程度上防止数据倾斜。接下来我们就谈一谈rowkey常用的设计方案。
+rowKey的设计最先考虑是要满足**业务需求**,RowKey的设计和预分区协调进行
 
+> **生成随机数、hash、散列值**
+>
+> ```
+> 原本rowKey为1001的，SHA1后变成：dd01903921ea24941c26a48f2cec24e0bb0e8cc7
+> 原本rowKey为3001的，SHA1后变成：49042c54de64a1e9bf0b33e00245660ef92dc7bd
+> 原本rowKey为5001的，SHA1后变成：7b61dec07e02c188790670af43e717f0f46e8913
+> ```
+>
+> 在做此操作之前，一般我们会选择从数据集中抽取样本，来决定什么样的rowKey来Hash后作为每个分区的临界值。
+> 解决Region热点问题(大批的数据写到一个Region)，在rowKey前加指定字符段的hash值前缀，对Region数取余得到位置。这样既能保证相同的字符段对应的RowKey在一块，有解决了热点问题，查询时，先计算hash值
+> 不能设计单调递增的rowKey，以防发生热点问题。
+
+> **字符串反转**
+>
+> ```
+> 20170524000001转成10000042507102
+> 20170524000002转成20000042507102
+> ```
+>
+> 因为字符串的后端变化频率更高，反转可以一定程度上散列逐步put进来的数据
+
+> **字符串拼接**
+>
+> ```
+> 20170524000001_a12e
+> 20170524000001_93i7
+> ```
 
 ## 4.内存优化
 
@@ -1182,29 +1226,20 @@ hbase.regionserver.region.split.policy=org.apache.hadoop.hbase.regionserver.Disa
 ## 1.需求
 
 1) 微博内容的浏览，数据库表设计
-
 2) 用户社交体现：关注用户，取关用户
-
 3) 拉取关注的人的微博内容
 
 ## 2.需求分析
 
 1) 创建命名空间以及表名的定义
-
 2) 创建微博内容表
-
 3) 创建用户关系表
-
+3) 创建用户关系表
 4) 创建用户微博内容接收邮件表
-
 5) 发布微博内容
-
 6) 添加关注用户
-
 7) 移除（取关）用户
-
 8) 获取关注的人的微博内容
-
 9) 测试
 
 ## 3.表格设计
@@ -1670,3 +1705,34 @@ public class WeiboAPP {
 }
 ```
 
+# 七、扩展
+
+## 1.HBase在商业项目中的能力
+
+每天：
+1) 消息量：发送和接收的消息数超过60亿
+2) 将近1000亿条数据的读写
+3) 高峰期每秒150万左右操作
+4) 整体读取数据占有约55%，写入占有45%
+5) 超过2PB的数据，涉及冗余共6PB数据
+6) 数据每月大概增长300千兆字节。
+
+## 2.布隆过滤器
+
+**Bloom Filter**是一种空间效率很高的随机数据结构，它利用位数组很简洁地表示一个集合，并能判断一个元素是否属于这个集合。Bloom Filter的这种高效是有一定代价的：==在判断一个元素是否属于某个集合时，有可能会把不属于这个集合的元素误认为属于这个集合（false positive）==。因此，==Bloom Filter不适合那些“零错误”的应用场合。而在能容忍低错误率的应用场合下，Bloom Filter通过极少的错误换取了存储空间的极大节省。==
+布隆过滤器的好处在于快速，省空间，但是有一定的误识别率，常见的补救办法是在建立一个小的白名单，存储那些可能个别误判的邮件地址。
+
+**布隆过滤器算法内容**
+[http://blog.csdn.net/jiaomeng/article/details/1495500](http://blog.csdn.net/jiaomeng/article/details/1495500)
+
+## 3.HBase2.0新特性
+
+**最新文档**
+[http://hbase.apache.org/book.html#ttl](http://hbase.apache.org/book.html#ttl)
+
+**官方发布主页**
+[http://mail-archives.apache.org/mod_mbox/www-](http://mail-archives.apache.org/mod_mbox/www-)
+[announce/201706.mbox/<CADcMMgFzmX0xYYso-UAYbU7V8z-](announce/201706.mbox/<CADcMMgFzmX0xYYso-UAYbU7V8z-)
+[Obk1J4pxzbGkRzbP5Hps+iA@mail.gmail.com](Obk1J4pxzbGkRzbP5Hps+iA@mail.gmail.com)
+
+[==*详细内容变动*==]([https://issues.apache.org/jira/secure/ReleaseNote.jspa?version=12340859&styleName=&projectId=12310753&Create=Create&atl_token=A5KQ-2QAV-T4JA-FDED%7Ce6f233490acdf4785b697d4b457f7adb0a72b69f%7Clout](https://issues.apache.org/jira/secure/ReleaseNote.jspa?version=12340859&styleName=&projectId=12310753&Create=Create&atl_token=A5KQ-2QAV-T4JA-FDED|e6f233490acdf4785b697d4b457f7adb0a72b69f|lout))

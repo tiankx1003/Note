@@ -67,7 +67,7 @@ bin/sqoop list-databases --connect jdbc:mysql://hadoop101:3306/ --username root 
 
 ### 4.1.1 RDBMS到HDFS
 ```bash
-mysql -uroot -p000000
+mysql -uroot -proot
 ```
 ```sql
 # 在Mysql中新建一张表并插入一些数据
@@ -82,7 +82,7 @@ insert into company.staff(name, sex) values('Catalina', 'FeMale');
 bin/sqoop import \
 --connect jdbc:mysql://hadoop101:3306/company \
 --username root \
---password 000000 \
+--password root \
 --table staff \
 --target-dir /user/company \
 --delete-target-dir \
@@ -94,7 +94,7 @@ bin/sqoop import \
 bin/sqoop import \
 --connect jdbc:mysql://hadoop101:3306/company \
 --username root \
---password 000000 \
+--password root \
 --target-dir /user/company \
 --delete-target-dir \
 --num-mappers 1 \
@@ -108,7 +108,7 @@ bin/sqoop import \
 bin/sqoop import \
 --connect jdbc:mysql://hadoop101:3306/company \
 --username root \
---password 000000 \
+--password root \
 --target-dir /user/company \
 --delete-target-dir \
 --num-mappers 1 \
@@ -122,7 +122,7 @@ bin/sqoop import \
 bin/sqoop import \
 --connect jdbc:mysql://hadoop101:3306/company \
 --username root \
---password 000000 \
+--password root \
 --target-dir /user/company \
 --delete-target-dir \
 --num-mappers 1 \
@@ -137,7 +137,7 @@ bin/sqoop import \
 bin/sqoop import \
 --connect jdbc:mysql://hadoop101:3306/company \
 --username root \
---password 000000 \
+--password root \
 --table staff \
 --num-mappers 1 \
 --hive-import \
@@ -154,7 +154,7 @@ bin/sqoop import \
 bin/sqoop import \
 --connect jdbc:mysql://hadoop101:3306/company \
 --username root \
---password 000000 \
+--password root \
 --table company \
 --columns "id,name,sex" \
 --column-family "info" \
@@ -178,7 +178,7 @@ scan 'hbase_company'
 bin/sqoop export \
 --connect jdbc:mysql://hadoop101:3306/company \
 --username root \
---password 000000 \
+--password root \
 --table staff \
 --num-mappers 1 \
 --export-dir /user/hive/warehouse/staff_hive \
@@ -203,7 +203,7 @@ jdbc:mysql://hadoop101:3306/company
 --username
 root
 --password
-000000
+root
 --table
 staff
 --num-mappers
@@ -430,4 +430,3 @@ staff
 | 序号 | 参数       | 说明          |
 | ---- | ---------- | ------------- |
 | 1    | --shutdown | 关闭metastore |
- 
