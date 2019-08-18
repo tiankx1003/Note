@@ -1244,7 +1244,7 @@ hbase.regionserver.region.split.policy=org.apache.hadoop.hbase.regionserver.Disa
 
 ## 3.表格设计
 
-![](E:\Git\Note\Markdown\img\hbase-guli-table.png)
+![](img\hbase-guli-table.png)
 
 ## 4.代码实现
 
