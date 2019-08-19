@@ -1,9 +1,0 @@
-{
-    "files.exclude": {
-        "**/.classpath": false,
-        "**/.project": false,
-        "**/.settings": false,
-        "**/.factorypath": false
-    },
-    "java.configuration.updateBuildConfiguration": "automatic"
-}
