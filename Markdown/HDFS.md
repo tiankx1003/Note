@@ -72,7 +72,7 @@ Client提供一些命令来访问HDFS进行增删改查
 紧急情况下可辅助回复NameNode
 
 ## 4.HDFS文件块大小（面试重点）
-HDFS中的文件分块存储(block),块的大小能够荣国参数(dfs.blocksize)来规定，Hadoop2.x中默认大小为128M，老版本中为64M
+HDFS中的文件分块存储(block),块的大小能够通过参数(dfs.blocksize)来规定，Hadoop2.x中默认大小为128M，老版本中为64M
 
 ![](img\blocksize.jpg)
 
@@ -883,6 +883,7 @@ hdfs dfs -put /opt/module/hadoop-2.7.2/README.txt /
 3. HDFS默认的超时时长为10分钟+30秒
 4. 如果定义超时时间为TimeOut，则超时时长的计算公式为:
    
+
 $TimeOut = 2 * dfs.namenode.heartbeat.recheck-interval + 10 * dfs.heartbeat.interval$
 
 而默认的`dfs.namenode.heartbeat.checheck-interval`大小为5分钟`dfs.heartbeat.interval`默认为3秒
@@ -1355,7 +1356,7 @@ bin/hdfs haadmin -getServiceState nn1
 	<name>dfs.ha.automatic-failover.enabled</name>
 	<value>true</value>
 </property>
-```	
+```
 在core-site.xml文件中增加
 ```xml
 <property>
