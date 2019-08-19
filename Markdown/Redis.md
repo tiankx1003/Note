@@ -1,5 +1,5 @@
 # Redis
-###现代互联网架构（略）
+### 现代互联网架构（略）
 
 ### NoSQL
 关系型数据库的查询瓶颈
@@ -51,7 +51,7 @@ redis-cli -h
 redis-cli -p
 ```
 
-### redis操作
+### redis操作e
 ```sql
 shutdown #关闭服务端
 exit #退出
@@ -221,18 +221,18 @@ redis-sentinel sentinel.conf
 
 ```java
 //jedis配置时，连接哨兵
-	public void testSentinel() throws Exception {
-		Set<String> set = new HashSet<>();
-		// set中放的是哨兵的Ip和端口
-		set.add("192.168.6.10:26379");
-		GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
-		JedisSentinelPool jedisSentinelPool = 
-            new JedisSentinelPool("mymaster", set, poolConfig, 60000);//set放置所有哨兵的IP和端口号
-		Jedis jedis = jedisSentinelPool.getResource();
-		String value = jedis.get("k7");
-		jedis.set("Jedis", "Jedis");
-		System.out.println(value);
-	}
+public void testSentinel() throws Exception {
+    Set<String> set = new HashSet<>();
+    // set中放的是哨兵的Ip和端口
+    set.add("192.168.6.10:26379");
+    GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
+    JedisSentinelPool jedisSentinelPool = 
+        new JedisSentinelPool("mymaster", set, poolConfig, 60000);//set放置所有哨兵的IP和端口号
+    Jedis jedis = jedisSentinelPool.getResource();
+    String value = jedis.get("k7");
+    jedis.set("Jedis", "Jedis");
+    System.out.println(value);
+}
 //启动后如果显示所有哨兵都down，那就在配置文件sentinel.conf中添加bind
 ```
 

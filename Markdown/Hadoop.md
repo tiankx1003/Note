@@ -56,7 +56,7 @@ HDFS（Hadoop Distributed File System）
 **Secondary NameNode**(2nn):用来监控HDFS状态的辅助后台程序，每隔一段时间获取HDFS元数据的快照。
 
 #### 2.2 YARN架构概述
-**ResourceManger**(RM)主要作用
+**ResourceManager**(RM)主要作用
 处理客户端请求
 监控NodeManager
 启动或监控ApplicationMaster
