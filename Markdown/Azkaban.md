@@ -30,7 +30,7 @@ Shell脚本程序，Java程序，MapReduce程序、Hive脚本等
 >5)	通过对明细表的统计和分析，得到结果报表信息（hive的查询操作）；
 >```
 
-![](E:\Git\Note\Markdown\img\azkaban-workflow.png)
+![](img\azkaban-workflow.png)
 
 ## 3.特点
 
@@ -74,7 +74,7 @@ Shell脚本程序，Java程序，MapReduce程序、Hive脚本等
 
 ## 5.架构
 
-![](E:\Git\Note\Markdown\img\azkaban-struc.png)
+![](img\azkaban-struc.png)
 
 > **Web Server**
 > 整个工作流系统的主要管理者，用户认证，project管理，定时调度，跟踪工作流执行进度等一系列任务。
