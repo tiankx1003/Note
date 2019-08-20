@@ -567,19 +567,35 @@ curl -X PUT -H "Authorization: Basic QURNSU46S1lMSU4=" -H 'Content-Type: applica
 
 # 四、Cube构建原理
 ## 1.Cube存储原理
-[^_^]:#(TODO ...)
-
-## 2.Cube构建算法
-### 2.1 逐层构建算法(layer)
-[//]: # (TODO ...)
-
-### 2.2 快速构建算法(inmem)
-<!-- TODO ... -->
-
+![](img/kylin/kylin-store1.png)
+![](img/kylin/kylin-store2.png)
 HBase rowKey
 Cuboid id + 维度值
 
-Kylin根据任务复杂度和资源自动决定构建算法
+## 2.Cube构建算法
+### 2.1 逐层构建算法(layer)
+![](img/kylin/kylin-layer.png)
+我们知道，一个N维的Cube，是由1个N维子立方体、N个(N-1)维子立方体、N*(N-1)/2个(N-2)维子立方体、......、N个1维子立方体和1个0维子立方体构成，总共有2^N个子立方体组成，在逐层算法中，按维度数逐层减少来计算，每个层级的计算（除了第一层，它是从原始数据聚合而来），是基于它上一层级的结果来计算的。比如，[Group by A, B]的结果，可以基于[Group by A, B, C]的结果，通过去掉C后聚合得来的；这样可以减少重复计算；当 0维度Cuboid计算出来的时候，整个Cube的计算也就完成了。
+每一轮的计算都是一个MapReduce任务，且串行执行；一个N维的Cube，至少需要N次MapReduce Job。
+>**算法优点**
+> * 此算法充分利用了MapReduce的优点，处理了中间复杂的排序和shuffle工作，故而算法代码清晰简单，易于维护；
+> * 受益于Hadoop的日趋成熟，此算法非常稳定，即便是集群资源紧张时，也能保证最终能够完成。
+
+>**算法缺点**
+> * 当Cube有比较多维度的时候，所需要的MapReduce任务也相应增加；由于Hadoop的任务调度需要耗费额外资源，特别是集群较庞大的时候，反复递交任务造成的额外开销会相当可观；
+> * 由于Mapper逻辑中并未进行聚合操作，所以每轮MR的shuffle工作量都很大，导致效率低下。
+> * 对HDFS的读写操作较多：由于每一层计算的输出会用做下一层计算的输入，这些Key-Value需要写到HDFS上；当所有计算都完成后，Kylin还需要额外的一轮任务将这些文件转成HBase的HFile格式，以导入到HBase中去；
+
+*总体而言，该算法的效率较低，尤其是当Cube维度数较大的时候。*
+
+### 2.2 快速构建算法(inmem)
+![](img/kylin/kylin-inmem.png)
+也被称作“逐段”(By Segment) 或“逐块”(By Split) 算法，从1.5.x开始引入该算法，该算法的主要思想是，每个Mapper将其所分配到的数据块，计算成一个完整的小Cube 段（包含所有Cuboid）。每个Mapper将计算完的Cube段输出给Reducer做合并，生成大Cube，也就是最终结果。
+与旧算法相比，快速算法主要有两点不同：
+* Mapper会利用内存做预聚合，算出所有组合；Mapper输出的每个Key都是不同的，这样会减少输出到Hadoop MapReduce的数据量，Combiner也不再需要
+* 一轮MapReduce便会完成所有层次的计算，减少Hadoop任务的调配。
+
+**Kylin根据任务复杂度和资源自动决定构建算法**
 
 # 五、Cube构建优化
 从之前章节的介绍可以知道，在没有采取任何优化措施的情况下，Kylin会对每一种维度的组合进行预计算，每种维度的组合的预计算结果被称为Cuboid。假设有4个维度，我们最终会有24 =16个Cuboid需要计算。
