@@ -96,3 +96,14 @@ HashMap<Character,HashSet<Character>>
 Reduce阶段
 对key1和key2取交集
 reduceMap.get(key1).containAll(reduceMap.get(key2))
+
+
+```json
+"githubPullRequests.hosts": [
+    {
+        "host": "https://github.com",
+        "token": "33cf96e2ce0d11277b5c25e6a05e3264946c6983",
+        "username": "Tiankx1003"
+    }
+]
+```
