@@ -228,6 +228,15 @@ curl -X PUT -H "Authorization: Basic QURNSU46S1lMSU4=" -H 'Content-Type: applica
 ```
 
 # 四、Cube构建原理
+## 1.Cube存储原理
+[^_^]:#(TODO ...)
+
+## 2.Cube构建算法
+### 2.1 逐层构建算法(layer)
+[//]: # (TODO ...)
+
+### 2.2 快速构建算法(inmem)
+<!-- TODO ... -->
 
 HBase rowKey
 Cuboid id + 维度值
@@ -235,9 +244,13 @@ Cuboid id + 维度值
 Kylin根据任务复杂度和资源自动决定构建算法
 
 # 五、Cube构建优化
-**Cube构建优化**
-尽可能减少Cuboid个数
+从之前章节的介绍可以知道，在没有采取任何优化措施的情况下，Kylin会对每一种维度的组合进行预计算，每种维度的组合的预计算结果被称为Cuboid。假设有4个维度，我们最终会有24 =16个Cuboid需要计算。
+但在现实情况中，用户的维度数量一般远远大于4个。假设用户有10 个维度，那么没有经过任何优化的Cube就会存在210 =1024个Cuboid；而如果用户有20个维度，那么Cube中总共会存在220 =1048576个Cuboid。虽然每个Cuboid的大小存在很大的差异，但是单单想到Cuboid的数量就足以让人想象到这样的Cube对构建引擎、存储引擎来说压力有多么巨大。因此，在构建维度数量较多的Cube时，尤其要注意Cube的剪枝优化（即==减少Cuboid的生成==）。
 
+## 1.使用衍生维度(derived dimension)
+衍生维度用于在有效维度内将维度表上的非主键维度排除掉，并使用维度表的主键（其实是事实表上相应的外键）来替代它们。Kylin会在底层记录维度表主键与维度表其他维度之间的映射关系，以便在查询时能够动态地将维度表的主键“翻译”成这些非主键维度，并进行实时聚合。
+![](img/kylin/kylin-derived.png)
+虽然衍生维度具有非常大的吸引力，但这也并不是说所有维度表上的维度都得变成衍生维度，如果从维度表主键到某个维度表维度所需要的聚合工作量非常大，则不建议使用衍生维度
 **衍生维度原理**
 通过衍生关系减少Cuboid个数，
 不使用真正的维度构建，使用外键维度构建，
@@ -247,33 +260,50 @@ Kylin根据任务复杂度和资源自动决定构建算法
 事实表中必须有字段(外键)通过函数关系确定维度表中的字段
 这个函数关系称为衍生关系
 
-**使用聚合组**
->**强制维度**
+
+## 2.使用聚合组
+聚合组（Aggregation Group）是一种强大的剪枝工具。聚合组假设一个Cube的所有维度均可以根据业务需求划分成若干组（当然也可以是一个组），由于同一个组内的维度更可能同时被同一个查询用到，因此会表现出更加紧密的内在关联。每个分组的维度集合均是Cube所有维度的一个子集，不同的分组各自拥有一套维度集合，它们可能与其他分组有相同的维度，也可能没有相同的维度。每个分组各自独立地根据自身的规则贡献出一批需要被物化的Cuboid，所有分组贡献的Cuboid的并集就成为了当前Cube中所有需要物化的Cuboid的集合。不同的分组有可能会贡献出相同的Cuboid，构建引擎会察觉到这点，并且保证每一个Cuboid无论在多少个分组中出现，它都只会被物化一次。
+
+### 2.1 强制维度(Mandatory)
+如果一个维度被定义为强制维度，那么这个分组产生的所有Cuboid中每一个Cuboid都会包含该维度。每个分组中都可以有0个、1个或多个强制维度。如果根据这个分组的业务逻辑，则相关的查询一定会在过滤条件或分组条件中，因此可以在该分组中把该维度设置为强制维度。
+![](img/kylin/kylin-mandatory.png)
 必须带有指定字段作为维度
 A,B,C中最终确定了，A,AB,AC,ABC四个维度
 
->**联合维度**
-必须把某些字段作为一个整体确定维度
-A,B,C中把BC,作为整体，确定了
-A,ABC,BC三个维度
-
->**层级维度**
+### 2.2 层级维度(Hierarchy)
+每个层级包含两个或更多个维度。假设一个层级中包含D1，D2…Dn这n个维度，那么在该分组产生的任何Cuboid中， 这n个维度只会以（），（D1），（D1，D2）…（D1，D2…Dn）这n+1种形式中的一种出现。每个分组中可以有0个、1个或多个层级，不同的层级之间不应当有共享的维度。如果根据这个分组的业务逻辑，则多个维度直接存在层级关系，因此可以在该分组中把这些维度设置为层级维度
+![](img/kylin/kylin-hierarchy.png)
 A>B>C的层级关系，
 维度中有低等级出现时，比它等级高的所有字段必须出现
 确定维度为A,AB,ABC
 如年，月，日字段
 有价值的维度为年，年月，年月日
 
-**Row Key优化**
+### 2.3 联合维度(Joint)
+每个联合中包含两个或更多个维度，如果某些列形成一个联合，那么在该分组产生的任何Cuboid中，这些联合维度要么一起出现，要么都不出现。每个分组中可以有0个或多个联合，但是不同的联合之间不应当有共享的维度（否则它们可以合并成一个联合）。如果根据这个分组的业务逻辑，多个维度在查询中总是同时出现，则可以在该分组中把这些维度设置为联合维度
+![](img/kylin/kylin-joint.png)
+必须把某些字段作为一个整体确定维度
+A,B,C中把BC,作为整体，确定了
+A,ABC,BC三个维度
+
+## 3.Row Key优化
+Kylin会把所有的维度按照顺序组合成一个完整的Rowkey，并且按照这个Rowkey升序排列Cuboid中所有的行。
+设计良好的Rowkey将更有效地完成数据的查询过滤和定位，减少IO次数，提高查询速度，维度在rowkey中的次序，对查询性能有显著的影响。
+![](img/kylin/kylin-region1.png)
 >**被用作where过滤条件的维度放在前边**
 HBase中的rowKey是按照字典顺序排列，
 * 拖动web界面中拖动rowKey即可调整
 
+![](img/kylin/kylin-region2.png)
 >**基数大的维度放在基数小的维度前边**
 根据Cuboid id确定基数大小，基数小的放在后面可以增加聚合度
 因为HBase中Compaction
 
-**并发粒度优化**
+## 4.并发粒度优化
+当Segment中某一个Cuboid的大小超出一定的阈值时，系统会将该Cuboid的数据分片到多个分区中，以实现Cuboid数据读取的并行化，从而优化Cube的查询速度。具体的实现方式如下：构建引擎根据Segment估计的大小，以及参数“kylin.hbase.region.cut”的设置决定Segment在存储引擎中总共需要几个分区来存储，如果存储引擎是HBase，那么分区的数量就对应于HBase中的Region数量。kylin.hbase.region.cut的默认值是5.0，单位是GB，也就是说对于一个大小估计是50GB的Segment，构建引擎会给它分配10个分区。用户还可以通过设置kylin.hbase.region.count.min（默认为1）和kylin.hbase.region.count.max（默认为500）两个配置来决定每个Segment最少或最多被划分成多少个分区。
+![](img/kylin/kylin-region.png)
+由于每个Cube的并发粒度控制不尽相同，因此建议在Cube Designer 的Configuration Overwrites（上图所示）中为每个Cube量身定制控制并发粒度的参数。假设将把当前Cube的kylin.hbase.region.count.min设置为2，kylin.hbase.region.count.max设置为100。这样无论Segment的大小如何变化，它的分区数量最小都不会低于2，最大都不会超过100。相应地，这个Segment背后的存储引擎（HBase）为了存储这个Segment，也不会使用小于两个或超过100个的分区。我们还调整了默认的kylin.hbase.region.cut，这样50GB的Segment基本上会被分配到50个分区，相比默认设置，我们的Cuboid可能最多会获得5倍的并发量。
+
 Kylin把任务转发到HBase，
 在HBase中Region个数决定了并发度
 通过调整`keylin.hbase.region.cut`的值决定并发
@@ -282,8 +312,13 @@ Kylin把任务转发到HBase，
 `kylin.hbase.region.count.max`
 
 # 六、BI工具集成
+可以与Kylin结合使用的可视化工具很多，例如：
+ODBC：与Tableau、Excel、PowerBI等工具集成
+JDBC：与Saiku、BIRT等Java工具集成
+RestAPI：与JavaScript、Web网页集成
+Kylin开发团队还贡献了Zepplin的插件，也可以使用Zepplin来访问Kylin服务。
 
-**JDBC**
+## 1.JDBC
 ```xml
 <dependencies>
     <dependency>
@@ -326,7 +361,7 @@ public class TestKylin {
 }
 ```
 
-**Zepplin**
+## 2.Zeppelin
 ```bash
 tar -zxvf zeppelin-0.8.0-bin-all.tgz -C /opt/module/
 mv zeppelin-0.8.0-bin-all/ zeppelin
@@ -334,3 +369,19 @@ bin/zeppelin-daemon.sh start
 ```
 [Zepplin Web界面http://hadoop101:8080](http://hadoop101:8080)
 
+**配置Zeppelin支持Kylin**
+![](img/kylin/zeppelin1.png)
+![](img/kylin/zeppelin2.png)
+![](img/kylin/zeppelin3.png)
+
+## 3.实际使用
+![](img/kylin/zeppelin01.png)
+![](img/kylin/zeppelin02.png)
+![](img/kylin/zeppelin03.png)
+![](img/kylin/zeppelin04.png)
+![](img/kylin/zeppelin05.png)
+![](img/kylin/zeppelin06.png)
+![](img/kylin/zeppelin07.png)
+![](img/kylin/zeppelin08.png)
+![](img/kylin/zeppelin09.png)
+![](img/kylin/zeppelin10.png)
