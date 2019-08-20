@@ -44,6 +44,7 @@ xsync /opt/module/cdh # 分发配置
 bin/hdfs namenode -format # 
 sbin/start-dfs.sh # hadoop101
 sbin/start-yarn.sh # hadoop102
+sbin/mr-jobhistory-daemon.sh start historyserver # 启动历史服务器
 ```
 
 ```xml
@@ -161,7 +162,18 @@ bin/oozied.sh stop # 关闭
 
 # 三、实战
 
+定义workflow，配置定时
+将配置文件上传到HDFS指定路径
+使用Oozie job提交任务
+
+Oozie执行hive任务
+
 ## 1.Oozie调度shell脚本
+
+Oozie是将shell脚本转成MR的形式运行
+如果调度自定义脚本
+需要把脚本上传至HDFS并通过`<file></file>`标签指定文件路径
+或者把shell脚本上传到HDFS中job目录下的lib文件夹中
 
 ```bash
 mkdir -p oozie-apps/shell # oozie根目录
@@ -224,7 +236,7 @@ bin/oozie job -oozie http://hadoop101:11000/oozie -kill 0000004-170425105153692-
 # 通过http://hadoop101:50070查看hdfs文件内容
 ```
 
-## 2.Oozie逻辑调度执行多个Job
+## 2.Oozie逻辑调度执行多个Job *视频*
 
 ```bash
 vim job.properites
@@ -292,7 +304,7 @@ bin/hadoop fs -put oozie-apps/shells /user/tian/oozie-apps
 bin/oozie job -oozie http://hadoop101:11000/oozie -config oozie-apps/shells/job.properties -run
 ```
 
-## 3.Oozie调度MapReduce任务
+## 3.Oozie调度MapReduce任务 *视频*
 
 ```bash
 # 拷贝模版到oozie-apps
@@ -400,7 +412,7 @@ cp -a  /opt /module/cdh/hadoop-2.5.0-cdh5.3.6/share/hadoop/mapreduce/hadoop-mapr
 bin/oozie job -oozie http://hadoop101:11000/oozie -config oozie-apps/map-reduce/job.properties -run
 ```
 
-## 4.Oozie定时任务/循环任务
+## 4.Oozie定时任务/循环任务 *视频*
 
 ```bash
 # 首先配置时间同步，略
@@ -484,7 +496,7 @@ coordinator.xml
               </property>
           </configuration>
           <exec>${EXEC}</exec>
-          <file>/user/atguigu/oozie-apps/cron/${EXEC}#${EXEC}</file>
+          <file>/user/tian/oozie-apps/cron/${EXEC}#${EXEC}</file>
           <capture-output/>
       </shell>
       <ok to="end"/>

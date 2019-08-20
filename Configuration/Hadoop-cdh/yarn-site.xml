@@ -14,27 +14,36 @@
 -->
 <configuration>
 
-  <!-- Site specific YARN configuration properties -->
-  <property>
-    <name>yarn.nodemanager.aux-services</name>
-    <value>mapreduce_shuffle</value>
-  </property>
+    <!-- Site specific YARN configuration properties -->
+    <property>
+        <name>yarn.nodemanager.aux-services</name>
+        <value>mapreduce_shuffle</value>
+    </property>
 
-  <!-- 指定YARN的ResourceManager的地址 -->
-  <property>
-    <name>yarn.resourcemanager.hostname</name>
-    <value>hadoop102</value>
-  </property>
-  <property>
-    <name>yarn.log-aggregation-enable</name>
-    <value>true</value>
-  </property>
+    <!-- 指定YARN的ResourceManager的地址 -->
+    <property>
+        <name>yarn.resourcemanager.hostname</name>
+        <value>hadoop102</value>
+    </property>
+    <property>
+        <name>yarn.log-aggregation-enable</name>
+        <value>true</value>
+    </property>
 
-  <!-- 任务历史服务 -->
-  <property>
-    <name>yarn.log.server.url</name>
-    <value>http://hadoop101:19888/jobhistory/logs/</value>
-  </property>
+    <!-- 任务历史服务 -->
+    <property>
+        <name>yarn.log.server.url</name>
+        <value>http://hadoop101:19888/jobhistory/logs/</value>
+    </property>
 
+    <property>
+        <name>yarn.log-aggregation-enable</name>
+        <value>true</value>
+    </property>
 
+    <!-- 日志聚集 -->
+    <property>
+        <name>yarn.log-aggregation.retain-seconds</name>
+        <value>604800</value>
+    </property>
 </configuration>
