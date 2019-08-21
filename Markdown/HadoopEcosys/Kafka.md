@@ -80,10 +80,10 @@ Kafka是一个分布式的基于发布/订阅模式的**消息队列，**主要�
 
 ### 2.1.1 集群规划
 
-hadoop102                     |            hadoop103             |             hadoop104
-:-:|:-:|:-:
-zk                        |                       zk                      |                  zk
-kafka                              |            kafka                 |                  kafka
+| hadoop102 | hadoop103 | hadoop104 |
+| :-------: | :-------: | :-------: |
+|    zk     |    zk     |    zk     |
+|   kafka   |   kafka   |   kafka   |
 
 ### 2.1.2 jar包下载
 
@@ -103,7 +103,7 @@ xsync /opt/module/kafka/ # 分发后配置其他节点环境变量
 # 修改其他节点server.properties中的brokerid为1和2
 ```
 
-```properties
+```conf
 #broker的全局唯一编号，不能重复
 broker.id=0
 #删除topic功能使能
@@ -155,10 +155,10 @@ done
 
 ```bash
 # 查看当前服务器中的所有topic
-kafka-topics.sh --zookeeper hadoop101:2181 --list
+kafka-topics.sh --zookeeper hadoop102:2181 --list
 
 # 创建topic
-kafka-topics.sh --zookeeper hadoop101:2181 --create --replication-factor 3 --partitions 1 --topic first
+kafka-topics.sh --zookeeper hadoop102:2181 --create --replication-factor 3 --partitions 1 --topic first
 # 选项说明
 # --topic 定义topic名
 # --replication-factor 定义副本数
