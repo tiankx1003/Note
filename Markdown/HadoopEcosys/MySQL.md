@@ -851,7 +851,7 @@ mysql服务器的安装配置
 ### 二、Linux安装MySQL
 ```bash
 rpm -qa|grep mysql #查看当前mysql的安装情况
-rpm -e --nodeps mysql-libs #卸载之前的mysql
+sudo rpm -e --nodeps mysql-libs-5.1.73-7.el6.x86_64 #卸载之前的mysql
 mv MySQL-client-5.5.54-1.linux2.6.x86_64.rpm MySQL-server-5.5.54-1.linux2.6.x86_64.rpm /opte #拷贝到指定目录
 rpm -ivh MySQL-client-5.5.54-1.linux2.6.x86_64.rpm #在包所在的目录中安装
 rpm -ivh MySQL-server-5.5.54-1.linux2.6.x86_64.rpm
