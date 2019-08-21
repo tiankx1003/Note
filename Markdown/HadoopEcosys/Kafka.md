@@ -96,7 +96,7 @@ software]$ tar -zxvf kafka_2.11-0.11.0.0.tgz -C /opt/module/
 mv kafka_2.11-0.11.0.0/ kafka
 mkdir logs
 cd config/
-vi server.properties
+vim server.properties
 vim /etc/profile # 添加kafka环境变量
 source /etc/profile
 xsync /opt/module/kafka/ # 分发后配置其他节点环境变量
