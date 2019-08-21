@@ -1033,8 +1033,8 @@ DataNode也可以配置成多个目录，每个目录存储的数据不一样，
 **hdfs-site.xml配置**
 ```xml
 <property>
-        <name>dfs.datanode.data.dir</name>
-<value>file:///${hadoop.tmp.dir}/dfs/data1,file:///${hadoop.tmp.dir}/dfs/data2</value>
+	<name>dfs.datanode.data.dir</name>
+	<value>file:///${hadoop.tmp.dir}/dfs/data1,file:///${hadoop.tmp.dir}/dfs/data2</value>
 </property>
 ```
 
