@@ -222,3 +222,46 @@ ls -lR 目录名|grep ".java$"|wc -l
 5. Hadoop中job和Task之间的区别是什么
  * 一个job在运行期间，会启动多个task来完成每个阶段的具体任务
 ### 七、ZooKeeper
+1. 简述ZooKeeper的选举机制
+ * 只有zookeeper以集群模式启动时，需要选举leader
+ * 集群中leader再集群启动时，选举产生或者是leader挂掉，集群中的其他机器重新选举产生
+ * 满足半数以上机制，按照启动顺序，id大的由优势
+2. ZooKeeper的监听原理
+ * 首先要有一个main()线程，在main线程中创建ZooKeeper客户端，这是就会创建两个线程，一个负责和ZooKeeper服务端通信(connet)，一个负责监听ZooKeeper服务端的通知(listener)
+ * 通过connet线程将注册的监听事件发送给ZooKeeper
+ * 在ZooKeeper的注册监听器列表中该客户端注册的监听事件添加到列表中
+ * ZooKeeper监听到由数据和路径变化，通知listener线程
+ * listener线程内部调用了Watcher的process()方法
+3. ZooKeeper的部署方式有哪几种，集群中的角色有哪些，集群最少需要几台机器
+ * standlone模式和集群模式
+ * Leader和Follower
+ * 2台
+4. ZooKeeper常用的命令
+ * ls、ls2、stat、get、create、set
+### 八、Hive
+1. Hive表关联查询，如何解决数据倾斜问题
+ * 提前清洗数据，将不合法数据例如key为null的数据进行过滤
+ * 如果没用清洗则再查询时先过滤再关联表
+ * 如果数据中有很多数量级多的key，可以增加ReduceTask个数，避免多个大key集中到一个ReduceTask
+ * 且将无意义的nullkey进行随机替换处理，同时增加ReducerTask的个数，以分散数据
+ * 转换为mapjoin
+ * 大key和其他数据分开处理
+ * `hive.optimize.skewjoin`:将一个join sql分为连个job，另外可以同时设置下`hive.skewjoin.key`，默认为10000，参数对full outer join无效
+ * 调整内存设置，适用于那些由于内存超限任务被kill掉的场景，通过加大内存起码能让任务跑起来，不至于被杀掉，该参数不一定会明显降低任务执行时间，如`setmapreduce.reduce.memory.mb=5120``setmapreduce.reduce.java.opts=-Xmx5000M -XX:MaxPermSize=128`
+2. Hive的特点，Hive和RDBMS有什么异同
+ * Hive的特点：基于OLAP设计的数据仓库软件，不适合实时计算，适合大数据量的计算，的层本质是MR
+ * 和RDBMS的异同：异同为RDBMS为OLTP(事务，实时)，Hive为OLAP(分析，延迟)
+ * 具体参考Hive文档第一章第4节
+3. 说明Hive中Sort By，Order By，Cluster By，Distribute By各代表什么意思
+ * Sort By：部分排序，一个Job有多个Reducer，每个Reducer处理的数据内部有序
+ * Order By：全局排序，一个Job有一个Reducer
+ * Distribute By：类似MR中partition，进行分区，结合sort by使用，Hive要求Distribute By语句要写在Sort By语句之前，即先分区再排序
+ * Cluster By：当distribute by和sorts by字段相同时，可以使用cluster by方式，但是排序只能是升序排序，不能指定排序规则ASC或者DESC
+4. Hive有哪些方式保存元数据，各有哪些特点
+ * 默认存放在derby
+ * 修改存储在其他的关系型数据库，如mysql,oracle,mss,progresql
+ * 通过使用thrift调用metaServer服务进行元数据读写
+5. Hive内部表外部表的区别
+ * 内部表也称为管理表，可以管理数据的生命周期，删除管理表，数据也会随之删除
+ * 外部表，只删除表结构(元数据)
+6. 写出将text.txt文件收入Hive中test表
