@@ -1,9 +1,12 @@
 
-## Note
+# TODO
 
 * [ ] -
-* [ ] **Hadoop基准测试** *2019-8-22 14:26:16*
-* [ ] **验证Hadoop-lzo压缩** *2019-8-22 14:25:49*
+* [ ] **Flume Kafka sink** *2019-8-23 10:16:15*
+* [ ] **Flume各种source对比，每种source的bug** *2019-8-23 10:13:50*
+* [x] **Kafka Topic测试** *2019-8-22 17:04:02*
+* [x] **Hadoop基准测试** *2019-8-22 14:26:16*
+* [x] **验证Hadoop-lzo压缩** *2019-8-22 14:25:49*
 
 ---
 
@@ -14,11 +17,17 @@
 * [ ] **zookeeper工程文件** *2019-8-2 21:28:59*
 * [ ] **Hadoop@Ubuntu源码编译** *2019-7-31 13:47:46*
 * [ ] **共同好友案例优化** *2019-7-30 21:20:48*
+
+---
+
 * [x] **尚硅谷官网下载大数据文档** *2019-7-30 21:20:59*
 * [x] **下载拷贝HA课程视频和资料** *2019-7-30 21:21:03*
 * [x] **补全Git>>BigData目录下的zookeeper工程文件** *2019-7-30 21:21:15*
 * [x] **端口号汇总** *2019-7-29 10:17:34*
 * [ ] **设计模式** *2019-7-29 09:21:44*
+
+---
+
 * [x] **编写MapReduce扩充案例** *2019-7-29 00:39:00*
 * [ ] **补充MapReduce笔记** *2019-7-29 00:37:39*
 * [x] **Hadoop Xmind 总结**
@@ -28,94 +37,6 @@
 * [x] **MapReduce代码在IDEA上再写一遍**
 * [ ] **自定义inputformat的debug**
 * [ ] **shuffle源码**
-
-
-## Settings
-
 * [x] **VS Code Untitled open >> "startup" "init"**
-```json
-{
-    "workbench.startupEditor": "none",
-    "java.configuration.maven.userSettings": "C:\\Developing\\apache-maven-3.5.3\\conf\\settings.xml",
-    "java.home": "C:\\Developing\\jdk1.8.0_211",
-    "java.maven.downloadSources": true,
-    "maven.executable.path": "C:\\Developing\\apache-maven-3.5.3\\bin\\mvn.cmd",
-    "editor.suggestSelection": "first",
-    "vsintellicode.modify.editor.suggestSelection": "automaticallyOverrodeDefaultValue",
-    "java.configuration.checkProjectSettingsExclusions": false,
-    "workbench.iconTheme": "material-icon-theme",
-    "explorer.confirmDragAndDrop": false,
-    "explorer.confirmDelete": false,
-    "workbench.editor.enablePreview": false,
-    "markdown-preview-enhanced.previewTheme": "github-dark.css",
-    "markdown-preview-enhanced.revealjsTheme": "black.css",
-    "markdown-preview-enhanced.mermaidTheme": "dark",
-    "markdown-preview-enhanced.codeBlockTheme": "atom-dark.css",
-    "git.autofetch": true,
-    "window.zoomLevel": 0,
-    "window.menuBarVisibility": "toggle"
-}
-```
-
-*2019-7-23 08:54:09*
-
-<!-- test -->
-
-
-
-
-## Linux
-
 * [ ] **Linux crontab 4 Hadoop**
 
-*2019-7-23 08:54:47*
-
-Port
-8080
-3306
-6379
-50070
-50090
-8088
-19888
-
-
-
->**Eclipse keymaps**
-ctrl + shift + t  搜索查看类
-ctrl + t 查看子类/实现类
-ctrl + shift + o :全局导包
-
->**IDEA keymaps**
-
-
-
-使用KeyValueTextInputFormat分隔符为":"
-Map阶段
-读取key为左侧Text，value为右侧Text
-HashMap<Character,HashSet<Character>>
-输出key为hashMap的key，value为hashMap的value
-Reduce阶段
-对key1和key2取交集
-reduceMap.get(key1).containAll(reduceMap.get(key2))
-
-
-```json
-"githubPullRequests.hosts": [
-    {
-        "host": "https://github.com",
-        "token": "33cf96e2ce0d11277b5c25e6a05e3264946c6983",
-        "username": "Tiankx1003"
-    }
-]
-```
-
-## Markdown
-```md
-<details>
-<summary>展开查看</summary>
-<pre><code>
-System.out.println("Hello to see U!");
-</code></pre>
-</details>
-```
