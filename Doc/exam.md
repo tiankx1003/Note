@@ -221,4 +221,4 @@ ls -lR 目录名|grep ".java$"|wc -l
  * 使用Partitioner的getPartition()确定分区号
 5. Hadoop中job和Task之间的区别是什么
  * 一个job在运行期间，会启动多个task来完成每个阶段的具体任务
-### ZooKeeper
+### 七、ZooKeeper
