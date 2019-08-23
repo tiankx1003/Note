@@ -15,7 +15,7 @@
  * awk '/^$/{print NR}' file1
 6. 文件中指定列的和并输出
  * awk -v sum=0 -F ""'{sum+=$2} END{print sum}' chengji.txt
-7. 把Linux文件`/home/dim_city.txt`加载到hive内部表`dim_city`外部表中，HDFS路径为/user/dim/dim_city
+7. 把Linux文件`/home/dim_city.txt`加载到hive内部表`dim_city`外部表中，HDFS路径为`/user/dim/dim_city`
 ```sql
 -- 建表指定外部表类型为外部表，指定表的location属性
 create external table dim_city(...) location '/user/dim/dim_city';
@@ -70,7 +70,7 @@ ls -lR 目录名|grep ".java$"|wc -l
  * 2.NN处理请求，对请求进行合法性检查(权限，文件路径是否存在等)，验证请求合法后，响应客户端，通知写操作
  * 3.客户端创建一个输出流，输出流在写文件时，以块(128M)为单位，块又由packet(64k)作为基本单位，packet由多个chunk(512B+4B校验位)组成!
  * 4.开始第一块的上传，在上传时，会请求NN，根据网络拓扑距离，和上传的副本数，分配指定数量的距离客户端最近的DataNode节点列表
- * 5.客户端请求距离最近的一个DN建立通道，DN列表中的DN依次请求建立通道，全部通道建立完成，开始传输!客户端将一个块的0-128信息，以packet形式进行封装，将封装好的packe放入data_queue队列中，输出流在传输时，会建立一个ack_queue，将data_queue要传输的packet一次放入ack_queue中!
+ * 5.客户端请求距离最近的一个DN建立通道，DN列表中的DN依次请求建立通道，全部通道建立完成，开始传输!客户端将一个块的0-128信息，以packet形式进行封装，将封装好的packe放入`data_queue`队列中，输出流在传输时，会建立一个`ack_queue`，将data_queue要传输的packet一次放入`ack_queue`中!
  * 6.客户端只负责当前的packet发送给距离最近的DN，DN会在收到packet后，向客户端的流对象发送ack命令，当ack_queue中的packet已经被所有的DN收到，那么在当前队列中就会删除次packet
  * 7.第一块上传完毕后，会上报NN，当前块已经发送到了哪些DN上!开始传输第二块(128M-...)，和第一块一样的流程
  * 8.当所有的数据都上传完毕，关闭流等待NN的一个响应
@@ -119,7 +119,7 @@ ls -lR 目录名|grep ".java$"|wc -l
  * reducetask数量取决于Job.setNumReduceTasks()的值
 5. MapTask工作机制
  * Map阶段: 使用InputFormat的RecordReader读取切片中的每一对key-value，每一对key-value都会调用mapper的map()处理
- * Sort阶段: 在Mapper和map()方法处理后，输出的key-value会先进行分区，之后被收集到缓冲区，当缓冲区达到一定的溢写阈值时，每个区的key-value会进行排序，之后溢写到磁盘，每次溢写的文件，最后会进行合并为一个总的文件，这个文件包含若干区，而且米格区内都是有序的
+ * Sort阶段: 在Mapper和map()方法处理后，输出的key-value会先进行分区，之后被收集到缓冲区，当缓冲区达到一定的溢写阈值时,每个区的key-value会进行排序，之后溢写到磁盘，每次溢写的文件，最后会进行合并为一个总的文件，这个文件包含若干区，而且每个区内都是有序的
 6. ReduceTask工作机制
  * copy阶段: ReduceTask启动Shuffle进程，到指定的maptask拷贝指定的数据，拷贝后会进行合并，合并成一个总的文件
  * sort阶段: 在合并时，保证所有的数据都是合并后有序的，所以会进行排序
@@ -150,4 +150,75 @@ ls -lR 目录名|grep ".java$"|wc -l
  * 如果ReduceTask个数是大于1，默认使用HashPartitioner，根据key的hashCode()方法和Integer最大值做与运算，之后模除ReduceTask的个数
  * 所有数据的区号介于0和ReduceTask个数-1的范围内
 11. MapReduce怎么实现TopN
- * 
+  在Map端使数据根据排名字段进行排序
+ * 合理设置Map的key，key中需要包含排序的字段
+ * 通过时key实现WritableComparable接口或者自定义key的RawComparator类型比较器，归根到底，在排序时都是使用用户实现的compareTo()方法进行比较
+  在Reduce端是输出数据
+ * reduce端处理的数据已经自动排序完成，只需要控制输出N个key-value即可
+12. 有可能使Hadoop任务输出到多个目录中么?如果可以怎么做?
+ * 可以，通过自定义OutputFormat进行实现，核心时实现OutputFormat中的相关的RecordWriter，通过实现其write()方法就需要的数据输出到指定的目录
+13. 简述Hadoop实现join的几种方法及每种方法的实现方法
+ * ReduceJoin: 在Map阶段，对所有的输入文件进行组装，打标记输出，到reduce阶段，只处理啊需要join的字段，进行合并即可
+ * MapJoin: 在Map阶段，将小文件以分布式缓存的形式进行存储，在Mapper的map()方法处理前，读取小文件的内容，和大文件进行合并即可，不需要有reduce阶段
+14. 请简述hadoop怎样实现二级排序
+ * key实现WritableComparable()接口，实现CompareTo()方法，先根据一个字段比较，如果当前字段相等继续按照另一个字段进行比较
+15. 已知MapReduce场景为(HDFS文件块大小为64M，输出类型为FileInputFormat，有三个文件的大小分别时64k、65MB、127MB)，hadoop框架会把这些文件且多少片
+ * 4片
+16. Hadoop中RecordReader的作用是什么
+ * 读取每一片中的记录为key-value，传给Mapper
+17. 若有一个1G的数据文件，分别有id,name,mark,source四个字段，按照mark分组，id排序，减少排序的核心逻辑思路，其中启动几个MapTask
+ * Map阶段key的比较器，使用根据mark和id进行二次排序
+ * Reduce阶段分布比较器，根据mark进行比较，mark相同视为key相同
+ * 默认启动8个MapTask
+### 五、Hadoop的Yarn
+1. 简述Hadoop1和Hadoop2的架构异同
+ * Hadoop1使用JobTracker调度MR的运行
+ * Hadoop2提供Yarn框架进行资源的调度
+ * Hadoop2支持HA集群搭建
+2. 为什么会产生Yarn，它解决了什么问题，有什么优势
+ * Yarn为了将MR编程模型和资源的调度分层解耦
+ * 使用Yarn后软件维护方便，Yarn还可以为其他的计算框架例如spark等提供资源的调度
+3. MR作业提交全过程
+<!-- TODO 添加配图 -->
+4. HDFS的数据压缩算法
+ * 系统内置: deflate、gzip、bzip2
+ * 额外安装: lzo、snappy
+ * 压缩率高: bzip2
+ * 速度快:   snappy、lzo
+ * 可切片的: lzo、bzip2
+ * 使用麻烦: lzo
+5. Hadoop调度器总结
+   ▼FIFO调度器
+ * 单队列
+ * 按照job提交的顺序先进先出
+ * 容易出现单个用的job独占资源，而其他的小job无法及时处理的问题
+   ▼容量调度器
+ * 多个队列，队列内部FIFO，内个队列可以指定容量
+ * 资源利用率高，处理灵活，空闲队列的资源可以补充到繁忙队列
+ * 可以设置单个用户的资源限制，防止单个用户独占资源
+ * 动态调整，维护方便
+   ▼公平调度器
+ * 在容量调度器的基础上，改变了FIFO的调度策略
+ * 默认参考集群中内存资源使用最大最小公平算法，保证小Job可以及时处理，大job不至于饿死，对小job有优势
+6. MapReduce推测执行算法及原理
+<!-- TODO 推荐执行算法配图 -->
+### 六、Hadoop优化
+1. MapReduce跑的慢的原因
+ * Task运行申请的资源少，可以通过调节相关参数解决
+ * 程序逻辑复杂，可以将复杂逻辑拆分为多个job，串行执行
+ * 产生了数据倾斜，可以通过合理设置切片策略和设置分区及调节ReduceTask数量解决
+ * Shuffle过程漫长，可以通过合理使用Combiner，使用压缩，调大Map端缓冲区大小等解决
+2. MapReduce优化方法
+<!-- TODO HadoopMapReduce第六章第2节 -->
+3. HDFS小文件优化方法
+ * 在源头处理，就小文件压缩和打包
+ * 使用Har进行归档，Har归档后的文件只能节省NameNode的内存空间，在进行MapReduce计算时，依然以小文件的形式存在
+ * 使用CombineTextInputFormat
+ * 使用紧凑的文件格式，例如SequenceFile
+4. MapReduce怎么解决数据均衡问题，如何确定分区号
+ * Map端避免数据倾斜: 抽样数据，避免不可切分的数据，小文件过多，使用CombineTextInputFormat
+ * Reduce端避免数据倾斜: 抽样数据，合理设置数据的分区，合理设置ReduceTask的个数
+ * 使用Partitioner的getPartition()确定分区号
+5. Hadoop中job和Task之间的区别是什么
+ * 一个job在运行期间，会启动多个task来完成每个阶段的具体任务
+### ZooKeeper
