@@ -47,9 +47,9 @@ chkconfig iptables off
 ```
 ```host
 192.168.2.100 hadoop100
-192.168.2.101 hadoop101
 192.168.2.102 hadoop102
 192.168.2.103 hadoop103
+192.168.2.104 hadoop104
 192.168.2.104 hadoop104
 192.168.2.105 hadoop105
 192.168.2.106 hadoop106
@@ -76,7 +76,7 @@ pdir=`cd -P $(dirname $p1); pwd`
 echo pdir=$pdir
 user=`whoami`
 
-for((host=101; host<104; host++)); 
+for((host=102; host<104; host++)); 
 do
 	echo ------------------- hadoop$host -------------------
 	rsync -av $pdir/$fname $user@hadoop$host:$pdir
@@ -85,9 +85,9 @@ done
 ```sh
 #!/bin/bash
 ssh-keygen -t rsa
-ssh-copy-id hadoop101
 ssh-copy-id hadoop102
 ssh-copy-id hadoop103
+ssh-copy-id hadoop104
 ssh-copy-id hadoop104
 ssh-copy-id hadoop105
 ssh-copy-id hadoop106
@@ -119,7 +119,7 @@ vim /etc/sysconfig/network #修改主机名
 
 ### 集群配置
 
--|hadoop101|hadoop102|hadoop103
+-|hadoop102|hadoop103|hadoop104
 :-:|:-|:-|:-
 **HDFS**|NameNode<br>DataNode|DataNode|SecondaryNameNode<br>DataNode
 **YARN**|NodeManager|ResourceManager<br>NodeManager|NodeManager
@@ -143,7 +143,7 @@ vim /opt/module/hadoop-2.7.2/etc/hadoop/slaves
 <!-- core-site.xml -->
 <property>
 	<name>fs.defaultFS</name>
-	<value>hdfs://hadoop101:9000</value>
+	<value>hdfs://hadoop102:9000</value>
 </property>
 
 <property>
@@ -160,7 +160,7 @@ vim /opt/module/hadoop-2.7.2/etc/hadoop/slaves
 
 <property>
 	<name>dfs.namenode.secondary.http-address</name>
-	<value>hadoop103:50090</value>
+	<value>hadoop104:50090</value>
 </property>
 ```
 ```xml
@@ -172,7 +172,7 @@ vim /opt/module/hadoop-2.7.2/etc/hadoop/slaves
 
 <property>
 	<name>yarn.resourcemanager.hostname</name>
-	<value>hadoop102</value>
+	<value>hadoop103</value>
 </property>
 ```
 ```xml
@@ -184,9 +184,9 @@ vim /opt/module/hadoop-2.7.2/etc/hadoop/slaves
 ```
 
 ```
-hadoop101
 hadoop102
 hadoop103
+hadoop104
 hadoop104
 hadoop105
 hadoop106
@@ -204,11 +204,11 @@ vim yarn-site.xml
 ```xml
 <property>
 <name>mapreduce.jobhistory.address</name>
-<value>hadoop101:10020</value>
+<value>hadoop102:10020</value>
 </property>
 <property>
     <name>mapreduce.jobhistory.webapp.address</name>
-    <value>hadoop101:19888</value>
+    <value>hadoop102:19888</value>
 </property>
 ```
 ```xml
@@ -231,32 +231,32 @@ vim yarn-site.xml
 
 ```bash
 #第一次启动集群时需要格式化namenode
-bin/hdfs namenode -format #101
+bin/hdfs namenode -format #102
 #启动HDFS
-sbin/start-dfs.sh #101
-jps #102
+sbin/start-dfs.sh #102
+jps #103
 #4166 NameNode
 #4482 Jps
 #4263 DataNode
-jps #102
+jps #103
 #3218 DataNode
 #3288 Jps
-jps #103
+jps #104
 #3221 DataNode
 #3283 SecondaryNameNode
 #3364 Jps
 #启动YARN
-sbin/start-yarn.sh #102
+sbin/start-yarn.sh #103
 ```
-[Web端查看SecondaryNameNode](http://hadoop103:50090/status.html).
+[Web端查看SecondaryNameNode](http://hadoop104:50090/status.html).
 
 [web端查看HDFS文件系统](http://tian:50070/dfshealth.html#tab-overview)
 
-[Web页面查看YARN](http://hadoop102:8088/cluster)
+[Web页面查看YARN](http://hadoop103:8088/cluster)
 
-[查看JobHistory](http://hadoop101:19888/jobhistory)
+[查看JobHistory](http://hadoop102:19888/jobhistory)
 
-[Web查看日志](http://hadoop102:19888/jobhistory)
+[Web查看日志](http://hadoop103:19888/jobhistory)
 
 ### 集群测试
 ```bash
