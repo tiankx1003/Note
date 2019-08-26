@@ -265,3 +265,9 @@ ls -lR 目录名|grep ".java$"|wc -l
  * 内部表也称为管理表，可以管理数据的生命周期，删除管理表，数据也会随之删除
  * 外部表，只删除表结构(元数据)
 6. 写出将text.txt文件收入Hive中test表
+ * event从source到channel为put事务，put事务在一批event被拦截器处理后，准备存储到channel时开启事务，全部存储完毕后提交事务，全部存储完毕后提交事务，如果失败则回滚事务。
+ * event从channel到sink为take事务，同理，sink开始写入数据时开启事务，一批event被sink从channel中全部写入到指定目标后提交事务，然后清除再channel中存储的event发生异常时则回滚事务，保证event的安全。
+7. Flume采集数据会丢失数据吗
+ * 会/不会
+ * 使用exec source由丢失数据的风险
+ * 使用memory channel会在agent故障时丢失阶段性数据!
