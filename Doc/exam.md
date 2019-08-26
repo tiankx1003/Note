@@ -259,15 +259,114 @@ ls -lR 目录名|grep ".java$"|wc -l
  * Cluster By：当distribute by和sorts by字段相同时，可以使用cluster by方式，但是排序只能是升序排序，不能指定排序规则ASC或者DESC
 4. Hive有哪些方式保存元数据，各有哪些特点
  * 默认存放在derby
- * 修改存储在其他的关系型数据库，如mysql,oracle,mss,progresql
+ * 修改存储在其他的关系型数据库，如mysql,oracle,mss,postgresql
  * 通过使用thrift调用metaServer服务进行元数据读写
 5. Hive内部表外部表的区别
  * 内部表也称为管理表，可以管理数据的生命周期，删除管理表，数据也会随之删除
  * 外部表，只删除表结构(元数据)
-6. 写出将text.txt文件收入Hive中test表
- * event从source到channel为put事务，put事务在一批event被拦截器处理后，准备存储到channel时开启事务，全部存储完毕后提交事务，全部存储完毕后提交事务，如果失败则回滚事务。
- * event从channel到sink为take事务，同理，sink开始写入数据时开启事务，一批event被sink从channel中全部写入到指定目标后提交事务，然后清除再channel中存储的event发生异常时则回滚事务，保证event的安全。
-7. Flume采集数据会丢失数据吗
- * 会/不会
- * 使用exec source由丢失数据的风险
- * 使用memory channel会在agent故障时丢失阶段性数据!
+6. 写出将text.txt文件收入Hive中test表'2016-10-10'分区语句test的分区字段是`l_date`
+ * `load data local inpath '/text.txt' into table test partition(l_date='2016-10-10');`
+7. Hive自定义UDF函数的流程
+ * 自定义一个java类，继承UDF类，重写一个互殴多个evaluate方法
+ * evaluate()的返回值不能为void，可以是null
+ * 打成jar包，在hive中使用add jar pathofjar 或者直接将jar包放在hive的liv目录中
+ * 在hive中使用create function 函数名 as '主类名'声明函数
+8. 对于Hive，你写过哪些udf函数，作用是什么
+ * `dayofyear`,作用是返回当前日期是一年中的第几天
+ * `base_analizer`
+ * `flat_analizer`
+9. Hive中的压缩格式TextFile，SequenceFile，RCFile，ORCFile各有什么区别
+ * TextFile，默认格式，数据不做压缩，磁盘开销大，数据解析开销大，可结合压缩格式进行压缩
+ * SequenceFile，是Hadoop API提供的一种二进制文件，它将数据以key-value对的形式序列化到文件中，这种二进制文件内部使用Hadoop标准的Writable接口实现序列化和反序列化，Hive中的SequenceFile继承自Hadoop API的SequenceFile，不过他的key为空，使用value存放实际的值，这样是为了避免MR在运行Map阶段的排序进程。
+ * RCFile，是Hive推出的一种专门面向列的数据格式，它遵循"先排列划分，再垂直划分"的设计理念，在查询过程中，针对它并不关心的列时，它会在IO上跳过这些列，需要说明的是，RCFile在map阶段从远端拷贝仍然是拷贝整个数据块，并且拷贝到本地目录后RCFile并不是真正直接跳过不需要的列，并跳到需要读取的列，而是通过扫描每一个row group的头部定义来实现，但是整个HDFS Block级别的头部并没有定义每个列从哪个row group起始到哪个row group结束，所以在读取所有的情况下，RCFile的性能反而没有SequenceFile高。
+ * ORCFile，是列式存储，有多种文件压缩方式，并且有着很高的压缩比，文件是不可切分(Split)的，因此，在Hive中使用ORC作为表的文件存储格式，不仅节省HDFS存储资源，查询任务的输入数据量减少，使用的MapTask也就减少了，提供了多种索引，row group index、bloom filter index。ORC可以支持复杂的数据结构(比如Map等)
+10. Hive join过程中大表和小表的防止顺序
+ * 小表join大表，当设置了`set hive.auto.convert.join=true`后，hive会自动调整顺序
+11. Hive的两张表关联，使用MapReduce怎么实现
+   ▼ReduceJoin
+ * 在Map端使用了一个通用的bean来封装谁，这个bean中包含了两个表的所有字段
+ * 在Map端处理时，为每个bean打上标记，标记当前数据的来源
+ * 在Reduce端，根据数据的来源将数据分类
+ * 在Reduce端进行字段的关联，且只处理需要处理的数据
+   ▼MapJoin
+ * 根据两张表的数据的数据量，将两张表划分为大表和小表
+ * 小表使用分布式缓存提前缓存，大表作为MR的输入，进行切片后读入到MapTask
+ * 在Mapper的map()方法处理之前，提前从分布式缓存中读取小表中的数据
+ * 在Mapper的map()方法中，对大表的数据进行关联操作
+12. 所有的Hive任务都会有MapReduce的执行吗
+ * 取决于`hive.fetch.task.conversion`的配置，默认配置为more
+ * 即当一个查询中只有select，where，包括带分区字段的过滤查询和limit走fetchtask，不走MR
+13. Hive的函数:UDF、UDAF、UDTF的区别
+ * UDF，用户定义函数，一进一出
+ * UDAF，用户定义的聚集函数，多进一出
+ * UDTF，用户定义的表生成函数，一进多出
+14. Hive桶表的理解
+ * 分桶也是分散数据，分桶的作用，可以按照字段将数据分散到多个文件
+ * 可以使用抽样查询结合分桶操作，只选择指定的桶进行查询
+15. Hive可以像关系型数据库那样建立多个库吗
+ * 可以
+16. Hive实现统计的查询语句是什么
+ * count() max() avg() sum() main()
+ * renk() row_number() ntile() dense_ran()
+17. Hive优化措施
+ * 在简单查询时使用fetchtask
+ * 在测试和小文件的实验中，本地模式速度快
+ * 能够使用Mapjoin尽量使用Mapjoin
+ * 聚合操作如果数据量过大，开启map端集合，将原先的MR通过两个MR实现
+```conf
+hive.map.aggr=true
+hive.groupby.mapaggr.checkinterval=100000
+hive.groupby.skewindata=true
+```
+ * count(distinct)，在数据量过大时，可以先group by在执行count操作
+ * 开启严格模式，避免无效的hql在执行
+ * 行列过滤
+```
+行过滤:在查询时尽量先通过where将数据集的范围缩小，再进行关联等计算
+列过滤:按需查询，避免select * 
+```
+ * 在执行hive时，提前对数据进行抽样和调查，合理设置map和reduce个数避免数据倾斜
+ * 在机器性能好的前提下，可以设置MR的并行执行
+```conf
+set hive.exec.parallel=true
+set hive.exec.parallel.thread.number=16
+```
+ * 针对小文件过多造成的小任务过多，开启jvm重用`mapreduce.job.jvm.numtasks=10-20`
+ * 在必要时更换hive的执行引擎，在tez或者spark上执行hql语句
+18. Hive中，建的表为压缩表，但是输入文件为非压缩格式，会产生怎样的现象或者结果
+ * 如果load加载数据，那么文件在上传列表中时依然为非压缩格式
+ * 如果insert into的方式插入，那么会以压缩格式存在
+19. 已知a是一张内部表，如何将它转换成外部表，请写出相应的hive语句
+```sql
+alter table a set tblproperties('EXTERNAL'='TRUE');
+```
+20. Hive中mapjoin的原理和实际应用
+ * 同11 mapjoin的原理
+ * 作用是为了避免出现子啊Reduce端的数据倾斜
+21. <!-- TODO sql题 -->
+22. <!-- TODO sql题 -->
+# Flume
+1. Flume有哪些组件，flume的source、channel、sink具体是做什么的
+ * flume的组件有source，channel，sink，interceptor，channel selector，sink processor
+ * source对接不通过的数据源，将数据封装为event，传输给channel
+ * sink负责channel中获取event，将event写入到指定的目标
+ * channel介于source和sink中的缓冲，负责临时存储event
+2. 如何实现flume数据传输的监控
+ * 使用ganglia来监控 <!-- TODO 实际没有使用ganglia -->
+ * 或者使用Json Reporting将Flume的相关数据以json格式生成，交给前端进行可视化
+ * 自定义监控类，继承MonitoredCounterGroup，来自定义监控的逻辑
+3. Flume的source、sink、channel的作用，经常使用的source是什么类型
+ * 使用taildir source监控一个实时写入的文件
+ * 使用netcat source监控一个网络端口
+4. Flume 的Channel Selectors
+ * 默认为Replicating Channel Selector，它将event复制发送到所有的channel
+ * Maltiplexing Channel Selector则根据event中指定的header信息，将event发送到指定的channel
+5. Flume参数调优
+<!-- TODO ... -->
+6. Flume事务机制
+ * event从source到channel为put事务，put事务在一批event被拦截器处理后，准备存储到channel时开启事务，全部存储完毕后提交事务，如果失败则回滚事务
+ * event从channel到sink为take事务，同理，sink开始写入数据时开启事务，一批event被sink从channel中全部写入到指定目标提交事务，然后清楚在channel中存储的event发生异常时则回滚事务，保证event的安全。
+7. Flume采集数据会丢失吗
+ * 会
+ * 使用exec source有丢失数据的风险
+ * 使用memory channel会在agent故障时丢失阶段性数据
