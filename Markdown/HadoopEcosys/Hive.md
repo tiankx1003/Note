@@ -1139,21 +1139,21 @@ select * from emp where sal>1000;
 
 以下运算符同样可以用于join…on和having语句中
 
-| 操作符                  | 支持的数据类型 | 描述                                                         |
-| ----------------------- | -------------- | ------------------------------------------------------------ |
-| A=B                     | 基本数据类型   | 如果A等于B则返回TRUE，反之返回FALSE                          |
-| A<=>B                   | 基本数据类型   | 如果A和B都为NULL，则返回TRUE，其他的和等号（=）操作符的结果一致，如果任一为NULL则结果为NULL |
-| A<>B, A!=B              | 基本数据类型   | A或者B为NULL则返回NULL；如果A不等于B，则返回TRUE，反之返回FALSE |
-| A<B                     | 基本数据类型   | A或者B为NULL，则返回NULL；如果A小于B，则返回TRUE，反之返回FALSE |
-| A<=B                    | 基本数据类型   | A或者B为NULL，则返回NULL；如果A小于等于B，则返回TRUE，反之返回FALSE |
-| A>B                     | 基本数据类型   | A或者B为NULL，则返回NULL；如果A大于B，则返回TRUE，反之返回FALSE |
-| A>=B                    | 基本数据类型   | A或者B为NULL，则返回NULL；如果A大于等于B，则返回TRUE，反之返回FALSE |
-| A [NOT] BETWEEN B AND C | 基本数据类型   | 如果A，B或者C任一为NULL，则结果为NULL。如果A的值大于等于B而且小于或等于C，则结果为TRUE，反之为FALSE。如果使用NOT关键字则可达到相反的效果。 |
-| A IS NULL               | 所有数据类型   | 如果A等于NULL，则返回TRUE，反之返回FALSE                     |
-| A IS NOT NULL           | 所有数据类型   | 如果A不等于NULL，则返回TRUE，反之返回FALSE                   |
-| IN(数值1, 数值2)        | 所有数据类型   | 使用 IN运算显示列表中的值                                    |
+| 操作符                  | 支持的数据类型 | 描述                                                                                                                                                                                                                                                     |
+| ----------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A=B                     | 基本数据类型   | 如果A等于B则返回TRUE，反之返回FALSE                                                                                                                                                                                                                      |
+| A<=>B                   | 基本数据类型   | 如果A和B都为NULL，则返回TRUE，其他的和等号（=）操作符的结果一致，如果任一为NULL则结果为NULL                                                                                                                                                              |
+| A<>B, A!=B              | 基本数据类型   | A或者B为NULL则返回NULL；如果A不等于B，则返回TRUE，反之返回FALSE                                                                                                                                                                                          |
+| A<B                     | 基本数据类型   | A或者B为NULL，则返回NULL；如果A小于B，则返回TRUE，反之返回FALSE                                                                                                                                                                                          |
+| A<=B                    | 基本数据类型   | A或者B为NULL，则返回NULL；如果A小于等于B，则返回TRUE，反之返回FALSE                                                                                                                                                                                      |
+| A>B                     | 基本数据类型   | A或者B为NULL，则返回NULL；如果A大于B，则返回TRUE，反之返回FALSE                                                                                                                                                                                          |
+| A>=B                    | 基本数据类型   | A或者B为NULL，则返回NULL；如果A大于等于B，则返回TRUE，反之返回FALSE                                                                                                                                                                                      |
+| A [NOT] BETWEEN B AND C | 基本数据类型   | 如果A，B或者C任一为NULL，则结果为NULL。如果A的值大于等于B而且小于或等于C，则结果为TRUE，反之为FALSE。如果使用NOT关键字则可达到相反的效果。                                                                                                               |
+| A IS NULL               | 所有数据类型   | 如果A等于NULL，则返回TRUE，反之返回FALSE                                                                                                                                                                                                                 |
+| A IS NOT NULL           | 所有数据类型   | 如果A不等于NULL，则返回TRUE，反之返回FALSE                                                                                                                                                                                                               |
+| IN(数值1, 数值2)        | 所有数据类型   | 使用 IN运算显示列表中的值                                                                                                                                                                                                                                |
 | A [NOT] LIKE B          | STRING 类型    | B是一个SQL下的简单正则表达式，如果A与其匹配的话，则返回TRUE；反之返回FALSE。B的表达式说明如下：‘x%’表示A必须以字母‘x’开头，‘%x’表示A必须以字母’x’结尾，而‘%x%’表示A包含有字母’x’,可以位于开头，结尾或者字符串中间。如果使用NOT关键字则可达到相反的效果。 |
-| A RLIKE B, A REGEXP B   | STRING 类型    | B是一个正则表达式，如果A与其匹配，则返回TRUE；反之返回FALSE。匹配使用的是JDK中的正则表达式接口实现的，因为正则也依据其中的规则。例如，正则表达式必须和整个字符串A相匹配，而不是只需与其字符串匹配。 |
+| A RLIKE B, A REGEXP B   | STRING 类型    | B是一个正则表达式，如果A与其匹配，则返回TRUE；反之返回FALSE。匹配使用的是JDK中的正则表达式接口实现的，因为正则也依据其中的规则。例如，正则表达式必须和整个字符串A相匹配，而不是只需与其字符串匹配。                                                      |
 
 ```mysql
 select * from emp where sal = 5000;
@@ -1492,14 +1492,14 @@ select nvl(comm, nvl(mgr,ename)) from emp;
 
 1. 数据准备
 
-   | name | dept_id | sex  |
-   | ---- | ------- | ---- |
-   | 悟空 | A       | 男   |
-   | 大海 | A       | 男   |
-   | 宋宋 | B       | 男   |
-   | 凤姐 | A       | 女   |
-   | 婷姐 | B       | 女   |
-   | 婷婷 | B       | 女   |
+   | name | dept_id | sex |
+   | ---- | ------- | --- |
+   | 悟空 | A       | 男  |
+   | 大海 | A       | 男  |
+   | 宋宋 | B       | 男  |
+   | 凤姐 | A       | 女  |
+   | 婷姐 | B       | 女  |
+   | 婷婷 | B       | 女  |
 
 2. 需求
    求出不同部门男女各多少人，结果如下:idFlag
@@ -2015,14 +2015,14 @@ select ename, mylower(ename) lowername from emp;
 
 **压缩参数设置**
 
-| 参数                                                 | 默认值                                                       | 阶段        | 建议                                         |
-| ---------------------------------------------------- | ------------------------------------------------------------ | ----------- | -------------------------------------------- |
+| 参数                                                 | 默认值                                                                                                                                                                      | 阶段        | 建议                                         |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------- |
 | io.compression.codecs      （在core-site.xml中配置） | org.apache.hadoop.io.compress.DefaultCodec,   org.apache.hadoop.io.compress.GzipCodec,   org.apache.hadoop.io.compress.BZip2Codec,   org.apache.hadoop.io.compress.Lz4Codec | 输入压缩    | Hadoop使用文件扩展名判断是否支持某种编解码器 |
-| mapreduce.map.output.compress                        | false                                                        | mapper输出  | 这个参数设为true启用压缩                     |
-| mapreduce.map.output.compress.codec                  | org.apache.hadoop.io.compress.DefaultCodec                   | mapper输出  | 使用LZO、LZ4或snappy编解码器在此阶段压缩数据 |
-| mapreduce.output.fileoutputformat.compress           | false                                                        | reducer输出 | 这个参数设为true启用压缩                     |
-| mapreduce.output.fileoutputformat.compress.codec     | org.apache.hadoop.io.compress.   DefaultCodec                | reducer输出 | 使用标准工具或者编解码器，如gzip和bzip2      |
-| mapreduce.output.fileoutputformat.compress.type      | RECORD                                                       | reducer输出 | SequenceFile输出使用的压缩类型：NONE和BLOCK  |
+| mapreduce.map.output.compress                        | false                                                                                                                                                                       | mapper输出  | 这个参数设为true启用压缩                     |
+| mapreduce.map.output.compress.codec                  | org.apache.hadoop.io.compress.DefaultCodec                                                                                                                                  | mapper输出  | 使用LZO、LZ4或snappy编解码器在此阶段压缩数据 |
+| mapreduce.output.fileoutputformat.compress           | false                                                                                                                                                                       | reducer输出 | 这个参数设为true启用压缩                     |
+| mapreduce.output.fileoutputformat.compress.codec     | org.apache.hadoop.io.compress.   DefaultCodec                                                                                                                               | reducer输出 | 使用标准工具或者编解码器，如gzip和bzip2      |
+| mapreduce.output.fileoutputformat.compress.type      | RECORD                                                                                                                                                                      | reducer输出 | SequenceFile输出使用的压缩类型：NONE和BLOCK  |
 
 3.开启Map输出阶段压缩
 
@@ -2243,15 +2243,15 @@ hadoop checknative
 
 **ORC存储方式的压缩**
 
-| Key                      | Default    | Notes                                                        |
-| ------------------------ | ---------- | ------------------------------------------------------------ |
-| orc.compress             | ZLIB       | high level compression (one of NONE, ZLIB,   SNAPPY)         |
-| orc.compress.size        | 262,144    | number of bytes in each compression chunk                    |
-| orc.stripe.size          | 67,108,864 | number of bytes in each stripe                               |
-| orc.row.index.stride     | 10,000     | number of rows between index entries (must be   >= 1000)     |
-| orc.create.index         | true       | whether to create row indexes                                |
+| Key                      | Default    | Notes                                                                           |
+| ------------------------ | ---------- | ------------------------------------------------------------------------------- |
+| orc.compress             | ZLIB       | high level compression (one of NONE, ZLIB,   SNAPPY)                            |
+| orc.compress.size        | 262,144    | number of bytes in each compression chunk                                       |
+| orc.stripe.size          | 67,108,864 | number of bytes in each stripe                                                  |
+| orc.row.index.stride     | 10,000     | number of rows between index entries (must be   >= 1000)                        |
+| orc.create.index         | true       | whether to create row indexes                                                   |
 | orc.bloom.filter.columns | ""         | comma separated list of column names for which   bloom filter should be created |
-| orc.bloom.filter.fpp     | 0.05       | false positive probability for bloom filter (must   >0.0 and <1.0) |
+| orc.bloom.filter.fpp     | 0.05       | false positive probability for bloom filter (must   >0.0 and <1.0)              |
 
 **创建非压缩的ORC存储方式**
 
