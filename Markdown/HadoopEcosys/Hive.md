@@ -142,7 +142,7 @@ bin/hadoop fs -chmod g+w /tmp
 bin/hadoop fs -chmod g+w /user/hive/warehouse
 ```
 
-```mysql
+```sql
 # 3．Hive基本操作
 # （1）启动hive
 # bin/hive
@@ -185,7 +185,7 @@ quit;
 
 > Hive实际操作
 >
-> ```mysql
+> ```sql
 > # （1）启动hive
 > bin/hive
 > # （2）显示数据库
@@ -262,7 +262,7 @@ rpm -ivh MySQL-client-5.6.24-1.el6.x86_64.rpm
 mysql -uroot -pOEXaQuS8IWkG19Xs
 ```
 
-```mysql
+```sql
 # 修改密码
 SET PASSWORD=PASSWORD('root');
 ## MySQL在user表中主机配置
@@ -338,7 +338,7 @@ vi hive-site.xml
  mysql -uroot -proot
 ```
 
-```mysql
+```sql
 show databases;
 ```
 ```
@@ -512,7 +512,7 @@ mv hive-log4j.properties.template hive-log4j.properties
 ### 9.4 参数配置方式
 
 1．查看当前所有的配置信息
-```mysql
+```sql
 set;
 ```
 2．参数的配置三种方式
@@ -528,7 +528,7 @@ bin/hive -hiveconf mapred.reduce.tasks=10;
 ```
 注意：仅对本次hive启动有效
 查看参数设置：
-```mysql
+```sql
 hive (default)> set mapred.reduce.tasks;
 ```
 （3）参数声明方式
@@ -597,7 +597,7 @@ yangyang,caicai_susu,xiao yang:18_xiaoxiao yang:19,chao yang_beijing
 注意：MAP，STRUCT和ARRAY里的元素间关系都可以用同一个字符表示，这里用“_”。
 
 3）Hive上创建测试表test
-```mysql
+```sql
 create table test(
 name string,
 friends array<string>,
@@ -616,12 +616,12 @@ map keys terminated by ':'				-- MAP中的key与value的分隔符
 lines terminated by '\n';					-- 行分隔符
 
 4）导入文本数据到测试表
-```mysql
+```sql
 load data local inpath ‘/opt/module/datas/test.txt’into table test
 ```
 
 5）访问三种集合列里的数据，以下分别是ARRAY，MAP，STRUCT的访问方式
-```mysql
+```sql
 select friends[1],children['xiao song'],address.city from test
 where name="songsong";
 # OK
@@ -646,23 +646,23 @@ Hive的原子数据类型是可以进行隐式转换的，类似于Java的类型
 ## 1.数据库定义
 
 1）创建一个数据库，数据库在HDFS上的默认存储路径是/user/hive/warehouse/*.db。
-```mysql
+```sql
 hive (default)> create database db_hive;
 ```
 2）避免要创建的数据库已经存在错误，增加if not exists判断。（标准写法）
-```mysql
+```sql
 hive (default)> create database db_hive;
 /* FAILED: Execution Error, return code 1 from org.apache.hadoop.hive.ql.exec.DDLTask. Database db_hive already exists */
 hive (default)> create database if not exists db_hive;
 ```
 3）创建一个数据库，指定数据库在HDFS上存放的位置
-```mysql
+```sql
 hive (default)> create database db_hive2 location '/db_hive2.db';
 ```
 
 ## 2.查询数据库
 
-```mysql
+```sql
 # 显示数据库
 hive> show databases;
 # 过滤显示查询的数据库
@@ -687,7 +687,7 @@ hive (default)> use db_hive;
 ## 3.修改数据库
 
 用户可以使用ALTER DATABASE命令为某个数据库的DBPROPERTIES设置键-值对属性值，来描述这个数据库的属性信息。数据库的其他元数据信息都是不可更改的，包括数据库名和数据库所在的目录位置。
-```mysql
+```sql
 hive (default)> alter database db_hive set dbproperties('createtime'='20170830');
 # 在hive中查看修改结果
 hive> desc database extended db_hive;
@@ -697,7 +697,7 @@ hive> desc database extended db_hive;
 
 ## 4.删除数据库
 
-```mysql
+```sql
 # 1．删除空数据库
 hive>drop database db_hive2;
 # 2．如果删除的数据库不存在，最好采用 if exists判断数据库是否存在
@@ -714,7 +714,7 @@ hive> drop database db_hive cascade;
 
 **建表语法**
 
-```mysql
+```sql
 CREATE [EXTERNAL] TABLE [IF NOT EXISTS] table_name 
 [(col_name data_type [COMMENT col_comment], ...)] 
 [COMMENT table_comment] 
@@ -752,7 +752,7 @@ SerDe是Serialize/Deserilize的简称，目的是用于序列化和反序列化�
 
 
 **实操**
-```mysql
+```sql
 # （1）普通创建表
 create table if not exists student2(
 id int, name string
@@ -808,7 +808,7 @@ hive (default)> desc formatted student2;
 ```
 
 **建表语句**
-```mysql
+```sql
 # （1）创建部门表
 create external table if not exists default.dept(
 deptno int,
@@ -848,7 +848,7 @@ hive (default)> desc formatted dept;
 
 ### 5.3 管理表和外部表的互相转换
 
-```mysql
+```sql
 # （1）查询表的类型
 hive (default)> desc formatted student2;
 # Table Type:             MANAGED_TABLE
@@ -881,7 +881,7 @@ hive (default)> desc formatted student2;
 
 ### 7.1 重命名表
 
-```mysql
+```sql
 alter table table_name rename to new_table_name;
 ```
 
@@ -893,7 +893,7 @@ alter table table_name rename to new_table_name;
 
 ### 7.3 增加、修改、替换列信息
 
-```mysql
+```sql
 alter table table_name add columns (col_name data_type); -- 默认位置在所有列后，(partition列前)
 alter table table_name replace columns (col_name data_type); -- 替换所有列
 alter table table_name change column col_old_name col_new_name column_type;
@@ -907,7 +907,7 @@ alter table stu_tab change column email mail string;
 
 ## 8.删除表
 
-```mysql
+```sql
 drop table dept_partition;
 ```
 
@@ -921,7 +921,7 @@ drop table dept_partition;
 
 **语法**
 
-```mysql
+```sql
 hive> load data [local] inpath '/opt/module/datas/student.txt' overwrite | into table student [partition (partcol1=val1,…)];
 /*
 （1）load data:表示加载数据
@@ -936,7 +936,7 @@ hive> load data [local] inpath '/opt/module/datas/student.txt' overwrite | into 
 
 **实操**
 
-```mysql
+```sql
 create table stu(id int, name string)
 row format delimited fields terminated by "\t";
 
@@ -948,7 +948,7 @@ load data local inpath '/opt/module/datas/student.txt' overwrite into stu_tab;
 
 ### 1.2 通过查询语句向表中插入数据(Insert)
 
-```mysql
+```sql
 create tabe stu_tab2 like stu_tab; -- 按结构复制表，不复制数据
 insert into table stu_tab2 partition(month('201709')
 values(1,'wangwu');
@@ -968,14 +968,14 @@ select id, name where month='201801'; -- 针对来自同一张表的数据的操
 
 ### 1.3 查询语句中创建表并加载数据(As Select)
 
-```mysql
+```sql
 create table if not exists student3
 as select id, name from student;
 ```
 
 ### 1.4 创建表时通过Location指定加载数据路径
 
-```mysql
+```sql
 create table if not exists student5(
 	id int, name string
 )
@@ -989,7 +989,7 @@ select * from student5;
 
 ### 1.5 Import数据到指定Hive表中
 
-```mysql
+```sql
 ## 先用export导出数据，再将数据导入
 import table student2 partition(month='201909')
 from '/user/hive/warehouse/export/student';
@@ -999,7 +999,7 @@ from '/user/hive/warehouse/export/student';
 
 ### 2.1 Insert导出
 
-```mysql
+```sql
 # 将查询的结果导出到本地 只能使用overwrite 不能使用into
 insert overwrite local directory '/opt/module/datas/export/student'
 select * from student;
@@ -1017,19 +1017,19 @@ select * from student;
 
 ### 2.2 hadoop命令导出到本地
 
-```mysql
+```sql
 dfs -get /user/hive/warehouse/student/month=201909/000000_0 /opt/module/datas/export/student3.txt
 ```
 
 ### 2.3 Hive Shell命令导出
 
-```mysql
+```sql
 hive -e 'select * from student;' > /opt/module/datas/export/student.txt;
 ```
 
 ### 2.4 Export导出到hdfs上
 
-```mysql
+```sql
 export table default.student to 'user/hive/warehouse/export/student';
 -- 然后才能import数据到指定hive表
 ```
@@ -1040,7 +1040,7 @@ export table default.student to 'user/hive/warehouse/export/student';
 
 ## 3.清除表中的数据(Truncate)
 
-```mysql
+```sql
 # Truncate只能删除管理表，不能删除外部表中数据
 truncate table student;
 ```
@@ -1051,7 +1051,7 @@ truncate table student;
 
 **基本语法**
 
-```mysql
+```sql
 [WITH CommonTableExpression (, CommonTableExpression)*]    (Note: Only available
  starting with Hive 0.13.0)
 SELECT [ALL | DISTINCT] select_expr, select_expr, ...
@@ -1075,7 +1075,7 @@ SELECT [ALL | DISTINCT] select_expr, select_expr, ...
 
 ### 1.1 全表和特定列查询
 
-```mysql
+```sql
 # 全表查询
 select * from emp;
 # 选择特定列查询
@@ -1091,7 +1091,7 @@ select empno, ename from emp;
 
 ### 1.2 列别名
 
-```mysql
+```sql
 select ename as name, deptno dn from emp;
 ```
 
@@ -1109,13 +1109,13 @@ select ename as name, deptno dn from emp;
 | A^B    | A和B按位取异或 |
 | ~A     | A按位取反      |
 
-```mysql
+```sql
 select sal +1 from emp;
 ```
 
 ### 1.4 常用函数
 
-```mysql
+```sql
 select count(*) cnt from emp;
 select max(sal) max_sal from emp;
 select min(sal) min_sal from emp;
@@ -1125,13 +1125,13 @@ select avg(sal) avg_sal from emp;
 
 ### 1.5 limit语句
 
-```mysql
+```sql
 select * from emp limit 5; -- 用于限制返回的行数
 ```
 
 ## 2.where语句
 
-```mysql
+```sql
 select * from emp where sal>1000;
 ```
 
@@ -1139,23 +1139,23 @@ select * from emp where sal>1000;
 
 以下运算符同样可以用于join…on和having语句中
 
-| 操作符                  | 支持的数据类型 | 描述                                                         |
-| ----------------------- | -------------- | ------------------------------------------------------------ |
-| A=B                     | 基本数据类型   | 如果A等于B则返回TRUE，反之返回FALSE                          |
-| A<=>B                   | 基本数据类型   | 如果A和B都为NULL，则返回TRUE，其他的和等号（=）操作符的结果一致，如果任一为NULL则结果为NULL |
-| A<>B, A!=B              | 基本数据类型   | A或者B为NULL则返回NULL；如果A不等于B，则返回TRUE，反之返回FALSE |
-| A<B                     | 基本数据类型   | A或者B为NULL，则返回NULL；如果A小于B，则返回TRUE，反之返回FALSE |
-| A<=B                    | 基本数据类型   | A或者B为NULL，则返回NULL；如果A小于等于B，则返回TRUE，反之返回FALSE |
-| A>B                     | 基本数据类型   | A或者B为NULL，则返回NULL；如果A大于B，则返回TRUE，反之返回FALSE |
-| A>=B                    | 基本数据类型   | A或者B为NULL，则返回NULL；如果A大于等于B，则返回TRUE，反之返回FALSE |
-| A [NOT] BETWEEN B AND C | 基本数据类型   | 如果A，B或者C任一为NULL，则结果为NULL。如果A的值大于等于B而且小于或等于C，则结果为TRUE，反之为FALSE。如果使用NOT关键字则可达到相反的效果。 |
-| A IS NULL               | 所有数据类型   | 如果A等于NULL，则返回TRUE，反之返回FALSE                     |
-| A IS NOT NULL           | 所有数据类型   | 如果A不等于NULL，则返回TRUE，反之返回FALSE                   |
-| IN(数值1, 数值2)        | 所有数据类型   | 使用 IN运算显示列表中的值                                    |
+| 操作符                  | 支持的数据类型 | 描述                                                                                                                                                                                                                                                     |
+| ----------------------- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A=B                     | 基本数据类型   | 如果A等于B则返回TRUE，反之返回FALSE                                                                                                                                                                                                                      |
+| A<=>B                   | 基本数据类型   | 如果A和B都为NULL，则返回TRUE，其他的和等号（=）操作符的结果一致，如果任一为NULL则结果为NULL                                                                                                                                                              |
+| A<>B, A!=B              | 基本数据类型   | A或者B为NULL则返回NULL；如果A不等于B，则返回TRUE，反之返回FALSE                                                                                                                                                                                          |
+| A<B                     | 基本数据类型   | A或者B为NULL，则返回NULL；如果A小于B，则返回TRUE，反之返回FALSE                                                                                                                                                                                          |
+| A<=B                    | 基本数据类型   | A或者B为NULL，则返回NULL；如果A小于等于B，则返回TRUE，反之返回FALSE                                                                                                                                                                                      |
+| A>B                     | 基本数据类型   | A或者B为NULL，则返回NULL；如果A大于B，则返回TRUE，反之返回FALSE                                                                                                                                                                                          |
+| A>=B                    | 基本数据类型   | A或者B为NULL，则返回NULL；如果A大于等于B，则返回TRUE，反之返回FALSE                                                                                                                                                                                      |
+| A [NOT] BETWEEN B AND C | 基本数据类型   | 如果A，B或者C任一为NULL，则结果为NULL。如果A的值大于等于B而且小于或等于C，则结果为TRUE，反之为FALSE。如果使用NOT关键字则可达到相反的效果。                                                                                                               |
+| A IS NULL               | 所有数据类型   | 如果A等于NULL，则返回TRUE，反之返回FALSE                                                                                                                                                                                                                 |
+| A IS NOT NULL           | 所有数据类型   | 如果A不等于NULL，则返回TRUE，反之返回FALSE                                                                                                                                                                                                               |
+| IN(数值1, 数值2)        | 所有数据类型   | 使用 IN运算显示列表中的值                                                                                                                                                                                                                                |
 | A [NOT] LIKE B          | STRING 类型    | B是一个SQL下的简单正则表达式，如果A与其匹配的话，则返回TRUE；反之返回FALSE。B的表达式说明如下：‘x%’表示A必须以字母‘x’开头，‘%x’表示A必须以字母’x’结尾，而‘%x%’表示A包含有字母’x’,可以位于开头，结尾或者字符串中间。如果使用NOT关键字则可达到相反的效果。 |
-| A RLIKE B, A REGEXP B   | STRING 类型    | B是一个正则表达式，如果A与其匹配，则返回TRUE；反之返回FALSE。匹配使用的是JDK中的正则表达式接口实现的，因为正则也依据其中的规则。例如，正则表达式必须和整个字符串A相匹配，而不是只需与其字符串匹配。 |
+| A RLIKE B, A REGEXP B   | STRING 类型    | B是一个正则表达式，如果A与其匹配，则返回TRUE；反之返回FALSE。匹配使用的是JDK中的正则表达式接口实现的，因为正则也依据其中的规则。例如，正则表达式必须和整个字符串A相匹配，而不是只需与其字符串匹配。                                                      |
 
-```mysql
+```sql
 select * from emp where sal = 5000;
 select * from emp where sal between 5000 and 10000;
 select * from emp where comm is null;
@@ -1164,7 +1164,7 @@ select * from emp where sal in (1500, 5000);
 
 ### 2.2 like和rlike
 
-```mysql
+```sql
 -- 使用like运算符选择类似的值
 -- 选择条件可以包含字符或数字
 -- 	%代表零个或多个字符(任意个字符)
@@ -1184,7 +1184,7 @@ select * from emp where sal rlike '[2]'; -- 查找薪水中含有2的员工信�
 | OR     | 逻辑或 |
 | NOT    | 逻辑否 |
 
-```mysql
+```sql
 select * from emp where sal > 1000 and depno = 30;
 select * from emp where sal > 1000 or depno = 30;
 select * from emp where deptno not in (30, 20);
@@ -1194,7 +1194,7 @@ select * from emp where deptno not in (30, 20);
 
 ### 3.1 group by语句
 
-```mysql
+```sql
 /* group by语句通常会和聚合函数一起使用，按照一个或者多个队列记过进行分组，然后对每个组执行聚合操作。 */
 -- 计算emp表每个部门的平均工资
 select t.deptno, avg(t.sal) avg_sal from emp t group by t.deptno;
@@ -1211,7 +1211,7 @@ group by t.deptno, t.job;
 > where后面不能写分组函数，而having后面可以使用分组函数
 > having只用于group by分组统计语句
 
-```mysql
+```sql
 -- 每个部门的平均薪水
 select deptno, avg(sal) from emp group by deptno;
 -- 每个部门的平均薪水大于2000的部门
@@ -1221,7 +1221,7 @@ select deptno, avg(sal) from emp group by deptno;
 
 ### 4.1 等值join
 
-```mysql
+```sql
 /* hive通常支持的sql join语句，但是只支持等值连接，不支持非等值连接 */
 
 -- 根据员工表和部门表中的部门编号相等，查询员工编号、员工名称和部门名称
@@ -1233,7 +1233,7 @@ on e.deptno = d.deptno;isFlag
 
 ### 4.2 表的别名
 
-```mysql
+```sql
 select e.empno, e.ename, d.deptno
 from emp e
 join dept d 
@@ -1242,7 +1242,7 @@ on e.deptno = d.deptno;
 
 ### 4.3 内连接
 
-```mysql
+```sql
 # 只进行连接的两个表中都存在与连接条件相匹配的数据才会保留下来
 select e.empno, e.name, d.deptno
 from emp e
@@ -1252,7 +1252,7 @@ on d.deptno = d.deptno;
 
 ### 4.4 左外连接
 
-```mysql
+```sql
 # join操作符左边表中符合where字句的所有记录将会被返回
 select e.empno, e.ename, d.deptno
 from emp e
@@ -1262,7 +1262,7 @@ on e.deptno = d.deptno;
 
 ### 4.5 右外连接
 
-```mysql
+```sql
 # join操作符右边表中符合where字句的所有记录将会被返回
 select e.empno, e.name, d.deptno
 from emp e
@@ -1272,7 +1272,7 @@ on e.deptno = d.deptno;
 
 ### 4.6 满外连接
 
-```mysql
+```sql
 # 返回所有表中符合where语句条件的所有记录，如果任一表的指定字段没有符合条件的值的话，那么就使用null替代
 select e.empno, e.ename, d.deptno
 from emp e
@@ -1290,7 +1290,7 @@ on e.deptno = d.deptno;
 
 ### 4.9 连接谓词中不支持or
 
-```mysql
+```sql
 select e.empno, e.ename, d.deptno
 from emp e
 join dept d 
@@ -1303,7 +1303,7 @@ on e.deptno = d.deptno or e.ename = d.ename; -- 错误示范
 
 Order By: 全局排序，一个Reducer
 
-```mysql
+```sql
 /*
 order by:全局排序，一个reducer
 ASC(ascend):升序(默认)
@@ -1323,7 +1323,7 @@ order by sal desc;
 
 ### 5.2  按照别名排序
 
-```mysql
+```sql
 -- 按照与员工薪水的二倍排序
 select ename, sal*2 double_sal
 from emp
@@ -1332,7 +1332,7 @@ order by double_sal;
 
 ### 5.3 多个列排序
 
-```mysql
+```sql
 -- 按照部门和工资升序排序
 select ename, deptno, sal
 from emp 
@@ -1343,7 +1343,7 @@ order by deptno, sal;
 
 Sort by:每个Reducer内部排序，对全局结果集来说不是排序
 
-```mysql
+```sql
 -- 设置reduce个数
 set mapreduce.job.reduces=3;
 -- 查看设置的reduce个数
@@ -1364,7 +1364,7 @@ Distribute by:类似MR中partition，进行分区，结合sort by使用
 只有分派对个reduce进行处理时才能看出distribute by的效果
 **分区个数和reducer个数**的确定与最终文件的个数和文件的内容
 
-```mysql
+```sql
 -- 先按照部门编号排序，再按照员工编号降序排序
 set mapreduce.job.reduces=3; # 个数的确定★ 
 insert overwrite loacl directory '/opt/module/datas/distribute-result'
@@ -1378,7 +1378,7 @@ sort by empno desc;
 当distribute by 和 sort by字段相同时，可以使用cluster by
 cluster by除了具有distribute by的功能外还兼具了sort by的功能。但是排序是升序，不能设置规则
 
-```mysql
+```sql
 select * 
 from emp 
 cluster by depto;
@@ -1420,7 +1420,7 @@ sort by deptno; -- 和第一条语句相同
    1016	ss16
    ```
 
-   ```mysql
+   ```sql
    -- 创建分桶表
    create table stu_buck(id int, name string)
    clustered by(id)
@@ -1435,7 +1435,7 @@ sort by deptno; -- 和第一条语句相同
 
 2. 创建分桶表是，数据通过子查询的方式导入
 
-   ```mysql
+   ```sql
    -- 先建一个普通的stu表
    create table stu(id int, name string)
    row format delimited fields terminated by '\t';
@@ -1460,7 +1460,7 @@ sort by deptno; -- 和第一条语句相同
 
 ### 6.2 分桶抽样查询
 
-```mysql
+```sql
 select * from stu_buck tablesample(bucket 1 out of 4 on id);
 ```
 
@@ -1479,7 +1479,7 @@ select * from stu_buck tablesample(bucket 1 out of 4 on id);
 > **函数说明**
 > NVL:给值为null的数据赋值，他的格式是NVL(string 1, replace_with)，他的功能是如果string1为null，则nvl则nvl函数返回replace_with的值，否则返回string 1的值，如果两个参数为null，则返回null
 
-```mysql
+```sql
 -- 如果comm为null，则用-1代替
 select nvl(comm,-1) from emp;
 -- 如果员工的comm为null，则用领导id代替
@@ -1492,14 +1492,14 @@ select nvl(comm, nvl(mgr,ename)) from emp;
 
 1. 数据准备
 
-   | name | dept_id | sex  |
-   | ---- | ------- | ---- |
-   | 悟空 | A       | 男   |
-   | 大海 | A       | 男   |
-   | 宋宋 | B       | 男   |
-   | 凤姐 | A       | 女   |
-   | 婷姐 | B       | 女   |
-   | 婷婷 | B       | 女   |
+   | name | dept_id | sex |
+   | ---- | ------- | --- |
+   | 悟空 | A       | 男  |
+   | 大海 | A       | 男  |
+   | 宋宋 | B       | 男  |
+   | 凤姐 | A       | 女  |
+   | 婷姐 | B       | 女  |
+   | 婷婷 | B       | 女  |
 
 2. 需求
    求出不同部门男女各多少人，结果如下:idFlag
@@ -1528,7 +1528,7 @@ select nvl(comm, nvl(mgr,ename)) from emp;
 
 4. 创建hive表并导入数据
 
-   ```mysql
+   ```sql
    create table emp_sex(
    	name string,
        dept_id string,
@@ -1539,7 +1539,7 @@ select nvl(comm, nvl(mgr,ename)) from emp;
 
 5. 按需求查询数据
 
-   ```mysql
+   ```sql
    select 
    	dept_id,
    	sum(case sex when '男' then 1 else 0 end) male_count,
@@ -1592,7 +1592,7 @@ select nvl(comm, nvl(mgr,ename)) from emp;
 
 > **创建hive表并导入数据**
 >
-> ```mysql
+> ```sql
 > create table person_info(
 > name string,
 > constellation string,
@@ -1603,7 +1603,7 @@ select nvl(comm, nvl(mgr,ename)) from emp;
 
 > **按需求查询数据**
 >
-> ```mysql
+> ```sql
 > select
 > 	t1.base,
 > 	concat ws('|', conllect_set(t1.name)) name
@@ -1647,7 +1647,7 @@ select nvl(comm, nvl(mgr,ename)) from emp;
 
 > **创建hive表并导入数据**
 >
-> ```mysql
+> ```sql
 > create table movie info(
 > 	movie string,
 > 	category array<string>)
@@ -1658,7 +1658,7 @@ select nvl(comm, nvl(mgr,ename)) from emp;
 
 > **按需求查询数据**
 >
-> ```mysql
+> ```sql
 > select
 > 	movie,
 > 	catagory_name
@@ -1712,7 +1712,7 @@ select nvl(comm, nvl(mgr,ename)) from emp;
 
 > **创建hive表并导入数据**
 >
-> ```mysql
+> ```sql
 > create table business(
 > name string,
 > orderdate string,
@@ -1723,7 +1723,7 @@ select nvl(comm, nvl(mgr,ename)) from emp;
 
 > **按需求查询数据**
 >
-> ```mysql
+> ```sql
 > -- 查询在2017年4月购买过的顾客及总人数
 > select name, count(*) over() -- 使用over()后，count窗口个数
 > from business
@@ -1793,7 +1793,7 @@ select nvl(comm, nvl(mgr,ename)) from emp;
 
 > **创建hive表并导入数据**
 >
-> ```mysql
+> ```sql
 > create table score(
 > name string,
 > subject string,
@@ -1804,7 +1804,7 @@ select nvl(comm, nvl(mgr,ename)) from emp;
 
 > **按需求查询数据**
 >
-> ```mysql
+> ```sql
 > select name, subject, score,
 > rank() over(partition by subject order by score desc) rp,
 > dense rank() over(partition by subject order by score desc) drp,
@@ -1836,7 +1836,7 @@ select nvl(comm, nvl(mgr,ename)) from emp;
 
 ## 1.系统内置函数
 
-```mysql
+```sql
 -- 查询系统自带的函数
 show functions;
 -- 显示自带的函数的用法
@@ -1861,7 +1861,7 @@ hive自带了一些函数，但是数量有限，当内置函数无法满足业�
 > 需要实现evaluate函数;evaluate函数支持重载
 > 在hive的命令行窗口创建函数
 >
-> ```mysql
+> ```sql
 > # 添加jar
 > add jar linux_jar_path
 > -- 创建function
@@ -1870,7 +1870,7 @@ hive自带了一些函数，但是数量有限，当内置函数无法满足业�
 >
 > 在hive命令行窗口删除函数
 >
-> ```mysql
+> ```sql
 > Drop [temporary] function [if exists] [dbname.]function_name;
 > ```
 
@@ -1915,7 +1915,7 @@ public class Lower extends UDF {
 
 **打成jar包上传到服务器/opt/module/jars/udf.jar**
 
-```mysql
+```sql
 -- 将jar包添加到hive的classpath
 add jar /opt/module/jars/udf.jar
 -- 创建临时函数与开发好的java class关联
@@ -2015,21 +2015,21 @@ select ename, mylower(ename) lowername from emp;
 
 **压缩参数设置**
 
-| 参数                                                 | 默认值                                                       | 阶段        | 建议                                         |
-| ---------------------------------------------------- | ------------------------------------------------------------ | ----------- | -------------------------------------------- |
+| 参数                                                 | 默认值                                                                                                                                                                      | 阶段        | 建议                                         |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- | -------------------------------------------- |
 | io.compression.codecs      （在core-site.xml中配置） | org.apache.hadoop.io.compress.DefaultCodec,   org.apache.hadoop.io.compress.GzipCodec,   org.apache.hadoop.io.compress.BZip2Codec,   org.apache.hadoop.io.compress.Lz4Codec | 输入压缩    | Hadoop使用文件扩展名判断是否支持某种编解码器 |
-| mapreduce.map.output.compress                        | false                                                        | mapper输出  | 这个参数设为true启用压缩                     |
-| mapreduce.map.output.compress.codec                  | org.apache.hadoop.io.compress.DefaultCodec                   | mapper输出  | 使用LZO、LZ4或snappy编解码器在此阶段压缩数据 |
-| mapreduce.output.fileoutputformat.compress           | false                                                        | reducer输出 | 这个参数设为true启用压缩                     |
-| mapreduce.output.fileoutputformat.compress.codec     | org.apache.hadoop.io.compress.   DefaultCodec                | reducer输出 | 使用标准工具或者编解码器，如gzip和bzip2      |
-| mapreduce.output.fileoutputformat.compress.type      | RECORD                                                       | reducer输出 | SequenceFile输出使用的压缩类型：NONE和BLOCK  |
+| mapreduce.map.output.compress                        | false                                                                                                                                                                       | mapper输出  | 这个参数设为true启用压缩                     |
+| mapreduce.map.output.compress.codec                  | org.apache.hadoop.io.compress.DefaultCodec                                                                                                                                  | mapper输出  | 使用LZO、LZ4或snappy编解码器在此阶段压缩数据 |
+| mapreduce.output.fileoutputformat.compress           | false                                                                                                                                                                       | reducer输出 | 这个参数设为true启用压缩                     |
+| mapreduce.output.fileoutputformat.compress.codec     | org.apache.hadoop.io.compress.   DefaultCodec                                                                                                                               | reducer输出 | 使用标准工具或者编解码器，如gzip和bzip2      |
+| mapreduce.output.fileoutputformat.compress.type      | RECORD                                                                                                                                                                      | reducer输出 | SequenceFile输出使用的压缩类型：NONE和BLOCK  |
 
 3.开启Map输出阶段压缩
 
 开启map输出阶段压缩可以减少job中map和reduce task间数据传输量
 **实操**
 
-```mysql
+```sql
 -- 临时设置只对当前窗口有效，更改配置文件才能永久有效
 
 -- 开启hive中间传输数据压缩功能
@@ -2050,7 +2050,7 @@ select count(ename) name from emp;
 
 **实操**
 
-```mysql
+```sql
 -- 开启hive最终输出数据压缩功能
 set hive.exec.compress.output=true;
 -- 开启mapreduce最终输出数据压缩
@@ -2132,7 +2132,7 @@ scp ./log.data tian@hadoop201:/opt/module/datas/log.data # 拷贝数据到服务
 
 **TextFile**
 
-```mysql
+```sql
 -- 创建表，存储数据格式为TEXTFILE
 create table log_text (
 track_time string,
@@ -2154,7 +2154,7 @@ hive (default)> dfs -du -h /user/hive/warehouse/log_text;
 
 **ORC**
 
-```mysql
+```sql
 -- 创建表，存储数据格式为orc
 create table log_orc(
 track_time string,
@@ -2176,7 +2176,7 @@ dfs -du -h /user/hive/warehouse/log_orc/;
 
 **Parquet**
 
-```mysql
+```sql
 -- 创建表，存储数据格式为parquet
 create table log_parquet(
 track_time string,
@@ -2198,7 +2198,7 @@ dfs -du -h /user/hive/warehouse/log_parquet/ ;
 
 **查询速度测试**
 
-```mysql
+```sql
 select count(*) from log_text;
 # _c0
 # 100000
@@ -2243,19 +2243,19 @@ hadoop checknative
 
 **ORC存储方式的压缩**
 
-| Key                      | Default    | Notes                                                        |
-| ------------------------ | ---------- | ------------------------------------------------------------ |
-| orc.compress             | ZLIB       | high level compression (one of NONE, ZLIB,   SNAPPY)         |
-| orc.compress.size        | 262,144    | number of bytes in each compression chunk                    |
-| orc.stripe.size          | 67,108,864 | number of bytes in each stripe                               |
-| orc.row.index.stride     | 10,000     | number of rows between index entries (must be   >= 1000)     |
-| orc.create.index         | true       | whether to create row indexes                                |
+| Key                      | Default    | Notes                                                                           |
+| ------------------------ | ---------- | ------------------------------------------------------------------------------- |
+| orc.compress             | ZLIB       | high level compression (one of NONE, ZLIB,   SNAPPY)                            |
+| orc.compress.size        | 262,144    | number of bytes in each compression chunk                                       |
+| orc.stripe.size          | 67,108,864 | number of bytes in each stripe                                                  |
+| orc.row.index.stride     | 10,000     | number of rows between index entries (must be   >= 1000)                        |
+| orc.create.index         | true       | whether to create row indexes                                                   |
 | orc.bloom.filter.columns | ""         | comma separated list of column names for which   bloom filter should be created |
-| orc.bloom.filter.fpp     | 0.05       | false positive probability for bloom filter (must   >0.0 and <1.0) |
+| orc.bloom.filter.fpp     | 0.05       | false positive probability for bloom filter (must   >0.0 and <1.0)              |
 
 **创建非压缩的ORC存储方式**
 
-```mysql
+```sql
 -- 建表
 create table log_orc_none(
 track_time string,
@@ -2277,7 +2277,7 @@ dfs -du -h /user/hive/warehouse/log_orc_none/ ;
 
 **创建Snappy压缩的ORC存储方式**
 
-```mysql
+```sql
 -- 建表
 create table log_orc_snappy(
 track_time string,
@@ -2327,7 +2327,7 @@ Fetch抓取是指，Hive中对某些情况的查询可以不必使用MapReduce�
 
 **实操**
 
-```mysql
+```sql
 -- 把hive.fetch.task.conversion设置成none，然后执行查询语句，都会执行mapreduce程序。
 set hive.fetch.task.conversion=none;
 select * from emp;
@@ -2348,7 +2348,7 @@ select ename from emp limit 3;
 
 用户可以通过设置hive.exec.mode.local.auto的值为true，来让Hive在适当的时候自动启动这个优化。
 
-```mysql
+```sql
 set hive.exec.mode.local.auto=true;  -- 开启本地mr
 -- 设置local mr的最大输入数据量，当输入数据量小于这个值时采用local  mr的方式，默认为134217728，即128M
 set hive.exec.mode.local.auto.inputbytes.max=50000000;
@@ -2358,7 +2358,7 @@ set hive.exec.mode.local.auto.input.files.max=10;
 
 **实操**
 
-```mysql
+```sql
 -- 开启本地模式，并执行查询语句
 set hive.exec.mode.local.auto=true; 
 select * from emp cluster by deptno;
@@ -2379,7 +2379,7 @@ select * from emp cluster by deptno;
 
 **实操**
 
-```mysql
+```sql
 # 需求: 测大表join小表和小表join大表的效率
 
 -- 建大表、小表和join后表的语句
@@ -2440,7 +2440,7 @@ mr-history-daemon.sh start historyserver # 启动历史服务器
 
 [查看jobhistory](http://hadoop101:19888/jobhistory)
 
-```mysql
+```sql
 # 创建原始表
 create table ori(id bigint, time bigint, uid string, keyword string, url_rank int, click_num int, click_url string) row format delimited fields terminated by '\t';
 # 创建空id表
@@ -2468,7 +2468,7 @@ select n.* from nullidtable n left join ori o on n.id = o.id;
 
 不随机分布null值
 
-```mysql
+```sql
 # 设置5个reduce个数
 set mapreduce.job.reduce=5
 -- join两张表
@@ -2485,7 +2485,7 @@ n left join ori b on n.id=b.id;
 
 如果不指定MapJoin或者不符合MapJoin的条件，那么Hive解析器会将Join操作转换成Common Join，即：在Reduce阶段完成join。容易发生数据倾斜。可以用MapJoin把小表全部加载到内存在map端进行join，避免reducer处理。
 
-```mysql
+```sql
 # 开启MapJoin参数设置
 -- 设置自动设置Mapjoin
 set hive.auto.convert.join=true; -- 默认为true
@@ -2497,7 +2497,7 @@ set hive.mapjoin.smalltable.filesize=25000000;
 
 **实操**
 
-```mysql
+```sql
 -- 开启Mapjoin功能
 set hive.auto.convert.join=true; -- 默认为true
 -- 执行小表join大表语句
@@ -2522,7 +2522,7 @@ on s.id = b.id;
 
 > **开启Map端集合参数设置**
 >
-> ```mysql
+> ```sql
 > -- 是否在Map端进行聚合，默认为true
 > hive.map.aggr=true
 > -- 在Mapdaunt进行聚合操作的条目数目
@@ -2539,7 +2539,7 @@ on s.id = b.id;
 
 **实操**
 
-```mysql
+```sql
 -- 创建一张大表
 create table bigtable(id bigint, time bigint, uid string, keyword
 string, url_rank int, click_num int, click_url string) row format delimited
@@ -2581,7 +2581,7 @@ select count(id) from (select id from bigtable group by id) a;
 
 **实操**
 
-```mysql
+```sql
 -- 测试先关联两张表，再用where条件过滤
 select o.id from bigtable b
 join ori o on o.id = b.id
@@ -2599,7 +2599,7 @@ join (select id from ori where id <= 10 ) o on b.id = o.id;
 
 > **开启动态分区参数设置**
 >
-> ```mysql
+> ```sql
 > -- 开启动态分区功能(默认为true，开启)
 > hive.exec.dynamic.patition=true
 > -- 设置为非严格模式(动态分区模式，默认strict，表示必须指定至少一个分区为静态分区，nonstrict模式表示允许所有的分区字段都可以使用动态分区)
@@ -2616,7 +2616,7 @@ join (select id from ori where id <= 10 ) o on b.id = o.id;
 
 **实操**
 
-```mysql
+```sql
 # 需求：将ori中的数据按照时间(如：20111230000008)，插入到目标表ori_partitioned_target的相应分区中。
 -- （1）创建分区表
 create table ori_partitioned(id bigint, time bigint, uid string, keyword string,
@@ -2668,7 +2668,7 @@ show partitions ori_partitioned_target;
 
 在map执行前合并小文件，减少map数：CombineHiveInputFormat具有对小文件进行合并的功能（系统默认的格式）。HiveInputFormat没有对小文件合并功能。
 
-```mysql
+```sql
 set hive.input.format= org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;
 ```
 
@@ -2680,7 +2680,7 @@ set hive.input.format= org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;
 
 > **调整reduce个数方法一**
 >
-> ```mysql
+> ```sql
 > -- （1）每个Reduce处理的数据量默认是256MB
 > hive.exec.reducers.bytes.per.reducer=256000000
 > -- （2）每个任务最大的reduce数，默认为1009
@@ -2691,7 +2691,7 @@ set hive.input.format= org.apache.hadoop.hive.ql.io.CombineHiveInputFormat;
 
 > **调整reduce个数方法二**
 >
-> ```mysql
+> ```sql
 > -- 在hadoop的mapred-default.xml文件中修改设置每个job的Reduce个数
 > set mapreduce.job.reduces = 15;
 > ```
@@ -2712,7 +2712,7 @@ Hive会将一个查询转化成一个或者多个阶段。这样的阶段可以�
 
 通过设置参数hive.exec.parallel值为true，就可以开启并发执行。不过，在共享集群中，需要注意下，如果job中并行阶段增多，那么集群利用率就会增加。
 
-```mysql
+```sql
 set hive.exec.parallel=true;             -- 打开任务并行执行
 set hive.exec.parallel.thread.number=16;  -- 同一个sql允许最大并行度，默认为8。
 ```
@@ -2820,7 +2820,7 @@ Hadoop的默认配置通常是使用派生JVM来执行map和Reduce任务的。�
 
 **实操**
 
-```mysql
+```sql
 -- （1）查看下面这条语句的执行计划
 hive (default)> explain select * from emp;
 hive (default)> explain select deptno, avg(sal) avg_sal from emp group by deptno;
@@ -3038,7 +3038,7 @@ yarn jar /opt/module/jars/udf.jar/ com.tian.etl.VideoETLRunner /guli/video/ /gul
 
 ### 3.1 创建表
 
-```mysql
+```sql
 -- gulivideo_ori
 create table gulivideo_ori(
     videoId string, 
@@ -3110,14 +3110,14 @@ stored as orc;
 
 ### 3.2 导入ETL后的数据
 
-```mysql
+```sql
 load data inpath "/gulivideo/output/video/2008/0222" into table gulivideo_ori;
 load data inpath "/gulivideo/user/2008/0903" into table gulivideo_user_ori;
 ```
 
 ### 3.3 向ORC表插入数据
 
-```mysql
+```sql
 insert into table gulivideo_orc select * from gulivideo_ori;
 insert into table gulivideo_user_orc select * from gulivideo_user_ori;
 ```
@@ -3126,7 +3126,7 @@ insert into table gulivideo_user_orc select * from gulivideo_user_ori;
 
 ### 4.1 统计视频观看数Top10
 
-```mysql
+```sql
 -- 思路，order by排序取前十
 select *
 from gulivideo_orc
@@ -3136,7 +3136,7 @@ limit 10;
 
 ### 4.2 统计视频类别热度Top10
 
-```mysql
+```sql
 -- a. 炸开视频类别
 select videoId, category_name 
 from gulivideo_orc 
@@ -3175,7 +3175,7 @@ LIMIT 10;
 
 ### 4.3 统计出视频观看数最高的20个视频的所属类别以及类别包含的Top20视频的个数
 
-```mysql
+```sql
 -- a. 视频观看数最高的20个视频的类别
 select videoId , views  , category
 from gulivideo_orc 
@@ -3208,7 +3208,7 @@ order by hot desc ;
 
 ### 4.4 统计视频观看数Top50所关联视频的所属类别的Rank
 
-```mysql
+```sql
 -- a. 统计视频观看数Top50  (一个视频对应多个关联视频(array))
 
 select videoId, views , relatedId
@@ -3262,7 +3262,7 @@ group by category_name )t6 ;
 
 ### 4.5 统计每个类别的视频热度Top10，以Music为例
 
-```mysql
+```sql
 -- a. 炸开每个视频的类别
 select videoId , views , category_name 
 from gulivideo_orc 
@@ -3292,7 +3292,7 @@ where t2.rn <=10 ;
 
 ### 4.6 统计每个类别中视频流量Top10，以Music为例
 
-```mysql
+```sql
 -- a. 炸开每个视频的类别
 select videoId , ratings , category_name 
 from gulivideo_orc 
@@ -3322,7 +3322,7 @@ where t2.rn <=10 ;
 
 ### 4.7 统计上传视频最多的用户Top10以及他们上传的观看次数在前20的视频
 
-```mysql
+```sql
 -- a. 上传视频最多的用户Top10
 select  uploader ,videos
 from gulivideo_user_orc 

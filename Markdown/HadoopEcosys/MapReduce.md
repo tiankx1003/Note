@@ -229,7 +229,7 @@ World   1
 ```
 
 src/main/resources目录下新建log4j.properties
-```propeerties
+```conf
 log4j.rootLogger=INFO, stdout
 log4j.appender.stdout=org.apache.log4j.ConsoleAppender
 log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
