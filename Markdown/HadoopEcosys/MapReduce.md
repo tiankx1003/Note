@@ -4338,8 +4338,7 @@ YARN中的任务将其进度和状态(包括counter)返回给应用管理器, �
 ```xml
 <property>
     <description>The class to use as the resource scheduler.</description>
-    <name>yarn.resourcemanager.scheduler.class</name>
-<value>org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler</value>
+    <name>yarn.resourcemanager.scheduler.class</name>							<value>org.apache.hadoop.yarn.server.resourcemanager.scheduler.capacity.CapacityScheduler</value>
 </property>
 ```
 

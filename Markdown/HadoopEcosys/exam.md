@@ -144,16 +144,16 @@ fi
 9. 请描述MapReduce中combiner的作用是什么，使用情景，哪些情况不需要，和reduce的区别
    * 作用是在每次溢写数据到磁盘时，对数据进行局部的合并，减少溢写数据量
    * 求和，汇总等场景适合使用，不是适合的场景例如求平均数
-   * 和reduce的唯一区别，就是Combiner时运行在Shuffle阶段，且主要时MapTask端的shuffle阶段，而Reducer运行在reduce阶段
+   * 和reduce的唯一区别，就是Combiner是运行在Shuffle阶段，且主要是MapTask端的shuffle阶段，而Reducer运行在reduce阶段
 10. 如果没有定义partitioner，那数据在被送达Reducer前是如何被分区的
    * 如果ReduceTask个数为1，那么所有key-value都是0号区
    * 如果ReduceTask个数是大于1，默认使用HashPartitioner，根据key的hashCode()方法和Integer最大值做与运算，之后模除ReduceTask的个数
    * 所有数据的区号介于0和ReduceTask个数-1的范围内
 11. MapReduce怎么实现TopN
-  在Map端使数据根据排名字段进行排序
+    在Map端使数据根据排名字段进行排序
    * 合理设置Map的key，key中需要包含排序的字段
    * 通过时key实现WritableComparable接口或者自定义key的RawComparator类型比较器，归根到底，在排序时都是使用用户实现的compareTo()方法进行比较
-  在Reduce端是输出数据
+    在Reduce端是输出数据
    * reduce端处理的数据已经自动排序完成，只需要控制输出N个key-value即可
 12. 有可能使Hadoop任务输出到多个目录中么?如果可以怎么做?
    * 可以，通过自定义OutputFormat进行实现，核心时实现OutputFormat中的相关的RecordWriter，通过实现其write()方法就需要的数据输出到指定的目录
@@ -283,12 +283,12 @@ fi
 10. Hive join过程中大表和小表的防止顺序
    * 小表join大表，当设置了`set hive.auto.convert.join=true`后，hive会自动调整顺序
 11. Hive的两张表关联，使用MapReduce怎么实现
-   ▼ReduceJoin
+      ▼ReduceJoin
    * 在Map端使用了一个通用的bean来封装谁，这个bean中包含了两个表的所有字段
    * 在Map端处理时，为每个bean打上标记，标记当前数据的来源
    * 在Reduce端，根据数据的来源将数据分类
    * 在Reduce端进行字段的关联，且只处理需要处理的数据
-   ▼MapJoin
+      ▼MapJoin
    * 根据两张表的数据的数据量，将两张表划分为大表和小表
    * 小表使用分布式缓存提前缓存，大表作为MR的输入，进行切片后读入到MapTask
    * 在Mapper的map()方法处理之前，提前从分布式缓存中读取小表中的数据
