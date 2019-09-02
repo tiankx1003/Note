@@ -28,6 +28,7 @@ jdk 1.8
 maven
 python 3.7
 Git
+MySQL
 *hadoop
 *tomcat
 *gcc
