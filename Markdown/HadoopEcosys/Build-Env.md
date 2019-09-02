@@ -10,8 +10,8 @@ activate
 ### System settings
 
 ```
-rename admin
-open admin
+rename tian
+open tian
 userdel
 group policy edit
 control pannal >> firewall
@@ -26,12 +26,12 @@ dllsuit
 ```
 jdk 1.8
 maven
-hadoop
-tomcat
 python 3.7
 Git
-gcc
-nodejs
+*hadoop
+*tomcat
+*gcc
+*nodejs
 ```
 
 ### Software
@@ -39,8 +39,8 @@ nodejs
 ```
 office pro plus
 VMWare 15
-*eclipse
-Spring tools suit
+eclipse
+*Spring tools suit
 vscode
 vscode-insider
 idea

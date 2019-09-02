@@ -1740,7 +1740,7 @@ select nvl(comm, nvl(mgr,ename)) from emp;
 > sum(cost) over() as sample1, -- 所有行累加
 > sum(cost) over(partition by name) as sample2, -- 按name分组，组内数据相加
 > sum(cost) over(partition by name order by orderdate) as sample3, -- 按name分组，组内数据累加
-> sum(cost) over(partition by name order by orderdate rows between UNBOUNDED PRECEDING and current row) as sample4, -- 和sample3一样，由七点到当前行的聚合
+> sum(cost) over(partition by name order by orderdate rows between UNBOUNDED PRECEDING and current row) as sample4, -- 和sample3一样，由起点到当前行的聚合
 > sum(cost) over(partition by name order by orderdate rows between 1 PRECEDING and current row) as sample5, -- 当前行和前面一行做聚合
 > sum(cost) over(partition by name order by orderdate rows between 1 PRECEDING AND 1 FOLLOWING) as sample6, -- 当前行和前边一行及后面一行
 > sum(cost) over(partition by name order by orderdate rows between current row and UNBOUNDED FOLLOWING) as sample7 -- 当前行及后面所有行
