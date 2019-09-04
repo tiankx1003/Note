@@ -6,6 +6,7 @@ var a:Int = 10 // ;可以选择性忽略
 val b:Int = 10 // 常量，重新赋值时编译报错
 var c = false //变量类型推断为Boolean
 ```
+<!-- TODO 不能进行类型推断的场景 -->
 
 >**说明**
 在实际开发中，虽然定义变量的场景很多，但我们很少为变量重新赋值，而是当作常量来用，所以在使用scala编程时有限使用val，即能用常量的地方不用变量。
@@ -85,7 +86,7 @@ scala中的自动类型提升`val a:Int = 10.6.toInt`
 
  * scala中可以省略调用方法时的`.`，如果没有参数或参数只有一个则可以省略括号
 
-# 运算符
+# 二、运算符
 ```
 经典除法 10 / 3 = 3
 真除 10 / 3 = 3.333333
@@ -112,7 +113,7 @@ scala使用`eq()`方法实现java中的`==`
 val max = if(m>n) m else n
 ```
 
-# 流程控制
+# 三、流程控制
 ## 1.分支结构
  * scala中使用模式匹配的方式实现`switch-case`
  * 在scala中所有的语法结构都有值
@@ -206,10 +207,10 @@ import scala.util.control.Breaks._
  */
 object BreakDemo {
     /**
-     * 在scala中没有循环的break关键字
-     * 通过抛出异常并`try-catch`的方法使循环结束
-     * 也可把循环放进方法使用return跳出方法从而跳出循环
-     * @param args
+  在scala中没有循环的break关键字
+  通过抛出异常并`try-catch`的方法使循环结束
+  也可把循环放进方法使用return跳出方法从而跳出循环
+  @param args
      */
     def main(args: Array[String]): Unit = {
         // 原生try-catch
@@ -243,4 +244,283 @@ object BreakDemo {
 
 ```
 
-# 函数式编程
+#### 2.2.4 循环嵌套
+```scala
+//输出九九乘法表
+for (i <- 1 to 9) {
+    for (j <- 1 to i) {
+        print(s"$j * $i = ${j * i}\t")
+    }
+    println()
+}
+
+//使用for的嵌套
+for (i <- 1 to 9; j <- 1 to i) {
+    print(s"$j * $i = ${j * i}\t")
+    if (j == i) println()
+}
+```
+
+#### 2.2.4 for推导
+```scala
+//使用for推导输出序列中每个数的三次方
+val arr: immutable.IndexedSeq[Int] = for(i <- 1 to 5) yield i*i*i
+println(arr)
+//序列中的每个元素加3
+println((1 to 4).map(_ + 3))
+```
+
+# 四、函数式编程
+ * 函数可以当作一个值进行传递--高阶函数
+ * scala把函数式编程和面向对象变成完美的融合到了一起
+
+## 1.基本语法
+
+>**语法说明**
+函数体内可以没有`return`，自动把代码最后一行的值返回
+返回值类型省略后根据最后一行代码的值进行`类型推导`
+当没有省略return时必须写明返回值类型
+省略`=`时表示函数返回`Unit`，无论函数体怎么定义，这时无论函数体如何return，都是返回Unit，这种函数被成为过程
+*具体简写规则见至简规则*
+
+>**纯函数**
+**特点**:不产生副作用(控制台打印、修改外部变量的值、数据落盘)，引用透明(函数的返回值只和形参有关，和其他值无关)
+**优点**:天然的支持高并发，计算速度快(计算的结果直接放进缓存)
+
+>**过程**
+与纯函数相反，只有副作用没有返回值的函数
+
+### 1.1 函数的定义
+```scala
+def foo(a:Int,b:Int):Int = {//函数签名确定函数名，形参列表，返回值类型
+    //函数体内编写具体的实现方法
+    return a + b
+}
+
+def foo2(a:Int,b:Int) = { //省略返回值类型，自动推断
+    a + b //省略return，自动返回函数中最后执行的一行语句
+}
+
+def foo3(a:Int,b:Int) = {// 错误演示
+    return a + b // 当return没有省略时，返回值类型也不能省略
+}
+
+def fun1():Unit = {
+    print ("Hello fun!")
+}
+// 简写
+def fun1() = {
+    print ("Hello fun!")
+}
+def fun1() = print("Hello fun!")
+def fun1 = print("Hello fun!")
+```
+ * 具体的简写规则见至简原则
+
+### 1.2 可变形参
+```scala
+//可变参量
+def add1(arr: Int*) = {
+    var sum = 0
+    for (elem <- arr) {
+        sum += elem
+    }
+    sum
+}
+
+//可变参量出于形参列表的最后
+def add2(a: Double, b: Int, arr: Int*) = {
+    var sum = 0
+    for (elem <- arr) {
+        sum += elem
+    }
+    sum * a + b
+}
+```
+
+### 1.3 形参默认值、命名参量
+ * 在定义函数时可以为形参指定默认值，调用函数时若没有传入该参数则使用默认值
+ * 调用参数时，可以直接指定传入实参对应的形参的名称，有了命名参量，参量顺序没有要求
+
+```scala
+def f1(a: Int, b: Int, c: Int = 3) = a + b + c
+val m = f1(1,2) // c为默认值3
+val n = f1(c = 1, b = 2, a = 2) //通过命令参量传值，可以不考虑顺序
+def f2(a: Int, b: Int = 3, c: Int = 4) = a + b + c
+val x = f2(3, c = 2) //f2的三个参量中有两个是默认值，传入两个参数，必须通过命名参量确定
+def f3(a: Int, b: Int = 2, c: Int) = a + b + c
+val y = f3(1, c = 2) // b有形参默认值，不指定命名参量，只传入两个默认第二个仍为b
+```
+
+```scala
+//求指定范围内的质数的和
+
+def sumPrime(start: Int, end: Int) = {
+    var sum = 0
+    for (n <- start to end) {
+        if (isPrime(n)) sum += n
+    }
+    sum
+}
+
+def isPrime(num: Int): Boolean = {
+    for (i <- 2 until num) {
+        if (num % i != 0) return false
+    }
+    true
+}
+
+// TODO 有逻辑错误
+def sumPrime2(start: Int, end: Int) = {
+    var sum = 0
+    for (i <- start to end; j <- 2 until i if i % j != 0)
+        sum += i
+    sum
+}
+```
+
+### 1.4 惰性函数
+ * 只在第一次被调用时执行
+
+<!-- TODO 执行实际说明 -->
+```scala
+lazy val a0 = {
+    println("a...")
+    10
+}
+
+def main(args: Array[String]): Unit = {
+    println(a0)
+    println(a0)
+}
+
+// 执行时机
+val a = 10 //第一次加载object时执行
+lazy val b = 10 //第一次调用b时执行
+def c = 10 //每次调用时执行
+```
+
+## 2.至简原则
+```scala
+//0.标准写法
+def f0(s: String): String = {
+    return s + "String"
+}
+
+//1.return可以省略，scala使用函数体的最后一行代码作为返回值
+//注:如果return没有省略，那么返回值类型也不能省略，同f0
+def f1(s: String): String = {
+    s + "String"
+}
+
+//2.返回值的类型如果可以推断(根据方法体的最后一行代码)出来，也可以省略
+def f2(s: String) = {
+    s + "String"
+}
+
+//3.如果函数体只有一行代码，也可以省略花括号
+def f3(s: String) = s + "String"
+
+//4.如果函数没有参数列表，那么小括号可以省略(调用时必须也省略)
+def f4 = "String"
+
+val a = f4
+
+//5.如果函数签名明确了返回值为Unit，return不生效
+def f5: Unit = return 10
+val b = f5 //Unit
+
+//6.如果省略等号，则自动推断返回值为Unit，这时return也不生效
+def f6 {
+    print("Hello World!")
+    return 10
+}
+
+//7.如果不关心函数名，只关心逻辑关系，则可省略函数名(和def) -- 匿名函数
+val f = (s: String) => return s + "String"
+```
+
+## 3.高阶函数
+ * 在函数式编程里，除了函数的定义、调用，还能进行函数传递
+
+```scala
+// 函数传递
+def fun1() = print("fun1")
+val f = fun1 _ // 没有调用函数，知识把函数传递(赋值)给f
+f() // 传递(赋值)后的变量可以用于调用函数
+```
+
+>**高阶函数**
+一个函数可以接收一个函数作为参数，或者可以返回一个函数，
+这样的函数就是高阶函数(高阶算子)
+
+```scala
+def main(args:Array[String]):Unit = {
+    print(fun(add)) // 6
+}
+def add(a:Int,b:Int) = a + b
+def fun(n:(Int,Int) => Int) = n(2,4)
+```
+
+<!-- TODO 接口回调 -->
+
+## 4.匿名函数
+```scala
+def main(args: Array[String]): Unit = {
+operation(Array(1, 2, 3), (ele: Int) => { //传入的参数为匿名函数
+    print(ele) // 匿名函数的函数体
+})
+// 简写形式
+operation(Array(1, 2, 3), i => print(i)) // 函数体只有一行语句省略大括号
+operation(Array(1, 2, 3), print(_)) // 每个参数只使用一次，省略参数的说明
+}
+
+def operation(arr: Array[Int], op: Int => Unit) =
+    for (i <- arr) op(i)
+```
+
+```scala
+
+
+```
+
+## 5.闭包与柯里化
+>**说明**
+java程序中内部类无法访问局部变量
+因为java中没有闭包
+闭包可以延长局部变量的声明周期
+
+```java
+public static void main(String[] args) {
+    int i = 10;
+    // i = 20;
+    new Thread() {
+        @Override
+        public void run() {
+            System.out.println(i);
+        }
+    };
+}
+```
+
+## 6.递归
+
+## 7.控制抽象
+
+# 五、面向对象
+ * scal的面向对象和java中的面向对象思想相同，知识在语法上有所精简
+ * 在做面向对象分析阶段是先有对象，然后是对象的属性特征归类
+ * 在具体程序的实现时是先定义类，在根据类创建对象
+## 1.
+
+
+
+## 2.
+
+
+
+## 3.
+
+
+
+
