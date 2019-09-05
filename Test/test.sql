@@ -144,13 +144,23 @@ where last_order='none' and date_format(`date`,'yyyy-MM')='2017-11';
 -- 4
 create table users(
 	user_id string,
-	name string,
+	`name` string,
 	age int);
 create table views(
 	user_id string,
 	url string
 	);
--- 根据年龄段观看电影的次数进行排序
+-- 根据年龄段观看电影的次数对年龄段进行排序
+-- TODO 待验证
+select age_stage,count(user_id) num 
+from 
+	(
+		select u.user_id, age, url, age/10 age_stage
+		from views v 
+		left join users u 
+	)t1 
+group by age_stage
+order by num;
 
 ---------------------------------------------------------------------
 -- 5
@@ -212,3 +222,193 @@ from(
 where day(pt)=min(day(pt));
 ---------------------------------------------------------------------
 -- 7
+/*
+图书（数据表名：BOOK）
+序号	字段名称	字段描述	字段类型
+1		BOOK_ID		总编号		文本
+2		SORT		分类号		文本
+3		BOOK_NAME	书名		文本
+4		WRITER		作者		文本
+5		OUTPUT		出版单位	文本
+6		PRICE		单价		数值（保留小数点后2位）
+
+读者（数据表名：READER）
+序号	字段名称	字段描述	字段类型
+1		READER_ID	借书证号	文本
+2		COMPANY		单位		文本
+3		NAME		姓名		文本
+4		SEX			性别		文本
+5		GRADE		职称		文本
+6		ADDR		地址		文本
+
+借阅记录（数据表名：BORROW_LOG）
+序号	字段名称	字段描述	字段类型
+1		READER_ID	借书证号	文本
+2		BOOK_ID		总编号		文本
+3		BORROW_DATE	借书日期	日期
+*/
+create table book(
+	book_id string comment '总编号',
+	sort string comment '分类号',
+	book_name string comment '书名',
+	writer string comment '作者',
+	`output` string comment '出版单位',
+	price decimal(10,2) comment '单价'
+);
+create table reader(
+	reader_id string comment '借书编号',
+	company string comment '单位',
+	name string comment '姓名',
+	sex string comment '性别',
+	grade string comment '职称',
+	addr string comment '地址'
+);
+create table borrow_log(
+	reader_id string comment '借书编号',
+	book_id string comment '总编号',
+	borrow_date string comment '借书日期'
+);
+-- 找出姓李的读者姓名和所在单位
+select name, company
+from reader 
+where name like '李%';
+
+-- 找出高等教育出版社的的所有图书名称和单价,按单价降序排序
+select book_name, price
+from book
+where `output`='高等教育出版社'
+order by price desc;
+
+-- 查找价格介于10元和20元之间的图书种类(SORT）出版单位（OUTPUT）和单价（PRICE）,
+-- 结果按出版单位（OUTPUT）和单价（PRICE）升序排序
+select sort, `output`, price
+from book
+where price between 10 and 20
+order by `output`, price;
+
+-- 查找所有借了书的读者的姓名（NAME）及所在单位（COMPANY）
+select r.name, r.company
+from borrow_log bl
+left join reader r
+on bl.reader_id=r.reader_id
+group by r.name, r.company;
+
+-- 求”科学出版社”图书的最高单价、最低单价、平均单价
+select max(price), min(price), avg(price)
+from book
+where output='科学出版社';
+
+-- 找出当前至少借阅了2本图书（大于等于2本）的读者姓名及其所在单位
+select name, company
+from(
+	select r.name name,r.company company,count(borrow_date) num 
+	from borrow_log bl
+	left join reader r
+	on bl.reader_id=r.reader_id
+	group by r.name,r.company)t1
+where num>=2;
+
+-- 请使用一条SQL语句,
+-- 在备份用户bak下创建与“借阅记录”表结构完全一致的数据表BORROW_LOG_BAK
+-- 并且将“借阅记录”中现有数据全部复制到BORROW_LOG_BAK
+
+
+-- 写出“图书”在Hive中的建表语句（Hive实现,
+-- 提示：列分隔符|；数据表数据需要外部导入：
+-- 分区分别以month＿part、day＿part 命名）
+
+-- Hive中有表A,现在需要将表A的月分区201505中user＿id为20000的user＿dinner字段更新为bonc8920,
+-- 其他用户user＿dinner字段数据不变,请列出更新的方法步骤。
+-- （Hive实现,提示：Hlive中无update语法,请通过其他办法进行数据更新）
+
+
+
+
+
+---------------------------------------------------------------------
+-- 8
+-- 有一个线上服务器访问日志格式如下（用sql答题）
+-- 时间						接口				ip地址
+-- 2016-11-09 11：22：05	/api/user/login		110.23.5.33
+-- 2016-11-09 11：23：10	/api/user/detail	57.3.2.16
+-- .....
+-- 2016-11-09 23：59：40	/api/user/login		200.6.5.166
+create table net(
+	dt string,
+	port string,
+	ip string
+);
+
+-- 求11月9号下午14点（14-15点）,访问api/user/login接口的top10的ip地址
+select ip,count(dt) num
+from(
+select dt, port, ip 
+	from net
+	where year(dt)=2016 and month(dt)=11 and day(dt)=9 and hour(dt)=14
+		and port='api/user/login'
+)t1
+group by ip
+order by num desc;
+-- TODO 尝试用开窗的方式解决
+
+---------------------------------------------------------------------
+-- 9
+create table credit_log(
+	dist_id int comment '区组id',
+	account string comment '账号',
+	money int comment '充值金额',
+	create_time string comment '订单时间'
+);
+-- 请写出SQL语句,查询充值日志表2015年7月9号每个区组下充值额最大的账号,
+-- 要求结果：区组id,账号,金额,充值时间
+select dist_id,max(money)
+from credit_log
+where create_time='2015-07-09'
+group by dist_id;
+
+
+---------------------------------------------------------------------
+-- 10
+-- 查询各自区组的money排名前十的账号（分组取前10）
+select account
+from(
+	select account,
+		row_number() over(partition by dist_id order by money desc) rank_num
+	from credit_log)t1
+where rank_num<=10;
+
+---------------------------------------------------------------------
+-- 11
+create table member(
+	memberid string comment '会员id',
+	credits string comment '积分'
+);
+create table sale(
+	memberid string comment '会员id',
+	MNAccount string comment '购买金额'
+);
+create table member(
+	memberid string comment '会员id',
+	RMNAccount string comment '退货金额'
+);
+
+---------------------------------------------------------------------
+-- 12
+-- score中的id、cid，分别是student、course
+create table student
+(
+	id bigint comment '学号',
+	name string comment '姓名',
+	age bigint comment '年龄'
+);
+create table course
+(
+	cid string comment '课程号,001/002格式',
+	cname string comment '课程名'
+);
+Create table score
+(
+	Id bigint comment '学号',
+	cid string comment '课程号',
+	score bigint comment '成绩'
+) partitioned by(event_day string);
