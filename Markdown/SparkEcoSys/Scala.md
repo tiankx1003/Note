@@ -480,8 +480,63 @@ def operation(arr: Array[Int], op: Int => Unit) =
 ```
 
 ```scala
+package com.tian.review.day02.highfun
 
+/**
+ * 通过高阶函数实现map reduce filter
+ *
+ * @author tian
+ *         2019/9/4 20:51
+ */
+object HighDemo3 {
+    def main(args: Array[String]): Unit = {
+        val arr1 = map[Int, String](Array(1, 2, 3, 4), _ + "a")
+        val arr2 = map[Int, Int](Array(1, 2, 3, 4), _ + 1)
+        val arr3 = map[Char, Int](Array('a', 'b', 'c', 'd'), _.toInt)
+        val num1 = reduce[Int](Array(1, 2, 3, 4), _ + _) // 求和
+        val str1 = reduce[String](Array("aa", "bb", "cc", "dd"), _ + _) // 拼接
+        val arr4 = filter[Int](Array(1, 2, 3, 4), _ % 2 == 0) // 判断每一位是不是偶数
+    }
 
+    /**
+     * map端对一个数组的每个元素进行操作
+     *
+     * @param arr 传入的数组
+     * @param op  操作函数
+     * @tparam T 传入数组的泛型
+     * @tparam S 传出数组的泛型
+     * @return 经过op操作后得到的数组
+     */
+    def map[T, S](arr: Array[T], op: T => S) = {
+        for (i <- arr) yield op(i) //迭代，使每个元素传入函数
+    }
+
+    /**
+     * 聚合
+     * 使用操作函数对每个元素和上次操作结果(迭代)
+     *
+     * @param arr 传入的数组
+     * @param op  操作函数
+     * @tparam T 传入数组的泛型，
+     *           tparam S 操作函数返回的泛型
+     */
+    // TODO 泛型有问题，待解决
+    // def reduce[T, S](arr: Array[T], op: (S, T) => S) = {
+    def reduce[T](arr: Array[T], op: (T, T) => T) = {
+        var init = arr(0)
+        for (index <- 1 until arr.length) op(init, arr(index)) //递归
+        init
+    }
+
+    /**
+     * 迭代数组的元素，使每个传入迭代函数
+     *
+     * @param arr 传入数组
+     * @param op  过滤函数
+     * @tparam T 数组泛型
+     */
+    def filter[T](arr: Array[T], op: T => Boolean) = for (n <- arr) yield op(n)
+}
 ```
 
 ## 5.闭包与柯里化
@@ -489,6 +544,13 @@ def operation(arr: Array[Int], op: Int => Unit) =
 java程序中内部类无法访问局部变量
 因为java中没有闭包
 闭包可以延长局部变量的声明周期
+
+>**闭包**
+如果一个函数访问了他的外部(局部变量的值)，那么这个函数和他所处的环境，成为闭包，闭包是函数式编程的标配
+
+>**柯里化**
+把一个参数列表的多个参数，变成多个参数列表
+`def add(a:Int)(b:Int) = a + b`
 
 ```java
 public static void main(String[] args) {
@@ -502,24 +564,195 @@ public static void main(String[] args) {
     };
 }
 ```
+```scala
+def main(args: Array[String]): Unit = {
+    //写法演进
+    //        val add4: Int => Int = add(4)
+    val add4 = add(4)
+    val add45 = add4(5)
+    val num45 = add(4)(5)
+}
+def add(a: Int) = (b: Int) => a + b
+def add1(a: Int, b: Int) = a + b
+//柯里化
+def add2(a: Int)(b: Int) = a + b
+```
 
 ## 6.递归
+ * 递归就是自己调用自己
+
+>**递归满足的条件**
+设置了终止条件
+逐渐靠近终止条件
+
+ * 递归导致的方法调用次数过多可能会造成栈溢出
+
+```scala
+//定义方法通过递归完成阶乘的计算
+def factorial(a: Int): Int = {
+    if (a == 1) a
+    else a * factorial(a - 1)
+}
+```
 
 ## 7.控制抽象
+
+### 7.1 值调用与名调用
+>**值调用**
+传递的是一个表达式的计算结果
+
+>**名调用**
+传递的是一行代码或者一个完整的表达式，只会在每次调用时计算
+
+```java
+// java中是值调用
+int a = 3
+int b = 4
+int c = a + b
+boolean boo = if(c == 7) //把a + b这个表达式传入，每次计算c的值
+```
+
+```scala
+//验证scala的名调用
+def main(args: Array[String]): Unit = {
+    def f = () => {
+        println("a...")
+        10
+    }
+    println(f())
+    foo(f())
+    foo2(f())
+}
+
+def foo(a: => Int) = { //名调用
+    println(a)
+    println(a)
+    println(a)
+}
+
+def foo2(a: Int) = { //值调用
+    println(a)
+    println(a)
+    println(a)
+}
+```
+
+### 7.2 名调用的使用方法
+```scala
+def main(args: Array[String]): Unit = {
+    //既然名调用是传递一段代码，那就用代码块作为传参
+    foo({
+        println("a...")
+        10 //为了返回值满足语法要求
+    })
+    foo{ //省略小括号
+        println("a...")
+        10
+    }
+    foo2 {
+        println("a...")
+    }
+}
+
+def foo(a: => Int) = {
+    println(a)
+}
+
+//实际使用时，因为传入的是代码块，往往不限制类型，即Unit
+def foo2(a: => Unit) = {
+    println(a) // ()
+}
+```
+
+### 7.3 名调用的具体案例
+```scala
+//编写函数，使一段代码能够运行在子线程上
+def main(args: Array[String]): Unit = {
+    threadFun{
+        println(Thread.currentThread().getName)
+        for (elem <- 1 to 100 if elem % 2 == 0) println("Hello")
+    }
+
+    threadFun{
+        println("Hello World!")
+        for (elem <- 1 to 100 if elem % 2 == 1) println("World!")
+    }
+}
+
+def threadFun(f: => Unit) ={
+    new Thread() {
+        override def run(): Unit = f
+    }.start()
+}
+```
+```scala
+//结合名调用、递归和柯里化写一个类似于while的语法结构
+def main(args: Array[String]): Unit = {
+    var a = 10
+    var b = 10
+    while2(a > 0) {
+        println(a)
+        a -= 1
+    }
+    while (b > 0) {
+        println(b)
+        b -= 1
+    }
+}
+
+def while2(boo: Boolean)(f: => Unit): Unit = {
+    if (boo) {
+        f
+        while2(boo)(f) //通过递归完成循环
+    }
+}
+```
 
 # 五、面向对象
  * scal的面向对象和java中的面向对象思想相同，知识在语法上有所精简
  * 在做面向对象分析阶段是先有对象，然后是对象的属性特征归类
- * 在具体程序的实现时是先定义类，在根据类创建对象
-## 1.
+ * 在具体程序的实现时是先定义类，再根据类创建对象
+
+## 1.类和对象
+```scala
+object ObjDemo1 {
+    def main(args: Array[String]): Unit = {
+        // TODO 声明user为val，属性可变更，val的意义在于内存位置不变，即不可被赋值为其他对象
+        val user = new User("wangwu", 20, 'f', "Shenzhen")
+        println(user.name) // 实际调用的是name方法
+        user.name = "lisi" //实际调用的是name_$eq方法
+        println(user.name)
+        val user2 = new User("zhangsan", 30, 'm', "Guangzhou")
+        //        user = user2
+    }
+}
+```
+```scala
+class User(var name: String, val age: Int, gender: Char,@BeanProperty addr:String) {
+    /*
+    从函数式编程的角度来看，是声明了函数了参量
+    从面向对象的角度来看，上面的语句同时声明了类，和属性(公有私有，getter，setter)，构造器
+    当使用var时表示公有属性，提供name方法作用同getter，name_$eq方法作用同setter
+    当使用val时表示私有属性，不提供name_$eq只提供name方法供调用
+    当没有具体指明val或var，则表示这是私有属性，没有公共的name,name_$eq方法完成set和get
+    当使用@BeanProperty注解修饰时，scala会按照val或var约束额外提供复合JavaBean标准的setter和getter
+     */
+    def foo() ={
+        println(name) //闭包，从函数式编程的角度，调用外部变量
+        println(this.name) //使用this表示从面向对象的角度，调用属性
+    }
+    def foo2() = {
+        val name = "aaa"
+        println(name) //调用的是内部定义的name
+        println(this.name) //调用的是属性值(外部变量)name，闭包
+    }
+}
+
+class Person(var name: String) //如果一个类中没有内容，可以省略大括号
+```
 
 
 
-## 2.
-
-
-
-## 3.
 
 
 
