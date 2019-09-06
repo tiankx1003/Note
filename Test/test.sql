@@ -28,7 +28,7 @@ from(
 		from user_table
 		)t1
 	group by id,mn)t2;
-
+-- regexp_replacd(visitdate,'/','-') month 替换符号
 ---------------------------------------------------------------------
 -- 2
 drop table if exists visit;

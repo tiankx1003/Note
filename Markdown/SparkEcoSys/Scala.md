@@ -712,21 +712,88 @@ def while2(boo: Boolean)(f: => Unit): Unit = {
  * scal的面向对象和java中的面向对象思想相同，知识在语法上有所精简
  * 在做面向对象分析阶段是先有对象，然后是对象的属性特征归类
  * 在具体程序的实现时是先定义类，再根据类创建对象
+## 0. Scala包
 
-## 1.类和对象
+### 0.1 包的声明
+ * scala中除了能够使用java中声明包的方式外还可以使用包语句
+ * 通过包语句声明子包，可以嵌套多层，子包调用父包中的内容不需要导包
+
 ```scala
-object ObjDemo1 {
-    def main(args: Array[String]): Unit = {
-        // TODO 声明user为val，属性可变更，val的意义在于内存位置不变，即不可被赋值为其他对象
-        val user = new User("wangwu", 20, 'f', "Shenzhen")
-        println(user.name) // 实际调用的是name方法
-        user.name = "lisi" //实际调用的是name_$eq方法
-        println(user.name)
-        val user2 = new User("zhangsan", 30, 'm', "Guangzhou")
-        //        user = user2
+package com.tian.onclass.day03.pck
+object PckDemo1{
+    def main(args:Array[String]):Unit = {
+
+    }
+}
+//package com.tian.onclass.day03.pck.sub
+package sub{
+    class B
+    class C
+    package sub1{
+        class D
+        class A {
+            def foo:Unit = {
+                val b: B = null //使用父包中的内容
+            }
+        }
     }
 }
 ```
+
+### 0.2 导包
+ * 使用java中的导包方式，则当前文件中的所有类都可以使用
+ * 局部导入(在使用的时候导入)
+ * 通配符导入
+ * 类别名解决类的重名问题
+ * 屏蔽类，排除包中的某个类
+
+```scala
+package com.tian.onclass.day03.pck
+
+import java.util
+import java.util.{ArrayList => JAL} //别名
+import java.util._ //通配符导包
+import java.util.{ArrayList => _, _} //屏蔽类ArrayList
+import java.util.{ArrayList, List} //导入包中的ArrayList和List类
+
+object PckDemo1 {
+    import java.util.ArrayList // 局部导包
+    def main(args: Array[String]): Unit = {
+        import java.util.ArrayList // 局部导包
+        new util.ArrayList[String]()
+    }
+}
+```
+### 0.3 默认导包
+ * java中`java.lang`自动导入
+ * scala中自动导入`java.lang._`、`scala._`和`scala.Predef._`
+ * 使用通配符导入object中的静态内容后可以不使用对象就直接调用
+
+```scala
+object PckDemo {
+    def main(args: Array[String]): Unit = {
+        println("aaa")
+        import scala.math._ //导入对象中的静态内容
+        abs(11 + Pi)
+        val user = new User
+        user.foo()
+        user.foo1()
+        import user._
+        foo()
+        foo1()
+    }
+}
+
+class User{
+    def foo() = {}
+    def foo1() = {}
+}
+```
+
+## 1.类和对象(封装)
+
+### 1.1 类的编写
+
 ```scala
 class User(var name: String, val age: Int, gender: Char,@BeanProperty addr:String) {
     /*
@@ -750,6 +817,197 @@ class User(var name: String, val age: Int, gender: Char,@BeanProperty addr:Strin
 
 class Person(var name: String) //如果一个类中没有内容，可以省略大括号
 ```
+
+### 1.2 对象
+```scala
+object ObjDemo1 {
+    def main(args: Array[String]): Unit = {
+        // TODO 声明user为val，属性可变更，val的意义在于内存位置不变，即不可被赋值为其他对象
+        val user = new User("wangwu", 20, 'f', "Shenzhen")
+        println(user.name) // 实际调用的是name方法
+        user.name = "lisi" //实际调用的是name_$eq方法
+        println(user.name)
+        val user2 = new User("zhangsan", 30, 'm', "Guangzhou")
+        //        user = user2
+    }
+}
+```
+
+### 1.3 构造器
+ * 可以通过参数默认值的方式实现传不同个数的参量完成对象的创建
+ * 但这本质上不是java中构造器的重载，不能从根本上实现构造器重载的效果
+
+```scala
+class User(var name:String, val age:Int, sex:String = "f")
+```
+
+ * scala支持构造函数的重载
+ * 其他构造函数使用def this() {} 的方式重载，不能写返回值和等号
+ * scala中的构造函数有主和辅之分
+ * 主构造函数只能有一个，形参自动成为类的属性
+ * 辅构造函数首行必须调用主构造函数，可以有多个
+ * 当调用辅构造时，本质上还是会调用到主构造
+ * 辅助构造之间互相调用时，只能后面调用前面的
+
+```scala
+def main(args: Array[String]): Unit = {
+    new User("aa", 20, "f")
+}
+class User(var name: String, val age: Int, sex: String) {//sex会被编译器优化掉
+    var a:Int = 0
+    val b:String = ""
+    // 对应java类中的构造代码块，在创建对象时执行
+    println("Hello")
+    println("World")
+    // 静态代码块写在伴生object中
+    def this() { // 构造函数的重载
+        this("lisi", 20, "f") //这种写法要求必须调用被重载的构造函数
+    }
+    def this(name: String) {
+        this("wangwu", 20, "f")
+    }
+    def this(a: Int) { // 辅助构造函数的参量不会成为属性，只是函数局部的常量
+        this()
+    }
+    def this(e: Char) {
+        this("10") //辅助构造之间互相调用时，只能后面调用前面的
+    }
+}
+```
+
+## 2.继承和多态
+
+### 2.1 继承性
+ * scala和java一样也是单继承
+ * 覆写遵循规则:两同(方法名，形参列表)，两小(返回值类型，抛出异常的类型)，一大(权限修饰符)
+
+```scala
+class Persion{
+    def say():Unit = {
+        println("person say...")
+    }
+}
+
+class Stu extends Person{
+    override def say():Unit = {
+        println("stu say...")
+    }
+    def eat():Unit = {}
+    println("stu eat...")
+}
+
+class A3(val n:Int)
+class B3() extends A3(100)//必须传值给父类的主构造
+```
+
+>**方法的覆写**
+必须添加override关键字
+
+>**属性的覆写**
+val可以覆写val和没有参数的def
+var只能覆写抽象的var
+
+```scala
+object ExtendsDemo2 {
+    def main(args: Array[String]): Unit = {
+        val b = new B1
+        println(b.a)
+        println(b.b)
+        println(b.n)
+    }
+}
+
+abstract class A1 {
+    def n = 10
+    var a: Int
+    val b = 20
+}
+
+class B1 extends A1 {
+    //    override def n: Int = 100
+    override val n = 100
+    override var a = 100
+    override val b = 200
+}
+```
+
+ * 在继承时只有子类的主构造才有权利调用父类的构造器
+
+```scala
+// 继承案例
+class Point(val x: Double, val y: Double) {
+    def distance(other: Point) =
+        math.sqrt((this.x - other.x) * (this.x - other.x)
+            + (this.y - other.y) * (this.y - other.y))
+}
+
+class Circle(override val x: Double, override val y: Double, val r: Double)
+    extends Point(x, y) {
+    def area = math.Pi * r * r
+}
+```
+
+### 2.2 多态性
+ * 编译时类型和运行时类型不一致就是多态
+ * 多态就是父类的引用指向子类的实例
+
+ * 编译能否通过看编译时类型
+ * 执行的具体表现看运行时类型
+
+ * java中属性没有多态，但是scala有多态
+ * 在scala中调用属性本质上是调用方法，方法有多态，所以在scala中也有多态
+
+### 2.3 抽象类
+ * property包含fields和method
+
+```scala
+abstract class Human(val name:String){
+    val age:Int = 0 //无法从外部传参
+    var addr:String = _ //让jvm赋值为默认值
+    var sex:String //抽象字段，只声明，不初始化，只能在抽象类和接口中使用
+    def say(a:Int):Int //抽象方法，只有签名没有实现，不写返回值类型时为Unit
+    val a:Int //常量也可以是抽象的
+}
+class Person2(override val name:String,override val age:Int)extends Human(name) {
+    override var sex: String = _
+    override def say(a: Int): Int = 10
+    override val a: Int = 10
+}
+```
+
+## 3.权限修饰符
+ * 在Java中权限修饰符修饰的方法，如不在同一个包的类继承后只能通过`super.foo()`访问
+ * 在scala中有三种权限修饰符 默认、protected、private
+
+>**默认**
+类似于public，但是没有public关键字
+
+>**protected**
+只能子父类访问，只是同包不能访问
+
+>**private**
+定制private包，对指定包开放权限
+
+```scala
+class A5{
+    //指定包以及它的子包都可以访问
+    private[modifier] def foo() = {}
+    foo()
+}
+class B5 extends A5{
+    val a = new A5
+    a.foo() //定制后才能访问
+}
+```
+
+<!-- TODO 伴生、工厂类、类型的判断和转换、trait、自身类型的动态混入、类的别名、集合入门 -->
+
+<!-- TODO abs collectiondemo single traitdemo traitdemo.sub -->
+
+
+
+
+
 
 
 
