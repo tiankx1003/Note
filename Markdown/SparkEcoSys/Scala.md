@@ -975,6 +975,43 @@ class Person2(override val name:String,override val age:Int)extends Human(name) 
 }
 ```
 
+### 2.4 类型判断和转换
+
+```scala
+object TypeDemo {
+    def main(args: Array[String]): Unit = {
+        val b: A6 = new B6
+        println(b.isInstanceOf[B6])
+        println(b.isInstanceOf[A6])
+        //        b.f0
+        b.asInstanceOf[B6].f0 //类型转换后调用函数
+    }
+}
+
+class A6
+
+class B6 extends A6 {
+    def f0 = println("bbbb")
+}
+```
+
+### * 类的别名
+```scala
+class TypeDemo2 {
+    def main(args: Array[String]): Unit = {
+        type P = aojaosigjaoisgaoijg
+        val p = new P
+        println(p.isInstanceOf[P])
+        println(p.isInstanceOf[aojaosigjaoisgaoijg])
+        println(p.getClass.getSimpleName)
+    }
+}
+class aojaosigjaoisgaoijg
+// true
+// true
+// aojaosigjaoisgaoijg
+```
+
 ## 3.权限修饰符
  * 在Java中权限修饰符修饰的方法，如不在同一个包的类继承后只能通过`super.foo()`访问
  * 在scala中有三种权限修饰符 默认、protected、private
@@ -1000,9 +1037,52 @@ class B5 extends A5{
 }
 ```
 
-<!-- TODO 伴生、工厂类、类型的判断和转换、trait、自身类型的动态混入、类的别名、集合入门 -->
+## 4.伴生
+<!-- TODO 伴生对象视频 -->
+ * java中不够面向对象的元素:基本类型、静态
+ * scala中通过对象object实现静态的效果，同时解决了单例问题
 
-<!-- TODO abs collectiondemo single traitdemo traitdemo.sub -->
+>**伴生类和伴生对象**
+名字向同的`object`和`class`
+在同一个文件
+可以访问对方的私有成员
+
+```scala
+
+
+
+```
+<!-- TODO 伴生、工厂类、trait、自身类型的动态混入、类的别名、集合入门 -->
+
+<!-- TODO collectiondemo single traitdemo traitdemo.sub -->
+
+## 5.工厂类
+```scala
+
+
+```
+
+## 6.trait
+
+```
+ArrayDemo1
+ArrayBufferDemo1
+ArrayDemo2 多维数组
+ListDemo
+TupleDemo
+QueueDemo
+StackDemo
+StackTest
+MapDemo
+SetDemo1
+ForeachDemo
+MapDemo
+FlatMapDemo
+FilterDemo
+ReduceDemo
+FoldLeftDemo1
+FoldLeftDemo2 - WordCount
+```
 
 
 
