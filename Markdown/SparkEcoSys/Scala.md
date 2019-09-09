@@ -69,7 +69,7 @@ println(line)
 ```
 
 ## 3.数据类型
-![](img/scala-variable-type.png)
+![](img/scala/scala-variable-type.png)
 
 >**说明**
 scala中的**StringOps**是对java中的string的增强补充
@@ -369,14 +369,6 @@ def isPrime(num: Int): Boolean = {
     }
     true
 }
-
-// TODO 有逻辑错误
-def sumPrime2(start: Int, end: Int) = {
-    var sum = 0
-    for (i <- start to end; j <- 2 until i if i % j != 0)
-        sum += i
-    sum
-}
 ```
 
 ### 1.4 惰性函数
@@ -520,7 +512,7 @@ object HighDemo3 {
      * @tparam T 传入数组的泛型，
      *           tparam S 操作函数返回的泛型
      */
-    // TODO 泛型有问题，待解决
+    //  泛型有问题，待解决(可以使用foldLeft解决)
     // def reduce[T, S](arr: Array[T], op: (S, T) => S) = {
     def reduce[T](arr: Array[T], op: (T, T) => T) = {
         var init = arr(0)
@@ -822,7 +814,7 @@ class Person(var name: String) //如果一个类中没有内容，可以省略�
 ```scala
 object ObjDemo1 {
     def main(args: Array[String]): Unit = {
-        // TODO 声明user为val，属性可变更，val的意义在于内存位置不变，即不可被赋值为其他对象
+        // 声明user为val，属性可变更，val的意义在于内存位置不变，即不可被赋值为其他对象
         val user = new User("wangwu", 20, 'f', "Shenzhen")
         println(user.name) // 实际调用的是name方法
         user.name = "lisi" //实际调用的是name_$eq方法
@@ -1038,32 +1030,217 @@ class B5 extends A5{
 ```
 
 ## 4.伴生
-<!-- TODO 伴生对象视频 -->
  * java中不够面向对象的元素:基本类型、静态
  * scala中通过对象object实现静态的效果，同时解决了单例问题
 
 >**伴生类和伴生对象**
-名字向同的`object`和`class`
+名字相同的`object`和`class`
 在同一个文件
 可以访问对方的私有成员
 
 ```scala
+object SingleDemo {
+    def main(args: Array[String]): Unit = {
+        val dog = new Dog("red")
+        dog.speak()
+        val dog1 = Dog //调用了apply()方法
+        val dog2 = Dog("white")
+    }
+}
 
+class Dog(val color: String) {
+    def speak() = println("dog speak...")
+    Dog.foo() //可以访问对方的私有成员
+}
 
-
+object Dog {
+    private def foo() = println("private dog foo...")
+    def apply(color: String): Dog = new Dog(color)
+}
 ```
-<!-- TODO 伴生、工厂类、trait、自身类型的动态混入、类的别名、集合入门 -->
 
-<!-- TODO collectiondemo single traitdemo traitdemo.sub -->
+```scala
+sealed abstract class Father //sealed修改只能在该文件中继承
+object A extends Father //单例对象，通过继承限制类
+object B //单例对象，也叫独立对象
+```
 
 ## 5.工厂类
 ```scala
+package com.tian.review.day03.single
 
+import scala.collection.mutable
 
+/**
+ * 工厂类
+ *
+ * @author tian
+ *         2019/9/9 18:30
+ */
+object Marker {
+    val markers = mutable.Map(
+        "red" -> new Marker("red"),
+        "blue" -> new Marker("blue"),
+        "yellow" -> new Marker("yellow")
+    )
+    def getMarker(color:String) ={
+        markers.getOrElseUpdate(color,new Marker(color))
+    }
+    def main(args: Array[String]): Unit = {
+        println(Marker.getMarker("red"))
+        println(Marker.getMarker("yellow"))
+        println(Marker.getMarker("blue"))
+    }
+}
+
+class Marker private (val color:String){ //私有化构造器
+    println(s"$color marker")
+    override def toString: String = s"$color"
+}
 ```
 
 ## 6.trait
+<!-- TODO trait部分视频，待补全 -->
+ * 在java1.8之前接口中有常量和抽象方法，在1.8之后又添加了默认方法
+ * scala中没有接口的概念，而是使用trait(特质)来实现
 
+### 6.1 trait的声明和混入
+```scala
+object TraitDemo1 {
+    def main(args: Array[String]): Unit = {
+        val usb = new HuaWeiUsb
+        usb.print()
+    }
+}
+
+class HuaWeiUsb extends Usb with Console { //特质混入
+    //重写抽象方法
+    override def insert(): Unit = println("huawei usb insert...")
+    override def work: Unit = println("huawei usb work...")
+    override def discard(): Unit = println("huawei usb discard...")
+    override def display: Unit = println("huawei usb display...")
+    override def print(): Unit = { //调用方法
+        insert()
+        work
+        discard()
+        display
+    }
+}
+
+trait Test0 {
+    val a = 10
+    var b = 20
+    var c: Int //抽象
+    def foo = {} //默认方法
+    def foo1: Int //抽象方法
+}
+
+trait Usb {
+    def insert()
+    def work
+    def discard():Unit
+    def display:Unit
+}
+
+trait Console {
+    def print(): Unit
+}
+```
+
+### 6.2 多混入时的执行顺序
+
+### 6.3 trait继承类
+
+### 6.4 自身混入
+
+### 6.5 动态叠加
+
+
+# 六、集合
+ * scala可直接使用java的集合
+ * scala提供了两套集合:可变和不可变
+ * 优先使用不可变，且默认情况下都是不可变的
+
+[官方文档说明](https://docs.scala-lang.org/overviews/collections-2.13/overview.html#inner-main)
+
+>**immutable不可变**
+
+![](img/scala/immutable.png)
+
+>**mutable可变**
+
+![](img/scala/mutable.png)
+
+## 1.Array
+### 1.1 定长数组
+
+ * 定长数组底层就是java的数组
+ * 通过初始化元素的个数直接确定数组的长度
+
+#### 1.1.1 数组的定义
+```scala
+//val arr = new Array[Int](10) //默认为十个0
+val arr = Array(1, 2, 3)
+arr(0) = 100
+println(arr(0))
+println(arr(arr.length - 1))
+println(arr.size)
+var arr2 = Array(20, 30, 40)
+println(arr2)
+arr2 :+= 20 //对于不可变数组而言是添加后成为一个新的数组并赋值
+println(arr2)
+```
+#### 1.1.2 多维数组
+```scala
+val array = Array.ofDim[Int](2, 3)
+for (arr <- array) {
+    for (elem <- arr) {
+        println(elem)
+    }
+}
+```
+### 1.2 ArrayBuffer
+ * 可变数组ArrayBuffer
+
+
+
+## 2.List
+
+
+## 3.Tuple
+
+## 4.Queue
+
+
+## 5.Stack
+
+
+## 6.Map
+
+## 7.Set
+
+## 8.高阶算子
+### 8.1 map
+
+
+
+### 8.2 flatMap
+
+
+### 8.3 filter
+
+
+### 8.4 reduce
+
+
+### 8.5 foldLeft
+
+### 8.6 groupBy
+
+
+### 8.7 sort
+
+<!-- TODO word 7.7 集合常用函数 -->
 ```
 ArrayDemo1
 ArrayBufferDemo1
@@ -1087,6 +1264,24 @@ FoldLeftDemo2 - WordCount
 
 https://zhenchao125.github.io/
 
+
+# 七、隐式转换
+
+```scala
+implicit def double2Int(d:Double) = d.toInt
+val a:Int = 10.2 //自动寻找implicit修饰的传参只有Double返回Int的函数
+println(a)
+```
+
+## 1.隐式转换函数
+
+
+## 2.隐式类
+
+
+## 3.隐式参数与隐式值
+
+# 八、模式匹配
 
 
 
