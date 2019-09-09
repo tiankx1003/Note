@@ -1274,14 +1274,169 @@ println(a)
 ```
 
 ## 1.隐式转换函数
+```scala
+object ImplicitDemo2 {
+    def main(args: Array[String]): Unit = {
+        val ago = "ago"
+        val later = "later"
 
+        /**
+         * 隐式转换函数
+         *
+         * @param a
+         * @return
+         */
+        implicit def getMyRichData(a: Int) = new MyRichData(a)
+
+        3 days ago
+        2 days later
+    }
+}
+
+class MyRichData(i: Int) {
+    def days(s: String) = println(s"$i days " + s)
+}
+```
 
 ## 2.隐式类
+ * 隐式类是隐式转换的语法糖
+ * 构造器只接收一个参数
 
+```scala
+def main(args: Array[String]): Unit = {
+    val ago = "ago"
+    val later = "later"
+    2 days ago
+    3 days later
+}
+
+/**
+    * 隐式类，不能写在最外层，构造器只接收一个参数
+    *
+    * @param a
+    */
+implicit class MyRichDate(a: Int) {
+    def days(s: String) = println(s"$a + days " + s)
+}
+```
+
+```scala
+//使用隐式转换为File类能够直接读取文件内容
+def main(args: Array[String]): Unit = {
+    val content: String = new File("e:\\test.txt").readContent //添加文件路径
+    println(content)
+}
+
+implicit class RichFile(file: File) {
+    def readContent() = Source.fromFile(file).mkString
+}
+```
 
 ## 3.隐式参数与隐式值
+ * 定义函数时如果隐式参数同时又设置了默认值
+ * 优先使用才传入的实参
+ * 调用时如果有括号无传参则使用默认值
+ * 调用时无括号则使用隐式值
+
+```scala
+def main(args: Array[String]): Unit = {
+    implicit val num = 10 //隐式值
+    fun1
+    fun2(10)
+    fun2(10)(20) //有传参时使用传入的参数
+    fun3(10) //使用隐式值
+    fun3(10)() //使用默认值
+    fun3(10)(20) //使用实参
+}
+
+def fun1(implicit a: Int) = println(a) //含有隐式参数的函数
+def fun2(a: Int)(implicit b: Int) = println(a + b) //隐式参数柯里化
+def fun3(a: Int)(implicit b: Int = 102) = println(a + b) //隐式参数、柯里化、默认值
+```
+
+### 4.隐式值、隐式函数的查找
+ * 首先再当前作用域查找需要的隐式值或隐式函数
+ * 若作用域没有则到相关类型的伴生对象中查找
+
+```scala
+object ImplicitDemo6 {
+    def main(args: Array[String]): Unit = {
+        fun
+    }
+    def fun(implicit a:A[B]) = println("implicit")
+}
+
+class A[B]
+class B
+object B{ //相关类型的伴生对象
+    implicit val a:A[B] = new A[B]
+}
+```
 
 # 八、模式匹配
+
+
+## 1.模式匹配语法
+
+```scala
+val a = 10
+val b = 15
+val input = StdIn.readLine("input option: ")
+input match {
+    case "+" => println(a + b)
+    case "-" => println(a - b)
+    case "*" => println(a * b)
+    case "/" => println(a / b)
+    case _ => println("input err") //其他类型
+}
+```
+
+## 2.匹配变量
+```scala
+def main(args: Array[String]): Unit = {
+    val op = StdIn.readLine("input pls: ")
+    val plus = "+"
+    val Plus = "+" //常量首字母大写
+    op match {
+        case op => println(op) //使用变量接收，则任一case都会匹配得到，该值可以被调用
+        case _ => //_也可以匹配任意case，但是值不能再后续反复的使用
+        case plus => println("+") //这里的plus变量是做模式匹配临时新建的和前面的plus无关
+        case Plus => println("+") //首字母大写后match使用的是前面定义好的Plus常量
+    }
+}
+```
+
+
+## 3.匹配数组内容
+```scala
+val arr = Array(10, 20, 30, 50)
+arr match {
+    case Array(10, 20, 30, 50) => println("same") //匹配元素个数，元素值和顺序
+    case Array(_, _, _, _) => println("num") //匹配元素个数
+    case Array(10, _, _, _) => println("first and num") //匹配第一个元素内容和元素个数
+    case Array(10, a, _, _) => println(s"first = 10 and second = $a") //后续还要继续使用元素时
+    //case Array(10, a: Double, _, _) => println("error") //类型不匹配编译检查不通过
+    case Array(10, _*) => println("first = 10") //只匹配第一个，其余忽略
+    case Array(10, a@_*) => println(s"first = 10 and a = $a") //只匹配第一个，后面的元素还要使用
+}
+```
+
+## 4.匹配集合
+### 4.1 Seq匹配
+
+### 4.2 List匹配
+
+
+### 4.3 Tuple匹配
+
+## 5.匹配对象
+
+
+## 6.类型匹配
+<!-- TODO 泛型擦除 -->
+
+
+## 7.匹配用途
 
 
 
