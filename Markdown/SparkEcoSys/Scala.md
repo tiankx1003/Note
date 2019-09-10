@@ -1354,7 +1354,7 @@ def fun2(a: Int)(implicit b: Int) = println(a + b) //隐式参数柯里化
 def fun3(a: Int)(implicit b: Int = 102) = println(a + b) //隐式参数、柯里化、默认值
 ```
 
-### 4.隐式值、隐式函数的查找
+### 4.隐式实体的查找
  * 首先再当前作用域查找需要的隐式值或隐式函数
  * 若作用域没有则到相关类型的伴生对象中查找
 
@@ -1422,14 +1422,45 @@ arr match {
 ```
 
 ## 4.匹配集合
-### 4.1 Seq匹配
+ * list 和 set无法匹配，因为无序
 
-### 4.2 List匹配
+### 4.1 List匹配
+>**中置表达式**
+`1 + 2` 中置运算符`+`
+`+2` 前置运算符
+`a toString` 后置
 
+```scala
+val list = List(10, 20, 30, 40)
+list match {
+    case List(_, a, _, _) => println(a)
+    case List(a, _*) => println(a)
+    case List(_, a@_*) => println(a)
+    case a :: b :: c => println(c) //List专用，c为集合(30,40)
+    case a :: b :: c :: Nil => println(c)
+    case _ =>
+}
+```
 
-### 4.3 Tuple匹配
+### 4.2 Tuple匹配
+```scala
+val tuple = Tuple3(1,3,4)
+tuple match {
+    case (1,3,4) => println(tuple)
+    case (1,_,4) => println("head and tail")
+}
+```
 
-## 5.匹配对象
+### 4.3 Seq匹配
+
+## 5.对象匹配
+
+>**对象提取器**
+unapply的返回值必须是Option类型
+如果返回是Some表示匹配成功
+如果返回None表示匹配失败
+
+ * 2.11.1版本之后，不是必须返回Option，也可返回其他类型的对象，但是必须有两个方法isEmpty(表示匹配是否成功，如果是true表示失败，false表示成功)，get(如果匹配成功，则从这个方法获取具体的匹配到的值)
 
 
 ## 6.类型匹配
@@ -1439,6 +1470,366 @@ arr match {
 ## 7.匹配用途
 
 
+```
+变量和常量的匹配
+类型匹配
+    ...
+
+对象匹配
+    Array
+    List
+    ()
+    自定义类型
+    unaplly
+    unapplySeq
+样例类
+```
+
+## 8.样例类
+<!-- TODO 视频 -->
+
+
+
+## 9.偏函数
+ * 使用大括号括起来的一系列case语句，就是偏函数
+ * 偏函数可看作是对模式匹配的进一步封装
+ * 只有collect才会判断参数，其他都是直接调用apply
+
+```scala
+def main(args: Array[String]): Unit = {
+    val f1 = fun1(_ + _) //匿名函数写法
+    val f2 = fun1 { //偏函数写法
+        case (a, b) => a + b
+    }
+    println(f1 == f2)
+    val f3 = fun2((t, a) => t._1._2 + a) //匿名函数写法
+    val f4 = fun2 { //偏函数写法
+        case (((_, a), _), c) => a + c
+    }
+    println(f3 == f4)
+}
+def fun1(f: (Int, Int) => Int) = f(3, 4)
+def fun2(f: (((Int, Int), Int), Int) => Int) = f(((1, 2), 3), 4)
+```
+```scala
+def main(args: Array[String]): Unit = {
+    val list1 = List(1, 2, 3, "aa", false)
+    //map传入偏函数会被当作普通函数对待
+    val list2 = list1.map {
+        case a: Int => a * a
+        case _ =>
+    }
+    println(list2)
+    //scala中只有collect支持偏函数
+    val list3 = list1.collect {
+        case a: Int => a * a
+    }
+    println(list3)
+    //使用map传入偏函处理元组更方便
+    val map1 = Map(1 -> (2, 3), 10 -> (20, 30), 100 -> (200, 300))
+    val map2 = map1.map {
+        case (a, (_, b)) => (a + 1, b + 1)
+    }
+    println(map2)
+    //调用apply方法
+    (f1 _).apply(100)
+    val f = f1 _
+    f.apply(100)
+}
+
+/**
+    * 返回一个偏函数
+    *
+    * @return PartialFunction[Int, Int]
+    */
+def f0: PartialFunction[Int, Int] = {
+    case a => 10
+}
+
+def f1(a: Int) = println(a)
+```
+
+# 九、泛型
+## 1.泛型的使用
+ * 泛型就是类型的参数化
+ * 泛型类是把参数化的类型定义在类上，这个泛型在整个类都可以使用
+ * 泛型方法是把泛型定义在方法上，这个泛型只能在这个方法内使用(当作数据类型)
+
+```scala
+object GenericDemo1 {
+    def main(args: Array[String]): Unit = {
+        val point1 = new Point(10, 20)
+        val point2 = new Point[Int](10, 20)
+        //val point3 = new Point[Int](10,20.0) //编译报错
+    }
+
+    /**
+     * 泛型方法
+     *
+     * @param s 传参
+     * @tparam T 该方法内可以使用的泛型
+     */
+    def f0[T](s: String) = println(s)
+}
+
+/**
+ * 泛型类
+ *
+ * @param a 属性值
+ * @param b 属性值
+ * @tparam T 类中可以使用的泛型
+ */
+class Point[T](val a: T, val b: T) {
+    def f1(a: T): T = a
+}
+```
+
+## 2.泛型的上界与下界
+
+### 2.1 上界
+```scala
+package com.tian.review.day06.generic
+
+object GenericDemo2 {
+    def main(args: Array[String]): Unit = {
+
+    }
+
+    /**
+     * 通过设置泛型上界从而继承compareTo方法
+     */
+    def max[T <: Comparable[T]](a: T, b: T) =
+        if (a.compareTo(b) >= 0) a else b
+
+    /**
+     * 通过设置上限继承Ordered中的方法，可以直接使用运算符比较大小
+     */
+    def min[T <: Ordered[T]](a: T, b: T) =
+        if (a > b) b else a
+}
+
+/**
+ * 样例类继承Ordered类并重写compare方法实现比价规则
+ */
+case class User(val age: Int) extends Ordered[User] {
+    override def compare(that: User): Int = this.age - that.age
+}
+```
+
+### 2.2 下界
+```scala
+object GenericDemo3 {
+    def main(args: Array[String]): Unit = {
+        val animal = new Animal
+        val pet = new Pet
+        val lion = new Lion
+        val cat = new Cat
+        val dog = new Dog
+        val petC = new PetContainer(new Animal)
+        println("Hello World")
+    }
+
+    def print(petContainer: PetContainer[Pet]): Unit =
+        println(petContainer.pet.name)
+}
+
+class Animal {
+    val name: String = "animal"
+}
+
+class Pet extends Animal {
+    override val name: String = "pet"
+}
+
+class Lion extends Animal {
+    override val name: String = "lion"
+}
+
+class Cat extends Pet {
+    override val name: String = "pet"
+}
+
+class Dog extends Pet {
+    override val name: String = "dog"
+}
+
+class PetContainer[T >: Pet](val pet: T)
+```
+
+## 2.泛型的上下文界定
+```scala
+object GenericDemo4 {
+    //提供隐式值
+    implicit val ord: Ordering[Users] = new Ordering[Users] {
+        override def compare(x: Users, y: Users): Int = x.age - y.age
+    }
+
+    def main(args: Array[String]): Unit = {
+        f1(10, 20) //调用隐式值
+        f1(10, 20)(Ordering.Int)
+        f2("aa", "bb")
+        f2("aa", "bb")(Ordering.String)
+        println(f2(new Users(20), new Users(30)))
+        println("Hello World")
+    }
+
+    /**
+     * 柯里化、隐式值
+     */
+    def f1[T](a: T, b: T)(implicit ord: Ordering[T]) =
+        if (ord.gt(a, b)) a else b
+
+    /**
+     * 上下文界定
+     * 召唤隐式值Ordering[T]
+     */
+    def f2[T: Ordering](a: T, b: T) = {
+        //summoning implicit values from the nether world
+        val ord = implicitly[Ordering[T]] //召唤隐式值
+        if (ord.gt(a, b)) a else b
+    }
+}
+
+case class Users(val age: Int)
+```
+
+## 3.不变、协变、逆变
+ * 不变，不能把子类型对象的集合赋值给父类型的集合
+ * 协变，把子类型对象的结合赋值给父类型的集合
+ * 逆变，把父类型的集合赋值给子类型的集合
+
+```scala
+def main(args: Array[String]): Unit = {
+    val arr1 = Array(10,20)
+    //val arr2: Array[Double] = arr1 //类型不匹配
+    val bs = Array(new B)
+    //val as: Array[A] = bs //不变，类型不匹配
+    val cb = new C[B]
+    //val ca: C[A] = cb //不变
+    val list: List[A] = List[B]()
+    val db = new D[B]
+    val da: D[A] = db //协变
+    val ea = new E[A]
+    val eb: E[B] = ea //逆变
+}
+class A
+class B extends A
+class C[T] //不变
+class D[+T] //协变
+class E[-T] //逆变
+```
+
+# 十、异常
+## 1.try-catch
+```scala
+Thread.sleep(1000) //java中必须try-catch，scala中不需要
+try {
+    val a = 1 / 0
+} catch { //使用模式匹配的方式捕捉异常
+    case e: ArithmeticException => println(e)
+    case e: RuntimeException => println(e)
+    case e: Exception => println(e)
+    case _ =>
+} finally {
+    println("finally")
+}
+```
+
+## 2.throw
+```scala
+throw new IllegalArgumentException("参数非法")
+```
+
+## 3.throws
+```scala
+@throws(classOf[IllegalArgumentException])
+def f0(a: String) = {
+    a.toInt
+}
+```
+
+# :bookmark_tabs: 总结
+## 1.Any AnyVal AnyRef Nothing
+<!-- TODO 视频内容 -->
+
+## 2.Option
+ * 通过返回Option对象防止解决空指针问题
+ * 返回Some表示匹配成功
+ * 返回None表示匹配失败
+
+```scala
+def main(args: Array[String]): Unit = {
+    val f = f0()
+    println(f.get)
+    println(f.getOrElse(100)) //防止空值
+
+    f match { //通过模式匹配解决空值问题
+        case Some(a) => println(a)
+        case None =>
+    }
+}
+
+def f0(): Option[Int] = {
+    Some(10)
+    None
+}
+```
+
+## 3.either
+ * 用于表示正确或者错误的结果
+
+```scala
+def main(args: Array[String]): Unit = {
+    val num = fun(100)
+    //获取结果
+    if (num.isRight) println(num.right.get)
+    else println(num.left.get)
+    //通过模式匹配获取结果
+    num match {
+        case Left(a) => println(a)
+        case Right(a) => println(a)
+    }
+
+}
+
+def fun(a: Int) =
+    if (a < 0) Left("illegal argument")
+    else Right(math.sqrt(a))
+```
+
+## 4.类型推断
+>**无法自动类型推断的情况**
+推得类型和预期类型不一致 `val a: Double = 1`
+递归函数的返回值不能推导
+函数属性如果使用 _ 作为默认值，不能推导
+当显式使用return，返回值类型不能推导
+
+
+## 5. _ 的使用
+>**下划线`-`有以下几种使用情形**
+1.通配符导包或类
+2.匿名函数的简写
+3.部分应用函数 `val sqrt = math.pow(_, 2)`
+4.元组中的元素 `t._1 t._2`
+5.模式匹配中的通配匹配
+6.利用`_`给属性设置默认值
+7.传递函数而不调用 `val f = fun _`
+8.异常catch
+9.集合分解操作 `rest@_* rest:_*`
+10.用于定义标识符中包含`:`的情况 `def fun_:(): Unit = println("Hello")`
+
+## 6.方法的约定
+ * 运算符的结合性
+<!-- TODO 总结 -->
+
+## 7.apply update
+
+```
+集合
+模式匹配
+样例类
+总结
+```
 
 
 
