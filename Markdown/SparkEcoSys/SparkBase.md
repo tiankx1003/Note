@@ -261,7 +261,6 @@ vim yarn-site.xml
 vim spark-env.sh
 # YARN_CONF_DIR=/opt/module/hadoop-2.7.2/etc/hadoop
 xsync /opt/module/hadoop-2.7.2/etc/hadoop/yarn-site.xml
-
 ```
 ```xml
 <!--是否启动一个线程检查每个任务正使用的物理内存量，如果任务超出分配值，则直接将其杀掉，默认是true -->
@@ -320,12 +319,12 @@ Maven工程WordCount
     </dependency>
 </dependencies>
 <build>
-    <finalName>WordCount</finalName>
     <plugins>
+        <!-- 打包插件, 否则 scala 类不会编译并打包进去 -->
         <plugin>
             <groupId>net.alchim31.maven</groupId>
             <artifactId>scala-maven-plugin</artifactId>
-            <version>3.2.2</version>
+            <version>3.4.6</version>
             <executions>
                 <execution>
                     <goals>
@@ -335,63 +334,41 @@ Maven工程WordCount
                 </execution>
             </executions>
         </plugin>
-        <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <version>3.0.0</version>
-            <configuration>
-                <archive>
-                    <manifest>
-                        <mainClass>WordCount</mainClass>
-                    </manifest>
-                </archive>
-                <descriptorRefs>
-                    <descriptorRef>jar-with-dependencies</descriptorRef>
-                </descriptorRefs>
-            </configuration>
-            <executions>
-                <execution>
-                    <id>make-assembly</id>
-                    <phase>package</phase>
-                    <goals>
-                        <goal>single</goal>
-                    </goals>
-                </execution>
-            </executions>
-        </plugin>
     </plugins>
 </build>
 ```
 ```scala
-package com.tian
+object WordCount {
+    def main(args: Array[String]): Unit = {
+        //1.初始化spark context
+        val conf = new SparkConf()
+            .setAppName("WordCount")
+        //.setMaster("local[*]") //上传jar包在服务器运行不能设置
+        val sc = new SparkContext(conf)
 
-import org.apache.spark.{SparkConf, SparkContext}
+        //2.转换
+        val rdd = sc.textFile(args(0)) //手动传入路径
+            .flatMap(_.split("\\W+"))
+            .map((_, 1))
+            .reduceByKey(_ + _)
 
-object WordCount{
+        //3.行动
+        val result = rdd.collect()
+        result.foreach(println)
 
-  def main(args: Array[String]): Unit = {
-
-//1.创建SparkConf并设置App名称
-    val conf = new SparkConf().setAppName("WC")
-
-//2.创建SparkContext，该对象是提交Spark App的入口
-    val sc = new SparkContext(conf)
-
-    //3.使用sc创建RDD并执行相应的transformation和action
-    sc.textFile(args(0)).flatMap(_.split(" ")).map((_, 1)).reduceByKey(_+_, 1).sortBy(_._2, false).saveAsTextFile(args(1))
-
-//4.关闭连接
-    sc.stop()
-  }
+        //4.关闭上下文
+        sc.stop()
+    }
 }
 ```
+
+## 2.测试
+
+### 2.1 Linux服务器测试
 ```bash
 bin/spark-submit \
---class WordCount \
---master spark://hadoop102:7077 \
-WordCount.jar \
-/word.txt \
-/out
+--class com.tian.day01.WordCount \
+--master yarn input/spark-core-1.0-SNAPSHOT.jar
 ```
 
-## 2.本地调试
+### 2.2 Idea本地测试
