@@ -368,7 +368,20 @@ object WordCount {
 ```bash
 bin/spark-submit \
 --class com.tian.day01.WordCount \
---master yarn input/spark-core-1.0-SNAPSHOT.jar
+--master yarn \
+libs/spark-core-1.0-SNAPSHOT.jar \
+/spark/input/ \
+/spark/output/
+```
+>**配置LZO压缩后有报错**
+`Caused by: java.lang.IllegalArgumentException: Compression codec com.hadoop.compression.lzo.LzoCodec not found.`
+
+>**解决方法**
+在spark-env.sh添加如下配置
+```
+export SPARK_LIBRARY_PATH=$SPARK_LIBRARY_PATH:/opt/module/hadoop-2.7.2/lib/native
+export SPARK_CLASSPATH=$SPARK_CLASSPATH:/opt/module/hadoop-2.7.2/share/hadoop/common/hadoop-lzo-0.4.20.jar
 ```
 
 ### 2.2 Idea本地测试
+ * 需要本地搭建了Hadoop环境
