@@ -1179,72 +1179,166 @@ trait Console {
 
 #### 1.1.1 数组的定义
 ```scala
-//val arr = new Array[Int](10) //默认为十个0
-val arr = Array(1, 2, 3)
-arr(0) = 100
-println(arr(0))
-println(arr(arr.length - 1))
-println(arr.size)
-var arr2 = Array(20, 30, 40)
-println(arr2)
-arr2 :+= 20 //对于不可变数组而言是添加后成为一个新的数组并赋值
-println(arr2)
-```
-#### 1.1.2 多维数组
-```scala
-val array = Array.ofDim[Int](2, 3)
-for (arr <- array) {
-    for (elem <- arr) {
-        println(elem)
-    }
+def main(args: Array[String]): Unit = {
+    //main函数的参数args为定长数组val args
+    val arr0 = new Array[Int](10) //默认为十个0
+    val arr1 = Array(1, 2, 3)
+    arr0(0) = 100
+    println(arr0(0))
+    println(arr0.length)
+    println(arr0.size)
+    var arr2 = Array(20, 30, 40)
+    println(arr2)
+    arr2 :+= 20 //对于定长数组而言是旧数组和新元素拼接成一个新的数组
+    println(arr2)
 }
 ```
+
+#### 1.1.2 多维数组
+ * 二维数组的元素即为一维数组
+```scala
+def main(args: Array[String]): Unit = {
+    val arr0 = Array.ofDim[Int](2, 3)
+    for (arr <- arr0)
+        for (elem <- arr)
+            println(elem)
+}
+```
+
 ### 1.2 ArrayBuffer
  * 可变数组ArrayBuffer
+```scala
+val arr1 = new ArrayBuffer[Int]
+//def append(elems: A*) { appendAll(elems) }
+arr1.append(10, 20) //append方法可变形参
+arr1 += 100 //+=一般用于可变集合
+arr1 += (20, 320)
+arr1 -= 11 //删除第一个11
+//def insert(n: Int, elems: A*) { insertAll(n, elems) }
+arr1.insert(3, 20)
+arr1.remove(0) //删除指定索引位置的元素
+arr1.remove(0, 2) //从索引0开始删除2个元素
+val sum = arr1.sum
+val max = arr1.max
+val min = arr1.min
+val head = arr1.head //第一个元素
+val last = arr1.last //最后一个元素
+val tail = arr1.tail //去除第一个元素后剩余元素组成的结合
+val take2 = arr1.take(2) //取前两个元素组成的集合
+//有些集合没有索引
 
+//运算符的约定，冒号改变了结合性
+val arr2 = ArrayBuffer[Int](10, 20, 30)
+val buffer1 = arr2 :+ 10
+val buffer2 = arr2.+:(10)
+val buffer3 = 100 +: arr2
+val buffer4 = 400 +: 300 +: arr2
 
+val buffer5 = arr1 ++ arr2
+arr1 ++= arr2
+arr1 --= arr2 //减去公共部分
+
+for (elem <- arr2 if elem > 5) println(elem) //遍历与守卫
+```
 
 ## 2.List
-
+```scala
+val list1 = List(1, 2, 3, 4)
+val list2 = list1 :+ 100 //在后面添加元素
+val list3 = 100 +: list1 //在前面添加元素
+println(100 :: list1 == list3) //::等价 +:
+val list4 = list2 ++ list3
+println(list2 ::: list3 == list4) //::: 等价 ++
+println(List[Nothing]() == Nil) //Nil为空list等价于List[Nothing]()
+val list5 = 1 :: 2 :: 3 :: Nil //Nil用于组成一个新的List
+```
 
 ## 3.Tuple
+```scala
+def main(args: Array[String]): Unit = {
+    val t2 = Tuple2(10, "abc")
+    println(t2._1) //索引从1开始
+    println(t2._2) //tuple最多存放22个元素
+    val t5 = (1, "abc", 123L, 5555.555F)
+    //先获取迭代器再遍历
+    for (elem <- t5.productIterator) println(elem)
+    println(/%(10, 3))
+}
 
-## 4.Queue
+/**
+    * 同时返回两数的商和余数
+    *
+    * @param a 被除数
+    * @param b 除数
+    * @return (Int, Int) 返回一个元组包含商和余数
+    */
+def /%(a: Int, b: Int) = (a / b, a % b)
+```
+
+## 4.Queue & Stack
+```scala
+val queue = mutable.Queue(10, 20, 30)
+queue.enqueue(100) //入队
+val ele = queue.dequeue() //出队，返回出队的元素
+val stack = mutable.Stack(10,20,30)
+stack.push(100) //入栈
+val ele = stack.pop() //出栈，返回出栈的元素
+```
+
+## 5.Map
+### 5.1 不可变Map
+```scala
+//scala.Predef._ 默认导入
+val map1 = Map("a" -> 97, "b" -> 98, "c" -> 99)
+val va = map1("a") //返回对应的value
+//val vf = map1("f") //当没有匹配的key时抛异常
+val vf = map1.getOrElse("f", 102) //当key不存在时返回默认值
+for (kv <- map1) { //kv是元组
+    println(kv)
+    println(kv._1) //key
+    println(kv._2) //value
+}
+for ((k, v) <- map1) {
+    println(k)
+    println(v)
+}
+for ((_, a) <- map1) println(a)
+for ((k, 99) <- map1) println(k) //只返回value为99的值
+for ((k, v) <- map1 if v < 99) println(k) //守卫
+val map2 = Map((1, 10), (2, 20)) // -> 相当于tuple2函数
+```
+
+### 5.2 可变Map
+<!-- TODO 当前进度 -->
+
+### 5.3 Map操作
+
+## 6.Set
 
 
-## 5.Stack
-
-
-## 6.Map
-
-## 7.Set
-
-## 8.高阶算子
-### 8.1 map
+## 7.高阶算子
+### 7.1 map
 
 
 
-### 8.2 flatMap
+### 7.2 flatMap
 
 
-### 8.3 filter
+### 7.3 filter
 
 
-### 8.4 reduce
+### 7.4 reduce
 
 
-### 8.5 foldLeft
+### 7.5 foldLeft
 
-### 8.6 groupBy
+### 7.6 groupBy
 
 
-### 8.7 sort
+### 7.7 sort
 
 <!-- TODO word 7.7 集合常用函数 -->
 ```
-ArrayDemo1
-ArrayBufferDemo1
-ArrayDemo2 多维数组
 ListDemo
 TupleDemo
 QueueDemo
