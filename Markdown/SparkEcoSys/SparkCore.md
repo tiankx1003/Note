@@ -252,8 +252,32 @@ val rdd7 = rdd1.cartesian(rdd2)
 
 ```scala
 val rdd8 = rdd1.zip(rdd2)
-val rdd9 = rdd1.zipWithIndex() //和集合高级算子的zipWithIndex()相同
 ```
 
+#### zip拓展
+```scala
+//和集合高级算子的zipWithIndex()相同
+val rdd9 = rdd1.zipWithIndex() 
+//只要求分区数相同
+val rdd10 = rdd1.zipPartitions(rdd2)((it1, it2) => it1.zip(it2))
+val rdd11 = rdd1.zipPartitions(rdd2)((it1, it2) => it1.zipAll(it2, 100, 200))
+```
 
 ## 3.3 key-value
+<!-- TODO 分区器知识 -->
+HashPartitioner
+RangePartitioner
+水塘抽样
+Partitioner
+binarySearch
+
+
+### 3.3.1 partitionBy
+ * 对kv形式的RDD的重新分区
+
+
+### 3.3.2 reduceByKey(func, [numTasks])
+
+
+
+### 3.3.3 groupByKey(func, [numTasks])
