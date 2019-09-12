@@ -1309,26 +1309,124 @@ val map2 = Map((1, 10), (2, 20)) // -> 相当于tuple2函数
 ```
 
 ### 5.2 可变Map
-<!-- TODO 当前进度 -->
+```scala
+val map = mutable.Map((1,10),(2,20),(3,30))
+```
 
 ### 5.3 Map操作
+```scala
+val map1 = mutable.Map("a" -> 97, "b" -> 98, "c" -> 99)
+map1 += (("z", 102))
+map1 += "y" -> 101
+map1.getOrElseUpdate("x",200) //不存在时直接更新出一个
+var map2 = Map("a" -> 97, "b" -> 98,"c" -> 99)
+println(System.identityHashCode(map2)) //打印地址
+map2 += "z" -> 102 //本质是添加赋给一个新的map
+println(System.identityHashCode(map2)) //与前者对比验证
+```
 
 ## 6.Set
+ * set无序不可重复
+ * scala中Set长度超过4时会优化顺序
+ * Set多用于去重
+ * 判断对象是不是相同时，先判断Hash值是否相同，然后在判断是不是同一个对象，再调用equals方法
 
+```scala
+var set1 = Set(10, 20, 30, 40, 40) //Set会自动去重
+set1 += 10
+set1 -= 10
+set1 ++= Array(20, 30, 40, 50)
+set1 ++= List(10, 20, 30)
+set1 ++= ListBuffer(10, 20, 40)
+var set2 = Set(10, 20, 30)
+set2 += 120
+set2 += 2220
+set2 += 100
+
+//可变Set
+val set3 = mutable.Set(10, 20, 30, 40)
+
+def toDuplicate(list: List[Int]) = {
+    (Set[Int]() ++ list).toList //使用空Set添加元素自动去重，然后再转为List
+    list.toSet.toList //简写
+}
+
+/*
+Set操作
+    */
+//并集
+set1 ++ set2
+//def union(that: GenSet[A]): This = this ++ that
+set1.union(set2) //底层仍旧是 ++
+set1 | set2
+//交集
+set1 & set2
+set1.intersect(set2)
+//差集
+set1 &~ set2
+set1 -- set2
+set1.diff(set2
+```
 
 ## 7.高阶算子
+### 7.0 foreach
+ * 主要用于和外界存储系统的交流
+
+```scala
+val list1 = List(10, 20, 30, 40, 50)
+list1.foreach(println(_))
+"aabbccdd".foreach(println(_))
+```
+
 ### 7.1 map
+ * foreach仅仅是对集合的遍历
+ * map不仅是遍历，而且返回遍历并操作后的集合
+ * 几个集合map之后，长度不变
 
-
+```scala
+val list1 = List(1, 2, 3, 4, 5)
+val list2 = list1.map(x => x * x)
+val list3 = list1.map(x => (x, x * x))
+val str = "abc".map(_ + 3)
+val list4 = List(30, 40, 50)
+list4.map(x => x)
+list4.map(_) //部分应用函数
+```
 
 ### 7.2 flatMap
+ * flatMap会改变集合的长度(增加，也可能减小))
+ * 传入的函数的返回值必须是一个集合
 
+```scala
+val list1 = List("Hello", "hadoop test", "test tian", "world hello")
+val list2 = list1.map(_.split("\\W+").toList)
+val list3 = list1.flatMap(_.split(" ")) //一个元素生成一个集合
+val list4 = list1.flatMap(x => List())
+```
 
 ### 7.3 filter
+```scala
+val list1 = List(1, 2, 3, 4, 5)
+val list2 = list1.filter(_ % 2 == 0) //只保留偶数
+val list3 = list1.filter(_ % 2 == 0).map(x => x * x)
 
+val list4 = List(null, 20, 30, 40, true, "aaa")
+val list5 = list4.filter(_.isInstanceOf[Int])
+    .map(_.asInstanceOf[Int] + 1) //转型
+    .map(_ + 1)
+```
 
 ### 7.4 reduce
+ * 聚合
 
+```scala
+val list1 = List(10, 20, 30, 40)
+val list2 = list1.reduce((x, y) => x + y)
+val list3 = list1.reduce(_ + _)
+println(list1.sum == list2)
+val str1 = List("aa", "bb", "cc")
+val str2 = str1.reduce(_ + "-" + _) //拼接
+```
 
 ### 7.5 foldLeft
 
@@ -1339,20 +1437,10 @@ val map2 = Map((1, 10), (2, 20)) // -> 相当于tuple2函数
 
 <!-- TODO word 7.7 集合常用函数 -->
 ```
-ListDemo
-TupleDemo
-QueueDemo
-StackDemo
-StackTest
-MapDemo
-SetDemo1
-ForeachDemo
-MapDemo
-FlatMapDemo
-FilterDemo
-ReduceDemo
 FoldLeftDemo1
 FoldLeftDemo2 - WordCount
+FileDemo
+mkString
 ```
 
 
