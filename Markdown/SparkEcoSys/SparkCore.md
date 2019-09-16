@@ -75,7 +75,7 @@ RDD编程的核心部分
 # 2.RDD创建
 
 
-# 3.RDD转换
+# 3.RDD转换算子
 `RDD[value]` 单value
 `RDD[key,value]` kv类型
 
@@ -88,7 +88,7 @@ RDD编程的核心部分
 val rdd2 = rdd1.map(x => x * x)
 ```
 
-### 3.1.2 mapPartition(func)
+### 3.1.2 mapPartitions(func)
  * func的传参和返回值都是iterator
  * `func:Iterator<T> => Iterator<U>`
 
@@ -103,7 +103,7 @@ end = (i + 1) * length / numSlices
 <!-- TODO 源码 -->
 经过transformation后分区数不变
 
-### 3.1.3 mapPartitionWithIndex(func)
+### 3.1.3 mapPartitionsWithIndex(func)
  * func的传参是index和iterator组成的tuple2，返回值仍为iterator
  * `func:(Int,Iterator<T>) => Iterator<U>`
 
@@ -206,7 +206,8 @@ case class User(age: Int, name: String)
 
 ### 3.1.13 pipe(command, [envVars])
  * 每个分区执行一次command
- * 
+
+<!-- TODO  -->
 
 
 ```scala
@@ -264,20 +265,315 @@ val rdd11 = rdd1.zipPartitions(rdd2)((it1, it2) => it1.zipAll(it2, 100, 200))
 ```
 
 ## 3.3 key-value
-<!-- TODO 分区器知识 -->
-HashPartitioner
-RangePartitioner
+
+### 3.3.0 partitioner
+ * 对于只存储value类型的RDD不需要分区器
+ * 只有存储kv类型的才会需要分区器
+
+#### 3.3.0.0 查看RDD的分区
+```scala
+// value RDD 的分区器
+val rdd1 = sc.parallelize(Array(10))
+rdd1.partitioner //查看分区器
+// Option[org.apache.spark.Partitioner] = None
+val rdd2 = sc.parallelize(Array(("hello", 1), ("world", 1)))
+rdd2.partitioner
+//Option[org.apache.spark.Partitioner] = None
+val rdd3 = rdd1.partitionBy(new HashPartitioner(3))
+rdd3.partitioner
+//Option[org.apache.spark.Partitioner] = Some(org.apache.spark.HashPartitioner@3)
+```
+#### 3.3.0.1 HashPartitioner
+ * 对于给定的key，计算其hashCode，并除以分区的个数取余，如果余数小于 0，则用余数+分区的个数（否则加0），最后返回的值就是这个key所属的分区ID。
+
+<!-- TODO Code -->
+
+#### 3.3.0.2 RangePartitioner
+ * HashPartitioner可能导致数据倾斜，极端情况下某个分区拥有RDD的全部数据
+
+>**RangePartitioner作用**
+将一定范围内的数映射到某一个分区内，尽量保证每个分区中数据量的均匀，而且分区与分区之间是有序的，一个分区中的元素肯定都是比另一个分区内的元素小或者大，但是分区内的元素是不能保证顺序的。简单的说就是将一定范围内的数映射到某一个分区内
+
+>**RangePartitioner实现过程**
+先从整个 RDD 中抽取出样本数据，将样本数据排序，计算出每个分区的最大 key 值，形成一个Array[KEY]类型的数组变量 rangeBounds
+判断key在rangeBounds中所处的范围，给出该key值在下一个RDD中的分区id下标；该分区器要求 RDD 中的 KEY 类型必须是可以排序的
+
 水塘抽样
 Partitioner
 binarySearch
 
+#### 3.3.0.3 自定义分区器
+ * 继承`org.apache.spark.Partitioner`
+ * 重写方法，`numPartitions` `getPartition(key)` `equals` `hashCode`
+
+```scala
+object MyPartitioner {
+    def main(args: Array[String]): Unit = {
+        val conf: SparkConf = new SparkConf().setAppName("Practice").setMaster("local[2]")
+        val sc = new SparkContext(conf)
+        val rdd1 = sc.parallelize(Array(20, 31, 40, 51, 20, 50))
+        val rdd2 = rdd1.map((_, null)) //先转为kv形式，partitionBy只能用于kv形式的RDD，
+        val rdd3 = rdd2.partitionBy(new MyPartitioner(2)).map(_._1)
+        rdd3.glom().collect.foreach(x => println(x.mkString(",")))
+    }
+}
+class MyPartitioner(var partitionNum: Int) extends Partitioner {
+    override def numPartitions: Int = partitionNum
+    override def getPartition(key: Any): Int = { //按照奇偶分区
+        val k = key.asInstanceOf[Int]
+        (k % 2).abs
+    }
+    override def hashCode(): Int = super.hashCode()
+    override def equals(obj: Any): Boolean = super.equals(obj)
+}
+```
 
 ### 3.3.1 partitionBy
  * 对kv形式的RDD的重新分区
+ * 只能用于kv形式的RDD
+
+```scala
+// 当之前的rdd没有分区器时，使用传入的分区器，分区器内传入分区数
+val rdd2 = rdd1.partitionBy(new HashPartitioner(3))
+```
+
+### 3.3.2 groupByKey()
+ * 只能用于kvRDD
+
+```scala
+val rdd1 = sc.parallelize(Array("hello", "hello", "world", "hello", "tian", "hello"))
+val rdd2 = rdd1.map((_, 1)).groupByKey //变为kv形式
+val rdd3 = rdd2.map {
+    case (key, valueIt) => (key, valueIt.sum)
+}
+```
 
 
-### 3.3.2 reduceByKey(func, [numTasks])
+### 3.3.3 reduceByKey(func, [numTasks])
+ * 把key相同的value放在一起进行reduce
+ * 默认使用hash分区
+ * 可以传入分区数
+ * 在shuffle前进行预聚合，从而提升性能
+ * 而groupBy只是分区，之后就shuffle
+ * 业务允许时优先使用reduceByKey
+ * 要求预聚合的逻辑和最终聚合逻辑一致
+
+```scala
+val rdd3 = rdd2.reduceByKey(_ + _) //wordCount
+val rdd4 = rdd2.reduceByKey(_ + _, 3) //传入分区数，默认使用hash分区
+```
+
+### 3.3.4 aggregateByKey(zeroValue)(seqOp, combOp, [numTasks])
+ * 零值类似foldLeft，
+ * 第一个函数为预聚合逻辑(分区内聚合操作)，
+ * 第二个函数为分区间聚合操作
+ * 宽依赖
+
+```scala
+def aggregateByKey[U: ClassTag](zeroValue: U)(seqOp: (U, V) => U, combOp: (U, U) => U): RDD[(K, U)]
+```
+```scala
+rdd1.aggregateByKey(0)(_ + _, _ + _) //两次聚合逻辑相同
+rdd1.aggregateByKey(Int.MinValue)(math.max, _ + _) //分区内和分区间聚合逻辑不同
+rdd1.aggregateByKey( //同时返回最大值和最小值
+    (Int.MinValue, Int.MaxValue))((maxMin, v) => (maxMin._1.max(v), maxMin._2.min(v)),
+    (maxMin1, maxMin2) => (maxMin1._1 + maxMin2._1, maxMin1._2 + maxMin2._2)
+)
+rdd1.aggregateByKey((Int.MinValue, Int.MaxValue))(//偏函数写法
+    {
+        case ((max, min), v) => (max.max(v), min.min(v))
+    },
+    {
+        case ((max1, min1), (max2, min2)) => (max1 + max2, min1 + min2)
+    }
+)
+```
+
+### 3.3.5 foldByKey
+ * 如果分区内和分区间聚合逻辑相同可使用foldByKey替换aggregateByKey
+ * 如果又不需要零值，则可以使用reduceByKey替换foldByKey
+
+```scala
+rdd2.aggregateByKey(0)(_ + _, _ + _) //两次聚合逻辑相同
+val rdd4 = rdd2.foldByKey(0)(_ + _) //效果同上
+```
+
+### 3.3.6 combineByKey[C]
+ * combineByKey与aggregateByKey相比，零值不写明可经过第一次计算得到
+ * 需要手动指明数据类型
+
+```scala
+rdd1.combineByKey( //累加
+    v => v,
+    //v => v + 10 //对每个分区都会加一下
+    (last: Int, v: Int) => last + v,
+    (v1: Int, v2: Int) => v1 + v2
+)
+rdd1.combineByKey( //求平均值
+    v => (v, 1),
+    (sumCount: (Int, Int), v: Int) => (sumCount._1 + v, sumCount._2 + v),
+    (sumCount1: (Int, Int), sumCount2: (Int, Int)) => (sumCount1._1 + sumCount2._1, sumCount1._2 + sumCount2._2)
+).mapValues(sumCount => sumCount._1.toDouble / sumCount._2)
+```
+
+### 3.3.7 sortByKey
+ * sortByKey是整体排序，使用较少
+ * 默认升序，排序后分区默认为原始分区
+ * sortBy底层还是调用了sortByKey
+
+```scala
+rdd1.sortByKey()
+rdd1.sortByKey(false, 4)
+rdd1.sortBy(x => x)
+```
+
+### 3.3.8 mapValues
+ * map过程中没有操作key，只操作了value，可使用mapValues
+
+```scala
+rdd1.aggregateByKey((0, 0))(
+    {
+        case ((sum, count), v) => (sum + v, count + 1)
+    },
+    {
+        case ((sum1, count1), (sum2, count2)) => (sum1 + sum2, count1 + count2)
+    }
+).map({ //map过程中没有操作key，只操作了value，可使用mapValues
+    case (k, (sum, count)) => (k, sum.toDouble / count)
+}) //返回每个key对应的value平均值
+rdd1.aggregateByKey((0, 0))(
+    {
+        case ((sum, count), v) => (sum + v, count + 1)
+    },
+    {
+        case ((sum1, count1), (sum2, count2)) => (sum1 + sum2, count1 + count2)
+    }
+).mapValues { //只对value进行map
+    case (sum, count) => sum.toDouble / count
+} //同上
+```
+
+### 3.3.9 join(otherDataset, [numTasks])
+```scala
+val rdd1 = sc.parallelize(Array((1, "a"), (2, "b"), (3, "c")))
+val rdd2 = sc.parallelize(Array((1, "A"), (2, "B"), (3, "C")))
+val rdd3 = rdd1.join(rdd2) //内连接
+rdd1.leftOuterJoin(rdd2) //左外连接，对于没有的值使用None补充
+rdd1.rightOuterJoin(rdd2) //右外连接
+```
 
 
+### 3.3.10 cogroup(otherDataset, [numTasks])
+<!-- TODO  -->
+```scala
+val rdd1 = sc.parallelize(Array((1, "a"), (2, "b"), (3, "c")))
+val rdd2 = sc.parallelize(Array((1, "A"), (2, "B"), (3, "C")))
+val rdd3 = rdd1.cogroup(rdd2)
+```
 
-### 3.3.3 groupByKey(func, [numTasks])
+## 3.4 案例
+
+### 3.4.1 数据结构
+时间戳，省份，城市，用户，广告，字段使用空格分割。
+1516609143867 6 7 64 16
+1516609143869 9 4 75 18
+1516609143869 1 7 87 12下载数据
+
+### 3.4.2 需求
+ * 统计出每一个省份广告被点击次数的 TOP3
+
+### 3.4.3 需求分析
+```
+...
+=> RDD[((province, ads), 1)] reduceByKey
+=> RDD[((province, ads), count)] map
+=> RDD[(province, (ads, count))] groupByKey
+=> RDD[(province, List[(ads, count)])]
+```
+
+### 3.4.4 具体实现
+
+```scala
+def main(args: Array[String]): Unit = {
+    val conf = new SparkConf().setAppName("Practice").setMaster("local[2]")
+    val sc = new SparkContext(conf)
+    val line = sc.textFile("file://" + ClassLoader.getSystemResource("agent.log"))
+    val rdd1 = line.map(line => {
+        val words = line.split(" ")
+        // RDD[((province, ads), 1)]
+        ((words(1), words(4)), 1)
+    })
+    val rdd2 = rdd1.reduceByKey(_ + _).map({ // RDD[((province, ads), count)]
+        // RDD[(province, (ads, count))]
+        case ((province, ads), count) => (province, (ads, count))
+    })
+    val rdd3 = rdd2.groupByKey() // RDD[(province, Iterable[(ads, count)])]
+        .map({ //RDD[(province, List[(ads, count)])]
+            case (province, listIt) => (province, listIt.toList.sortBy(-_._2).take(3)) //排序，取前三
+        }).sortByKey() //按照省份排序
+    rdd3.collect.foreach(println)
+    sc.stop()
+}
+```
+
+# 4.RDD行动算子
+ * 转换算子在行动算子之前不会被执行
+
+## 4.1 countByKey
+```scala
+val rdd1 = sc.parallelize(Array("hello", "hello", "world", "scala"))
+val rdd2 = rdd1.map(x => {
+    println(x)
+    (x, 1)
+}) //转换算子在行动算子之前不会被执行
+val rdd3 = rdd2.reduceByKey(_ + _)
+val rdd4 = rdd2.countByKey() //计算每个key个数，和value值无关
+val rdd5 = rdd2.countByValue() //计算每个value个数
+```
+
+## 4.2 foreach
+ * 行动算子foreach是`org.apache.spark.rdd.RDD.foreach`
+ * 和scala集合中的`scala.collection.IndexedSeqOptimized.foreach`不同
+ * 集群模式下直接调用RDD.foreach不会显示输出
+ * RDD.foreach可以把数据写入到外部存储(jdbc,hive,hdfs,hbase...)
+
+```scala
+val rdd1 = sc.parallelize(Array("hello", "hello", "world", "scala"))
+rdd1.collect.foreach(println) //在driver输出
+rdd1.foreach(println) //在executor输出
+```
+
+ * 使用RDD.foreach写数据，每次写入都会创建一个连接，所以很少使用
+ * map操作也可以往外部写入，但是不安全，每次行动算子都会触发该map操作的执行
+ * 所以map不能和外界有任何数据的写入写出
+ * 使用foreachPartition与RDD.foreach相比可以减少连接，
+ * 但是foreachPartition会把数据一次全部加载到内存导致OOM
+
+```scala
+rdd1.foreachPartition(it => { //每个分区连接一次
+    it.foreach(???)
+    it.toList //会把数据一次全部加载到内存导致OOM，缺点
+})
+```
+
+## 4.3 reduce
+ * zeroValue参与运算的次数是分区数+1
+
+```scala
+val result1 = rdd1.aggregate(0)(_ + _, _ + _)
+val result2 = rdd1.aggregate(10)(_ + _, _ + _) //分区合并也会使用零值
+println(result2 - result1) //30
+```
+
+## 4.4 sortByKey中的执行算子
+ * sortByKey()会创建RangePartitioner，
+ * 而创建RangePartitioner时会进行水塘抽样，
+ * 在水塘抽样时有collect
+
+```scala
+val rdd1 = sc.parallelize(Array("hello", "world", "scala", "hello", "hello", "spark", "scala"))
+val rdd2 = rdd1.map(x => {
+    println(x)
+    (x, 1)
+}).reduceByKey(_ + _).sortByKey()
+```
