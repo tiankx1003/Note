@@ -58,13 +58,18 @@ RDDs通过操作算子进行转换，转换得到的新RDD包含了从其他RDDs
 # 1.RDD编程模型
 ```scala
 //获取sc
-
+val conf = new SparkConf().setAppName("Practice").setMaster("local[2]")
+val sc = new SparkContext(conf)
 //转换
-
+val rdd1 = sc.parallelize(Array("hello", "hello", "world", "scala"))
+val rdd2 = rdd1.map(x => {
+    println(x)
+    (x, 1)
+})
 //行动
-
+rdd2.collect.foreach(println)
 //关闭上下文
-
+sc.stop()
 ```
 ## 1.1 转换(transformation)
 RDD编程的核心部分
