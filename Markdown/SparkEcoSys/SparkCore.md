@@ -9,7 +9,7 @@ Resilient Distributed Dataset弹性分布式数据集，是Spark中最基本的�
 弹性存储:内存和磁盘的自动切换
 弹性容错:丢失数据可以自动恢复
 弹性计算:计算出错重试机制
-弹性分片:可根据需要重新分片
+弹性分片:可根据需要重新分片k
 
 ### 2.2 分区
 对数据进行切片
@@ -31,10 +31,13 @@ collect是把数据拉到driver的内存
 
 ### 2.4 依赖(血缘)
 RDDs通过操作算子进行转换，转换得到的新RDD包含了从其他RDDs衍生所必须的信息，RDDs之间维护着这种血缘关系，也称为依赖
+![](img/spark-rdd-dependence.png)
 
 >**窄依赖**
+RDDs 之间分区是一一对应的
 
 >**宽依赖**
+下游 RDD 的每个分区与上游 RDD(也称之为父RDD)的每个分区都有关，是多对多的关系
 
 ### 2.5 缓存
 如果在应用程序中多次使用同一个RDD，
@@ -75,10 +78,32 @@ sc.stop()
 RDD编程的核心部分
 
 ## 1.2 行动(action)
-
+action可以是向应用程序返回结果(count, collect等)，或者是向存储系统保存数据(saveAsTextFile等)
 
 # 2.RDD创建
+## 2.1 创建RDD的途径
+1. 通过标准的scala集合来得到
+2. 从外部存储得到
+3. 从其他RDD转换得到
 
+## 2.2 CreateRDD
+```scala
+object CreateRDD {
+    def main(args: Array[String]): Unit = {
+        val conf = new SparkConf().setAppName("CreateRDD").setMaster("local[2]")
+        val sc = new SparkContext(conf)
+        //1. 通过标准的scala集合得到RDD
+        val list1 = List(20, 30, 40, 40, 50)
+        val rdd = sc.parallelize(list1)
+        val list2 = sc.makeRDD(list1) //效果同上，对有些集合会有优化
+        rdd.collect().foreach(println)
+        //2. 通过外部存储得到RDD
+        val linesRDD = sc.textFile("e:/test.txt") //存放一行数据
+        //3. 从其他RDD转换得到
+        sc.stop()
+    }
+}
+```
 
 # 3.RDD转换算子
 `RDD[value]` 单value
@@ -212,12 +237,42 @@ case class User(age: Int, name: String)
 ### 3.1.13 pipe(command, [envVars])
  * 每个分区执行一次command
 
-<!-- TODO  -->
+>**作用**
+管道，针对每个分区，把 RDD 中的每个数据通过管道传递给shell命令或脚本，返回输出的RDD。一个分区执行一次这个命令. 如果只有一个分区, 则执行一次命令
+
+>**注意**
+脚本要放在 worker 节点可以访问到的位置
 
 
-```scala
-
+>**实现步骤**
+```bash
+# 编写脚本
+vim pipe.sh
 ```
+```sh
+echo "hello"
+while read line;do
+    echo ">>>"$line
+done
+```
+```scala
+// 创建一个只有1个分区的RDD
+scala> val rdd1 = sc.parallelize(Array(10,20,30,40), 1)
+rdd1: org.apache.spark.rdd.RDD[Int] = ParallelCollectionRDD[0] at parallelize at <console>:24
+
+scala> rdd1.pipe("./pipe.sh").collect
+res1: Array[String] = Array(hello, >>>10, >>>20, >>>30, >>>40)
+
+//创建有两个分区的RDD
+scala> val rdd1 = sc.parallelize(Array(10,20,30,40), 2)
+rdd1: org.apache.spark.rdd.RDD[Int] = ParallelCollectionRDD[3] at parallelize at <console>:24
+
+scala> rdd1.pipe("./pipe.sh").collect
+res2: Array[String] = Array(hello, >>>10, >>>20, hello, >>>30, >>>40)
+```
+
+>**总结**
+每个分区执行一次脚本, 但是每个元素算是标准输入中的一行
 
 ## 3.2 双value交互
 <!-- TODO 交互后分区数的变化 -->
