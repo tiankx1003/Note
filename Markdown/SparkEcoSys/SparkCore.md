@@ -1187,3 +1187,148 @@ val hbaseRDD = initialRDD.map(x => {
 })
 hbaseRDD.saveAsNewAPIHadoopDataset(job.getConfiguration)
 ```
+
+# 四、RDD编程进阶
+
+## 1.累加器
+### 1.1 累加器用途
+ * 分布式运行，driver发给executor的是变量的值，在executor运算和driver的值无关
+ * 累加器实现了共享变量的修改
+ * 累加器只在行动算子中使用，不在转换算子中使用
+
+
+```scala
+val conf = new SparkConf().setAppName("Practice").setMaster("local[2]")
+val sc = new SparkContext(conf)
+val rdd1 = sc.parallelize(Array(20, 30, 40, 50, 20, 50))
+var a = 1
+val acc: LongAccumulator = sc.longAccumulator
+val result = rdd1.map(x => {
+    a += 1
+    (a, 1)
+})
+val result2: RDD[(Int, Int)] = rdd1.map(x => {
+    acc.add(1)
+    (x, 1)
+})
+result.collect
+result2.collect
+println("a=" + a) // 1
+println("------------")
+println("x=" + acc.value) // 6
+result2.collect
+println("------------")
+println("x=" + acc.value) // 12，累加器只有一个
+sc.stop()
+```
+### 1.2 自定义累加器
+```scala
+val conf: SparkConf = new SparkConf().setAppName("Practice").setMaster("local[2]")
+val sc: SparkContext = new SparkContext(conf)
+val rdd1: RDD[Int] = sc.parallelize(Array(3, 6, 4, 8))
+val acc: MyAcc = new MyAcc //自定义累加器
+sc.register(acc) //向executor注册累加器
+val result: RDD[(Int, Int)] = rdd1.map(x => {
+    acc.add(1)
+    (x, 1)
+})
+result.collect
+println("------------")
+println(acc.value) //4
+result.collect
+println("------------")
+println(acc.value) //8，累加器只有一个
+sc.stop()
+
+class MyAcc extends AccumulatorV2[Long, Long] {
+    var sum: Long = 0L //缓存中间值
+    //判断零值，零值不一定是数值0，根据具体情况而定
+    override def isZero: Boolean = sum == 0
+    //复制累加器，累加器从driver发送到executor
+    override def copy(): AccumulatorV2[Long, Long] = {
+        val newAcc: MyAcc = new MyAcc
+        newAcc.sum = sum //把当前缓存的值赋值给新的acc
+        newAcc
+    }
+    //重置累加器
+    override def reset(): Unit = sum = 0
+    //累加逻辑
+    override def add(v: Long): Unit = sum += v
+    //合并累加器
+    override def merge(other: AccumulatorV2[Long, Long]): Unit = {
+        //this.sum += other.asInstanceOf[MyAcc].sum
+        other match { //模式匹配写法
+            case o: MyAcc => this.sum += o.sum
+            case _ => throw new IllegalStateException
+        }
+    }
+    //返回最终累加后的值
+    override def value: Long = this.sum
+}
+
+```scala
+val conf = new SparkConf().setAppName("Practice").setMaster("local[2]")
+val sc = new SparkContext(conf)
+val rdd1 = sc.parallelize(Array(20, 30, 40, 50, 20, 50))
+val acc = new MapAcc
+sc.register(acc)
+//sum avg max min
+//一次遍历，同时计算所有指标，计算结果存在一个map
+val result = rdd1.map(x => acc.add(x))
+result.collect
+println(acc.value)
+sc.stop()
+
+class MapAcc extends AccumulatorV2[Long, Map[String, Double]] {
+    var map = Map[String, Double]()
+    var count = 0L //记录累加的元素个数
+    override def isZero: Boolean = map.isEmpty
+    override def copy(): AccumulatorV2[Long, Map[String, Double]] = {
+        var acc = new MapAcc
+        acc.map = map
+        acc.count = count
+        acc
+    }
+    override def reset(): Unit = {
+        map = Map[String, Double]()
+        count = 0
+    }
+    override def add(v: Long): Unit = {
+        // sum max min
+        count += 1
+        map += "sum" -> (map.getOrElse("sum", 0D) + v)
+        map += "max" -> map.getOrElse("max", Long.MinValue.toDouble).max(v)
+        map += "min" -> map.getOrElse("min", Long.MaxValue.toDouble).min(v)
+    }
+    override def merge(other: AccumulatorV2[Long, Map[String, Double]]): Unit = {
+        other match {
+            case o: MapAcc =>
+                count += o.count
+                map += "sum" -> (map.getOrElse("sum", 0D) + o.map.getOrElse("sum", 0D))
+                map += "max" -> (map.getOrElse("max", Long.MinValue.toDouble).max(o.map.getOrElse("max", Long.MinValue.toDouble)))
+                map += "min" -> (map.getOrElse("min", Long.MaxValue.toDouble).max(o.map.getOrElse("min", Long.MaxValue.toDouble)))
+            case _ => throw new UnsupportedOperationException
+        }
+    }
+    override def value: Map[String, Double] = {
+        map += "avg" -> map.getOrElse("sum", 0D) / count
+        map
+    }
+}
+```
+
+## 2.广播变量
+ * 当driver传递给executor变量只用于读取时
+ * 同一个进程的每一个task线程都有一个变量，数据冗余，占用内存
+ * 广播变量不直接发给每个task线程，而是直接发到executor，task线程共享变量
+ * 极大的优化了内存的占用
+
+```scala
+val set: Set[Int] = Set(10, 20) //同一进程的每个task线程都会有一个set集合，set只有读操作(没有线程安全问题)
+val bd: Broadcast[Set[Int]] = sc.broadcast(set) //发送广播变量到executor上，task线程共享set
+rdd1.foreach(x => println(set.contains(x)))
+rdd1.foreach(x => {
+    val set = bd.value //取出广播变量中存储的值
+    println(set.contains(x))
+})
+```
