@@ -215,3 +215,5 @@ val df = spark.read.json(ClassLoader.getSystemResource("employees.json").getPath
 df.createOrReplaceTempView("user")
 spark.sql("select mySum(age) sum from user").show
 ```
+
+
