@@ -217,3 +217,39 @@ spark.sql("select mySum(age) sum from user").show
 ```
 
 
+通用读格式
+```scala
+spark.read.load("") //默认数据格式是parquet
+spark.read.format("json").load("") //加载数据的通用方法
+```
+专用的读
+```scala
+spark.read.csv("文件名")
+spark.read.json("文件名")
+spark.read.jdbc(...)
+```
+通用的写格式
+```scala
+spark.write.save("路径") //默认格式为parquet
+spark.write.format("json").save("./json1") //文件已经存在时会报错
+spark.write.format("json").mode("error").save("./json1") //抛异常，默认
+spark.write.format("json").mode("append").save("./json1") //追加
+spark.write.format("json").mode("overwrite").save("./json1") //覆盖
+spark.write.format("json").mode("ignore").save("./json") //忽略修改
+```
+内置hive(很少使用)
+
+cp $HIVE_HOME/conf/hive-site.xml $SPARK_HOME/conf/
+拷贝连接驱动到$SPARK_HOME/jars/
+
+yarn模式hive
+
+
+```sql
+select
+    t1.area,
+    t1.product_name,
+    count(*)
+from t1
+group by area, product_name;
+```
