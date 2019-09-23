@@ -1,22 +1,20 @@
-实时流处理
-微批处理
-固定时间间隔的数据计算
-秒级
-
 # 一、概述
 ## 1.概念
 Spark Streaming 是 Spark 核心 API 的扩展, 用于构建弹性, 高吞吐量, 容错的在线数据流的流式处理程序. 总之一句话: Spark Streaming 用于流式数据的处理
 数据可以来源于多种数据源: Kafka, Flume, Kinesis, 或者 TCP 套接字. 接收到的数据可以使用 Spark 的负责元语来处理, 尤其是那些高阶函数像: map, reduce, join, 和window.
 最终, 被处理的数据可以发布到 FS, 数据库或者在线dashboards.
 另外Spark Streaming也能和MLlib（机器学习）以及Graphx完美融合.
-
+实时流处理
+微批处理
+固定时间间隔的数据计算
+秒级
 
 ## 2.特点
 ### 2.1 易用(Ease Of Use)
 通过高阶函数构建应用
 
 ### 2.2 容错(Fault TOlerance)
-
+exactly once语义
 
 
 ### 2.3 易整合到Spark体系中(Spark Integration)
@@ -52,11 +50,27 @@ nc -lk 9999
 ```
 
 ## 2.案例分析
+Discretized Stream(DStream) 是 Spark Streaming 提供的基本抽象, 表示持续性的数据流, 可以来自输入数据, 也可以是其他的 DStream 转换得到. 在内部, 一个 DSteam 用连续的一系列的 RDD 来表示. 在 DStream 中的每个 RDD 包含一个确定时间段的数据.
 
+![](img/spark-streaming-wordcount1.png)
 
+对 DStream 的任何操作都会转换成对他里面的 RDD 的操作. 比如前面的 wordcount 案例, flatMap是应用在 line DStream 的每个 RDD 上, 然后生成了 words SStream 中的 RDD. 
+
+![](img/spark-streaming-wordcount2.png)
+
+对这些 RDD 的转换是有 Spark 引擎来计算的. DStream 的操作隐藏的大多数的细节, 然后给开发者提供了方便使用的高级 API.
+
+![](img/spark-streaming-wordcount3.png)
+
+![](img/spark-streaming-wordcount.png)
 
 # 三、DStream创建(数据源)
+Spark Streaming原生支持一些不同的数据源，每个接收器都以Spark执行器程序中一个长期运行的任务的形式运行，因此会占据分配给应用的CPU核心。此外我们还需要有可用的CPU核心来处理数据，所以如果要运行多个接收器，就必须至少有和接收器相同数目的核心数，还要加上用来完成计算所需要的核心数。例如，如果我们想要在流计算应用中运行 10 个接收器，那么至少需要为应用分配 11 个 CPU 核心。
+所以本地模式运行时，不要使用`local`或者`local[1]`
+
 ## 1.RDD队列
+ * 循环创建几个RDD，将RDD放入队列，通过Spark Streaming创建DStream，计算WordCount
+
 ```scala
 val conf = new SparkConf().setMaster("local[2]").setAppName("wordcount2")
 val ssc = new StreamingContext(conf, Seconds(3))
@@ -73,19 +87,20 @@ ssc.awaitTermination()
 
 ## 2.自定义数据源
  * 本质上就是自定义接收器
+ * 需要继承Receiver，并实现onStart、onStop方法来自定义数据采集
 
 ```scala
+//需求，自定义数据源，实现监控某个端口号，获取该端口号内容
 object CustomReceiver {
     def main(args: Array[String]): Unit = {
         val conf = new SparkConf().setMaster("local[2]").setAppName("wordcount")
         val ssc = new StreamingContext(conf, Seconds(4)) //传入时间间隔
-        ssc.receiverStream(new MyReceiver("hadoop102", 9998))
+        ssc.receiverStream(new MyReceiver("hadoop102", 9999))
             .flatMap(_.split(" ")).map((_, 1)).reduceByKey(_ + _).print(100)
         ssc.start()
         ssc.awaitTermination()
     }
 }
-
 /**
  * 自定义接收器从socket接受数据
  */
@@ -129,9 +144,11 @@ class MyReceiver(val host: String, val port: Int) extends Receiver[String](Stora
     }
 }
 ```
+```bash
+nc -lk 9999
+```
 
 ## 3.Kafka数据源
-
 ### 3.1
 ```scala
 val conf = new SparkConf().setMaster("local[2]").setAppName("wordcount")
@@ -238,8 +255,14 @@ def main(args: Array[String]): Unit = { // TODO: 视频
 
 
 # 四、DStream转换
+DStream 上的原语与 RDD 的类似，分为Transformations（转换）和Output Operations（输出）两种，此外转换操作中还有一些比较特殊的原语，如：updateStateByKey()、transform()以及各种Window相关的原语。
 
 ## 1.无状态转换
+ * 无状态转化操作就是把简单的RDD转化操作应用到每个批次上，也就是转化DStream中的每一个RDD
+ * transform 原语允许 DStream上执行任意的RDD-to-RDD函数。
+ * 可以用来执行一些 RDD 操作, 即使这些操作并没有在 SparkStreaming 中暴露出来.
+ * 该函数每一批次调度一次。其实也就是对DStream中的RDD应用转换。
+
 ```scala
 val conf: SparkConf = new SparkConf().setMaster("local[*]").setAppName("TransformDemo")
 val ssc: StreamingContext = new StreamingContext(conf, Seconds(3))
@@ -252,7 +275,33 @@ ssc.start()
 ssc.awaitTermination()
 ```
 
+| Transformation                           | Meaning                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **map**(*func*)                          | Return a new DStream by passing each   element of the source DStream through a function *func*.                                                                                                                                                                                                                                                                                                                                                                        |
+| **flatMap**(*func*)                      | Similar to map, but each input item can be   mapped to 0 or more output items.                                                                                                                                                                                                                                                                                                                                                                                         |
+| **filter**(*func*)                       | Return a new DStream by selecting only the   records of the source DStream on which *func*   returns true.                                                                                                                                                                                                                                                                                                                                                             |
+| **repartition**(*numPartitions*)         | Changes the level of parallelism in this   DStream by creating more or fewer partitions.                                                                                                                                                                                                                                                                                                                                                                               |
+| **union**(*otherStream*)                 | Return a new DStream that contains the   union of the elements in the source DStream and *otherDStream*.                                                                                                                                                                                                                                                                                                                                                               |
+| **count**()                              | Return a new DStream of single-element RDDs   by counting the number of elements in each RDD of the source DStream.                                                                                                                                                                                                                                                                                                                                                    |
+| **reduce**(*func*)                       | Return a new DStream of single-element RDDs   by aggregating the elements in each RDD of the source DStream using a   function *func* (which takes two   arguments and returns one). The function should be associative and   commutative so that it can be computed in parallel.                                                                                                                                                                                      |
+| **countByValue**()                       | When called on a DStream of elements of   type K, return a new DStream of (K, Long) pairs where the value of each key   is its frequency in each RDD of the source DStream.                                                                                                                                                                                                                                                                                            |
+| **reduceByKey**(*func*, [*numTasks*])    | When called on a DStream of (K, V) pairs,   return a new DStream of (K, V) pairs where the values for each key are   aggregated using the given reduce function. **Note:** By default, this uses Spark’s default number of parallel   tasks (2 for local mode, and in cluster mode the number is determined by the   config property spark.default.parallelism) to do   the grouping. You can pass an optional numTasks argument to   set a different number of tasks. |
+| **join**(*otherStream*, [*numTasks*])    | When called on two DStreams of (K, V) and   (K, W) pairs, return a new DStream of (K, (V, W)) pairs with all pairs of   elements for each key.                                                                                                                                                                                                                                                                                                                         |
+| **cogroup**(*otherStream*, [*numTasks*]) | When called on a DStream of (K, V) and (K,   W) pairs, return a new DStream of (K, Seq[V], Seq[W]) tuples.                                                                                                                                                                                                                                                                                                                                                             |
+| **transform**(*func*)                    | Return a new DStream by applying a   RDD-to-RDD function to every RDD of the source DStream. This can be used to   do arbitrary RDD operations on the DStream.                                                                                                                                                                                                                                                                                                         |
+| **updateStateByKey**(*func*)             | Return a new “state” DStream where the   state for each key is updated by applying the given function on the previous   state of the key and the new values for the key. This can be used to maintain   arbitrary state data for each key.                                                                                                                                                                                                                             |
+
+需要记住的是，尽管这些函数看起来像作用在整个流上一样，但事实上每个DStream在内部是由许多RDD(批次)组成，且无状态转化操作是分别应用到每个RDD上的。例如，reduceByKey()会化简每个时间区间中的数据，但不会化简不同区间之间的数据。
+举个例子，在之前的wordcount程序中，我们只会统计几秒内接收到的数据的单词个数，而不会累加。
+无状态转化操作也能在多个DStream间整合数据，不过也是在各个时间区间内。例如，键值对DStream拥有和RDD一样的与连接相关的转化操作，也就是`cogroup()`、`join()`、`leftOuterJoin()` 等。我们可以在DStream上使用这些操作，这样就对每个批次分别执行了对应的RDD操作。
+我们还可以像在常规的 Spark 中一样使用 DStream的`union()` 操作将它和另一个DStream 的内容合并起来，也可以使用`StreamingContext.union()`来合并多个流。
+
 ## 2.有状态转换
+### 2.1 updateStateByKey
+ * updateStateByKey操作允许在使用新信息不断更新状态的同时能够保留他的状态
+ * 需要定义状态(可以是任意数据类型)和状态更新函数
+ * 在每个阶段，Spark都会在所有已经存在的key上使用状态更新函数，而不管是否有新的数据在
+
 ```scala
 val conf: SparkConf = new SparkConf().setMaster("local[*]").setAppName("TransformDemo")
 val ssc: StreamingContext = new StreamingContext(conf, Seconds(3))
@@ -270,4 +319,4 @@ ssc.start()
 ssc.awaitTermination()
 ```
 
-
+![](img/spark-streaming-updatestatebykey.png)
