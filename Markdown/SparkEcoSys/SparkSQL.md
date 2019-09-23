@@ -228,6 +228,7 @@ spark.read.csv("文件名")
 spark.read.json("文件名")
 spark.read.jdbc(...)
 ```
+<!-- TODO 有问题 -->
 通用的写格式
 ```scala
 spark.write.save("路径") //默认格式为parquet
@@ -245,11 +246,4 @@ cp $HIVE_HOME/conf/hive-site.xml $SPARK_HOME/conf/
 yarn模式hive
 
 
-```sql
-select
-    t1.area,
-    t1.product_name,
-    count(*)
-from t1
-group by area, product_name;
-```
+<!-- TODO 补全Spark sql内容 -->

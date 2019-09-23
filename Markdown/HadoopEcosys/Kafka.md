@@ -165,11 +165,11 @@ kafka-topics.sh --zookeeper hadoop102:2181 --create --replication-factor 3 --par
 # --partitions 定义分区数
 
 # 删除topic
-kafka-topics.sh --zookeeper hadoop101:2181 --delete --topic first
+kafka-topics.sh --zookeeper hadoop102:2181 --delete --topic first
 # 需要server.properties中设置delete.topic.enable=true否则只是标记删除
 
 # 发送消息
-kafka-console-producer.sh --broker-list hadoop101:9092 --topic first
+kafka-console-producer.sh --broker-list hadoop102:9092 --topic first
 >hello world
 >tian tian test
 
