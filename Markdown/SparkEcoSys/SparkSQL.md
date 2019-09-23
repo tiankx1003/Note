@@ -216,34 +216,136 @@ df.createOrReplaceTempView("user")
 spark.sql("select mySum(age) sum from user").show
 ```
 
+# 三、SparkSQL数据源
+## 1.加载和保存函数
+`spark.read.load`是加载数据的通用方法
+`df.write.save`是保存数据的通用方法
+默认数据源是parquet，可以通过`spark.sql.sources.default`这个属性来设置默认的数据源
 
-通用读格式
+
 ```scala
-spark.read.load("") //默认数据格式是parquet
-spark.read.format("json").load("") //加载数据的通用方法
-```
-专用的读
-```scala
-spark.read.csv("文件名")
-spark.read.json("文件名")
+//通用的读格式
+spark.read.load("file/user.parquet") //默认数据格式为parquet
+spark.read.load("json").load("file/user.json") //执行数据源
+//指定数据源类型的专用的的读格式
+spark.read.csv("fileName")
+spark.read.json("fileName")
+spark.read.parquet("fileName")
 spark.read.jdbc(...)
+//通用的写格式
+df.write.save("fileName") //默认格式为parquet
+df.write.format("json").save("./json1") //文件已存在时会报错
+df.write.format("json").mode("error").save("./json1") //文件已存在时抛异常，默认
+df.write.format("json").mode("append").save("./json1") //追加
+df.write.format("json").mode(SaveMode.Overwrite).save(".json1") //同上
+df.write.format("json").mode("overwrite").save("./json1") //覆盖
+df.write.format("json").mode("ignore").save("./json") //忽略修改
+//spark上运行sql
+spark.sql("sql语句")
 ```
-<!-- TODO 有问题 -->
-通用的写格式
+ * SaveMode都是没有加锁且不是原子操作
+ * 如果执行overwrite操作，在写入新的数据之前就会先删除旧的数据
+
+## 2.JDBC
+### 2.1加载JDBC
 ```scala
-spark.write.save("路径") //默认格式为parquet
-spark.write.format("json").save("./json1") //文件已经存在时会报错
-spark.write.format("json").mode("error").save("./json1") //抛异常，默认
-spark.write.format("json").mode("append").save("./json1") //追加
-spark.write.format("json").mode("overwrite").save("./json1") //覆盖
-spark.write.format("json").mode("ignore").save("./json") //忽略修改
+//通用读操作
+val df1 = spark.read.format("jdbc")
+    .option("url", "jdbc:mysql://hadoop102:3306/rdd")
+    .option("user", "root")
+    .option("password", "root")
+    .option("dbtable", "user")
+    .load()
+df1.show()
+df1.createTempView("user")
+spark.sql("select * from user where id > 10").show(10)
+//专用读操作
+val props = new Properties()
+props.setProperty("user", "root")
+props.setProperty("password", "root")
+val df2 =
+    spark.read.jdbc("jdbc:mysql://hadoop102:3306/rdd", "user", props)
+df2.show
 ```
-内置hive(很少使用)
 
-cp $HIVE_HOME/conf/hive-site.xml $SPARK_HOME/conf/
-拷贝连接驱动到$SPARK_HOME/jars/
+## 2.2写入JDBC
+```scala
+//通用写
+df.write
+    .format("jdbc")
+    .option("url", "jdbc:mysql://hadoop102:3306/rdd")
+    .option("user", "root")
+    .option("password", "root")
+    .option("dbtable", "person1")
+    .mode("append")
+    .save()
+//专用写
+val props = new Properties()
+props.setProperty("user","root")
+props.setProperty("password","root")
+df.write.jdbc("jdbc:mysql://hadoop102:3306/rdd","person2",props)
+```
 
-yarn模式hive
+## 3.Hive
+### 3.1 内置Hive
+ * Spark内置的Hive可以直接使用
+ * Hive的元数据存放在derby中，仓库地址:`$SAPRK_HOME/spark-warehouse`
 
+```scala
+spark.sql("show tables").show
+spark.sql("create table aa(id int)")
+spark.sql("load data local inpath './ids.txt' into table aa")
+spark.sql("select * from aa").show
+```
+ * 实际使用时很少会用到内置的Hive
 
-<!-- TODO 补全Spark sql内容 -->
+### 3.2 外置Hive
+ * 拷贝外置Hive的`$HIVE_HOME/conf/hive-site.xml`到`$SPARK_HOME/conf/`目录下
+ * 拷贝MySQL驱动到`$SPARK_HOME/jars/`目录下
+ * 如果访问不到HDFS需要把`core-site.xml`和`hdfs-site.xml`拷贝到`$SPARK_HOME/conf/`目录下
+ * 外置Hive不可配置tez，Hadoop不可配置lzo压缩
+
+#### 3.2.1 外置Hive的使用
+ * 具体使用和内置Hive相同
+
+#### 3.2.2 使用spark-sql cli
+ * 在spark-shell执行 hive 方面的查询比较麻烦`spark.sql("").show`
+ * Spark 专门给我们提供了书写 HiveQL 的工具: spark-sql cli
+
+### 3.2.3 使用hiveserver2 + beeline
+ * spark-sql 得到的结果不够友好, 所以可以使用`hiveserver2 + beeline`
+
+```bash
+sbin/start-thriftserver.sh --master yarn --hiveconf hive.server2.thrift.bind.host=hadoop201 --hiveconf hive.server2.thrift.port=10000
+bin/beeline
+!connect jdbc:hive2://hadoop102:10000
+```
+
+### 3.3 在scala代码中访问Hive
+ * 拷贝hive-site.xml到resource目录下
+
+```xml
+<dependency>
+    <groupId>org.apache.spark</groupId>
+    <artifactId>spark-hive_2.11</artifactId>
+    <version>2.1.1</version>
+</dependency>
+```
+```scala
+System.setProperty("HADOOP_USER_NAME", "tian")
+val spark = SparkSession
+    .builder()
+    .master("local[*]")
+    .appName("hive")
+    .enableHiveSupport() //支持hive
+    .config("spark.sql.warehouse.dir", "hdfs://hadoop102:9000/user/hive/warehouse")
+    .getOrCreate()
+spark.sql("show databases").show
+spark.sql("create database if not exists spark")
+spark.sql("use spark")
+spark.sql("create table if not exists user(id int,name string) row format delimited by '\\t'")
+spark.sql("select * from user")
+spark.sql("insert into table user values(1,'wangwu')")
+spark.sql("select * from emp").show
+spark.close()
+```
