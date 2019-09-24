@@ -169,7 +169,7 @@ kafka-topics.sh --zookeeper hadoop102:2181 --delete --topic first
 # 需要server.properties中设置delete.topic.enable=true否则只是标记删除
 
 # 发送消息
-kafka-console-producer.sh --broker-list hadoop102:9092 --topic first
+kafka-console-producer.sh --broker-list hadoop102:9092 --topic topic1
 >hello world
 >tian tian test
 

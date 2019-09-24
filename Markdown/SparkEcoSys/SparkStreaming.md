@@ -31,7 +31,7 @@ Spark Streaming 是一种“微量批处理”架构, 和其他基于“一次�
 val conf = new SparkConf().setMaster("local[2]").setAppName("wordcount")
 val ssc = new StreamingContext(conf, Seconds(5)) //传入时间间隔
 //2. 核心数据集: DStream
-val socketStream = ssc.socketTextStream("hadoop102", 9999)
+val socketStream = ssc.socketTextStream("hadoop102", 9999) //Socket数据源
 //3. 对DStreaming各种操作
 val wordCountDStream = socketStream
     .flatMap(_.split(" "))
@@ -48,6 +48,8 @@ ssc.awaitTermination() //等待ssc结束，主线程才结束
 sudo yum install -y nc
 nc -lk 9999
 ```
+ * 程序运行之前需要服务器端启动了netcat，否则会报连接异常
+ * 这种方式只能统计每四秒内的wordcount，且每个间隔没有关联
 
 ## 2.案例分析
 Discretized Stream(DStream) 是 Spark Streaming 提供的基本抽象, 表示持续性的数据流, 可以来自输入数据, 也可以是其他的 DStream 转换得到. 在内部, 一个 DSteam 用连续的一系列的 RDD 来表示. 在 DStream 中的每个 RDD 包含一个确定时间段的数据.
@@ -67,20 +69,26 @@ Discretized Stream(DStream) 是 Spark Streaming 提供的基本抽象, 表示持
 # 三、DStream创建(数据源)
 Spark Streaming原生支持一些不同的数据源，每个接收器都以Spark执行器程序中一个长期运行的任务的形式运行，因此会占据分配给应用的CPU核心。此外我们还需要有可用的CPU核心来处理数据，所以如果要运行多个接收器，就必须至少有和接收器相同数目的核心数，还要加上用来完成计算所需要的核心数。例如，如果我们想要在流计算应用中运行 10 个接收器，那么至少需要为应用分配 11 个 CPU 核心。
 所以本地模式运行时，不要使用`local`或者`local[1]`
+## 0.Socket
+ * 见前述WordCount案例
 
 ## 1.RDD队列
  * 循环创建几个RDD，将RDD放入队列，通过Spark Streaming创建DStream，计算WordCount
 
 ```scala
-val conf = new SparkConf().setMaster("local[2]").setAppName("wordcount2")
-val ssc = new StreamingContext(conf, Seconds(3))
-val rddQueue = mutable.Queue[RDD[Int]]() //数据源为rdd队列
-val resultDStream = ssc.queueStream(rddQueue, false).reduce(_ + _)
-resultDStream.print
+val conf: SparkConf = new SparkConf().setMaster("local[*]").setAppName("QueueRDD")
+val ssc: StreamingContext = new StreamingContext(conf, Seconds(3))
+val rddQueue: mutable.Queue[RDD[Int]] = mutable.Queue[RDD[Int]]()
+//val resultDStream: DStream[Int] = ssc.queueStream(rddQueue).reduce(_ + _) //每次处理一个RDD
+// @param oneAtATime Whether only one RDD should be consumed from the queue in every interval
+val resultDStream: DStream[Int] = ssc.queueStream(rddQueue, oneAtATime = false).reduce(_ + _)
+resultDStream.print(100)
 ssc.start()
-while (true) {
-    rddQueue.enqueue(ssc.sparkContext.parallelize(1 to 100))
-    Thread.sleep(1000) //每秒处理一个
+while (true) { //每个循环创建一个RDD
+    val sc: SparkContext = ssc.sparkContext
+    rddQueue.enqueue(sc.parallelize(1 to 100))
+    Thread.sleep(1000) //每个时间间隔内有三个RDD，
+    // 不设置sleep可以给集群做压测，即每个时间间隔内可以创建和处理多少个RDD
 }
 ssc.awaitTermination()
 ```
@@ -148,7 +156,7 @@ class MyReceiver(val host: String, val port: Int) extends Receiver[String](Stora
 nc -lk 9999
 ```
 
-## 3.Kafka数据源
+## 3.Kafka数据源(重点)
 ### 3.1
 ```scala
 val conf = new SparkConf().setMaster("local[2]").setAppName("wordcount")
@@ -167,7 +175,7 @@ ssc.start()
 ssc.awaitTermination()
 ```
 
-### 3.2
+### 3.2 exactly once语义
 ```scala
 def main(args: Array[String]): Unit = {
     val ssc: StreamingContext = StreamingContext.getActiveOrCreate("./ck1", createSsc)
@@ -262,6 +270,7 @@ DStream 上的原语与 RDD 的类似，分为Transformations（转换）和Outp
  * transform 原语允许 DStream上执行任意的RDD-to-RDD函数。
  * 可以用来执行一些 RDD 操作, 即使这些操作并没有在 SparkStreaming 中暴露出来.
  * 该函数每一批次调度一次。其实也就是对DStream中的RDD应用转换。
+ * 只在当前窗口有效
 
 ```scala
 val conf: SparkConf = new SparkConf().setMaster("local[*]").setAppName("TransformDemo")
@@ -320,3 +329,90 @@ ssc.awaitTermination()
 ```
 
 ![](img/spark-streaming-updatestatebykey.png)
+
+### 2.2 window操作
+#### 2.2.1 reduceByKeyAndWindow(reduceFunc: (V, V) => V, windowDuration: Duration)
+ * 传参分别为计算规则，窗口长度
+ * 滑动步长默认为DStream周期
+ * 窗口长度必须是周期的整数倍
+
+```scala
+ssc.socketTextStream("hadoop102", 9999) // ReceiverInputDStream
+    .flatMap(_.split(" "))
+    .map((_, 1))
+    //传入计算规则，窗口长度和滑动步长，不设置滑动步长时默认为周期
+    .reduceByKeyAndWindow(_ + _, Seconds(12)) //添加滑动步长需要指定泛型
+    .print(100)
+```
+
+ * 滑动步k长和窗口长度都必须是周期的整数倍
+ * 添加滑动步长需要指定计算规则中变量的泛型
+
+```scala
+.reduceByKeyAndWindow((_: Int) + (_: Int), Seconds(12), Seconds(8))
+```
+
+#### 2.2.2 reduceByKeyAndWindow(reduceFunc: (V, V) => V, invReduceFunc: (V, V) => V, windowDuration: Duration, slideDuration: Duration)
+ * `invReduceFunc: (V, V) => V`
+ * 窗口移动了, 上一个窗口和新的窗口会有重叠部分, 重叠部分的值可以不用重复计算了
+ * 第一个参数就是新的值, 第二个参数是旧的值
+ * 滑动步长大于等于窗口长度时这种方式失效，大于时会丢失数据
+
+```scala
+ssc.sparkContext.setCheckpointDir("hdfs://hadoop102:9000/checkpoint")
+val count: DStream[(String, Int)] =
+    wordAndOne.reduceByKeyAndWindow((x: Int, y: Int) => x + y,(x: Int, y: Int) => x - y,Seconds(15), Seconds(10))
+```
+
+#### 2.2.3 window(windowLength, slideInterval)
+ * 基于对源 DStream 窗化的批次进行计算返回一个新的 Dstream
+
+```scala
+val sourceDStream: ReceiverInputDStream[String] = ssc.socketTextStream("hadoop102", 9999)
+val sourceDStream2 = sourceDStream.window(Seconds(12), Seconds(8)) //直接返回一个新DStream
+sourceDStream2
+    .flatMap(_.split(" "))
+    .map((_, 1))
+    .reduceByKey(_ + _)
+    .print(100)
+```
+
+#### 2.2.4 countByWindow(windowLength, slideInterval)
+ * 返回一个滑动窗口计数流中的元素的个数
+
+#### 2.2.5 countByValueAndWindow(windowLength, slideInterval, [numTasks])
+ * 对(K,V)对的DStream调用，返回(K,Long)对的新DStream，
+ * 其中每个key的的对象的v是其在滑动窗口中频率。如上，可配置reduce任务数量
+
+
+# 五、DStream输出
+`print()` 可传入参数
+`saveAsTextFile(prefix,[Suffix])` 保存到文件，文件名可添加时间戳
+`saveAsObjectFile(prefix,[Suffix])` 保存为对象文件
+`saveAsHadoopFile(prefix,[Suffix])` 保存到HDFS
+`foreachRDD()` 
+
+```scala
+val sourceDStream: ReceiverInputDStream[String] = ssc.socketTextStream("hadoop102", 9999)
+val sourceDStream2 = sourceDStream.window(Seconds(12), Seconds(8)) //直接返回一个新DStream
+sourceDStream
+    .flatMap(_.split(" "))
+    .map((_, 1))
+    .reduceByKey(_ + _)
+    .foreachRDD(rdd => rdd.collect.foreach(print)) //输出算子，直接遍历RDD
+```
+>**注意**
+
+ * 连接不能写在driver里面(序列化)
+ * 如果写在foreach则每个RDD中的每一条数据都创建，得不偿失
+ * 增加foreachPartition，在分区创建(获取)
+
+# 六、编程进阶
+## 1.累加器
+
+## 2.广播变量
+
+## 3.DataFrame ans SQL Operations
+
+## 4.Caching / Persistence
+对于像reduceByWindow和reduceByKeyAndWindow以及基于状态的(updateStateByKey)这种操作，保存是隐含默认的
