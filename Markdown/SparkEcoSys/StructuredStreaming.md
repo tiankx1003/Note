@@ -57,10 +57,34 @@ exactly once是structured streaming的主要设计目标
 
 # 五、Streaming DF/Streaming DS 操作
 
-## 1.
+## 1.基本操作
 
-事件时间按窗口
 
+## 2.event-time窗口操作
+
+
+## 3.watermark延时数据处理
+
+
+## 4.流数据去重
+
+
+## 5.join操作
+
+
+## 6.Streaming DF/DS不支持的操作
+
+
+# 六、输出结果分析
+## 1.输出模式(output mode)
+
+## 2.输出接收器(output sink)
+
+
+# 七、Trigger(触发器)
+## 连续处理模式(Continuous processing)
+
+窗口计算
    * The windows are calculated as below:
    * maxNumOverlapping <- ceil(windowDuration / slideDuration)
    * for (i <- 0 until maxNumOverlapping)
@@ -68,11 +92,3 @@ exactly once是structured streaming的主要设计目标
    *   windowStart <- windowId * slideDuration + (i - maxNumOverlapping) * slideDuration + startTime
    *   windowEnd <- windowStart + windowDuration
    *   return windowStart, windowEnd
-
-窗口
-水印
-去重
-连接
-不支持
-输出
-触发器
