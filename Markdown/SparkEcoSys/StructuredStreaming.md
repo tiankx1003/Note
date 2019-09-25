@@ -57,5 +57,22 @@ exactly once是structured streaming的主要设计目标
 
 # 五、Streaming DF/Streaming DS 操作
 
+## 1.
 
 事件时间按窗口
+
+   * The windows are calculated as below:
+   * maxNumOverlapping <- ceil(windowDuration / slideDuration)
+   * for (i <- 0 until maxNumOverlapping)
+   *   windowId <- ceil((timestamp - startTime) / slideDuration)
+   *   windowStart <- windowId * slideDuration + (i - maxNumOverlapping) * slideDuration + startTime
+   *   windowEnd <- windowStart + windowDuration
+   *   return windowStart, windowEnd
+
+窗口
+水印
+去重
+连接
+不支持
+输出
+触发器
