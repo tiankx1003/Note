@@ -32,7 +32,6 @@ import spark.implicits._
 val df: DataFrame = lines
    .as[String]
    .flatMap(_.split("\\W+"))
-   .map((_, 1))
    .groupBy("value")
    .count
 lines
@@ -399,7 +398,7 @@ import org.apache.spark.sql.functions._
 // 按照窗口和单词分组, 并且计算每组的单词的个数
 val wordCounts = words.groupBy(
    // 调用 window 函数, 返回的是一个 Column 参数 1: df 中表示时间戳的列 参数 2: 窗口长度 参数 3: 滑动步长
-   window($"s", "10 minutes", "5 minutes"),
+   window($"timestamp", "10 minutes", "5 minutes"),
    $"word"
 ).count()//.orderBy($"window") // 计数, 并按照窗口排序
 
@@ -612,7 +611,7 @@ wordCounts
    .trigger(Trigger.ProcessingTime(0))
    .start()
    .awaitTermination()
-   ```
+```
 
 ## 5.join操作
 ### 5.1 Streaming-Static join
@@ -737,6 +736,7 @@ foreach() 不能直接使用, 而是使用: ds.writeStream.foreach(...)
 show() 不能直接使用, 而是使用 console sink
 如果执行上面操作会看到这样的异常: operation XYZ is not supported with streaming DataFrames/Datasets.
 
+<!-- TODO 验证 -->
 
 # 六、输出结果分析
 一旦定义了最终结果DataFrame / Dataset，剩下的就是开始流式计算。为此，必须使用返回的 DataStreamWriter Dataset.writeStream()。
@@ -837,13 +837,15 @@ words.writeStream
    .outputMode("update")
    .format("kafka")
    .trigger(Trigger.ProcessingTime(0))
-   .option("kafka.bootstrap.servers", "hadoop201:9092,hadoop202:9092,hadoop203:9092") // kafka 配置
-   .option("topic", "update") // kafka 主题
+   .option("kafka.bootstrap.servers", "hadoop102:9092,hadoop103:9092,hadoop104:9092") // kafka 配置
+   .option("topic", "topic1") // kafka 主题
    .option("checkpointLocation", "./ck1")  // 必须指定 checkpoint 目录
    .start
    .awaitTermination()
 ```
-
+```bash
+kafka-console-consumer.sh --bootstrap-server hadoop102:9092 --topic topic1
+```
 #### 2.2.2 以batch方式输出数据
 ```scala
 val spark: SparkSession = SparkSession
@@ -852,8 +854,11 @@ val spark: SparkSession = SparkSession
    .appName("Test")
    .getOrCreate()
 import spark.implicits._
-
-val wordCount: DataFrame = spark.sparkContext.parallelize(Array("hello hello atguigu", "atguigu, hello"))
+val arr: Array[String] = Array("hello,hello,tian", "tian,hello")
+val wordCount: DataFrame = spark
+            .sparkContext
+            .parallelize(arr.flatMap(_.split("\\W+")))
+            .toDF("word")
    .toDF("word")
    .groupBy("word")
    .count()
@@ -862,7 +867,7 @@ val wordCount: DataFrame = spark.sparkContext.parallelize(Array("hello hello atg
 
 wordCount.write  // batch 方式
    .format("kafka")
-   .option("kafka.bootstrap.servers", "hadoop201:9092,hadoop202:9092,hadoop203:9092") // kafka 配置
+   .option("kafka.bootstrap.servers", "hadoop102:9092,hadoop103:9092,hadoop104:9092") // kafka 配置
    .option("topic", "update") // kafka 主题
    .save()
 ```
@@ -934,8 +939,8 @@ import spark.implicits._
 
 val lines: DataFrame = spark.readStream
    .format("socket") // 设置数据源
-   .option("host", "hadoop201")
-   .option("port", 10000)
+   .option("host", "hadoop102")
+   .option("port", 9999)
    .load
 
 val wordCount: DataFrame = lines.as[String]
