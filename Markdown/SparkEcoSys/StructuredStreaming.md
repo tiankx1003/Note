@@ -518,28 +518,210 @@ Structured Streaming 引入 Watermark 机制, 主要是为了解决以下两个�
 2.	减少内存中维护的聚合状态.
 在不同输出模式(complete, append, update)中, Watermark 会产生不同的影响.
 
-### 3.1 update模式
+![](img/structured-streaming-watermark.png)
 
+### 3.1 update模式
+ * 在 update 模式下, 仅输出与之前批次的结果相比, 涉及更新或新增的数据
+ *  初始化wartmark 是 0
+
+```scala
+val spark: SparkSession = SparkSession
+   .builder()
+   .master("local[*]")
+   .appName("WordCountWatermark1")
+   .getOrCreate()
+
+import spark.implicits._
+val lines: DataFrame = spark.readStream
+   .format("socket")
+   .option("host", "hadoop102")
+   .option("port", 9999)
+   .load
+
+// 输入的数据中包含时间戳, 而不是自动添加的时间戳
+val words: DataFrame = lines.as[String].flatMap(line => {
+   val split: Array[String] = line.split(", ")
+   split(1).split(" ").map((_, Timestamp.valueOf(split(0))))
+}).toDF("word", "timestamp")
+
+import org.apache.spark.sql.functions._
+
+
+val wordCounts: Dataset[Row] = words
+   // 添加watermark, 参数 1: event-time 所在列的列名 参数 2: 延迟时间的上限.
+   .withWatermark("timestamp", "2 minutes")
+   .groupBy(window($"timestamp", "10 minutes", "2 minutes"), $"word")
+   .count()
+
+val query: StreamingQuery = wordCounts.writeStream
+   .outputMode("update") // complete模式下加水印没有意义
+   .trigger(Trigger.ProcessingTime(1000))
+   .format("console")
+   .option("truncate", "false")
+   .start
+query.awaitTermination()
+```
+
+![](img/structured-streaming-watermark-update.png)
 
 ### 3.2 append模式
+ * 在 append 模式中, 仅输出新增的数据, 且输出后的数据无法变更.
+ * 只需要设置`.outputMode("append")`
 
+![](img/structured-streaming-watermark-append.png)
 
 ### 3.3 机制总结
+1.	watermark 在用于基于时间的状态聚合操作时, 该时间可以基于窗口, 也可以基于 event-timeb本身.
+2.	输出模式必须是append或update. 在输出模式是complete的时候(必须有聚合), 要求每次输出所有的聚合结果. 我们使用 watermark 的目的是丢弃一些过时聚合数据, 所以complete模式使用wartermark无效也无意义.
+3.	在输出模式是append时, 必须设置 watermask 才能使用聚合操作. 其实, watermask 定义了 append 模式中何时输出聚合聚合结果(状态), 并清理过期状态.
+4.	在输出模式是update时, watermask 主要用于过滤过期数据并及时清理过期状态.
+5.	watermask 会在处理当前批次数据时更新, 并且会在处理下一个批次数据时生效使用. 但如果节点发送故障, 则可能延迟若干批次生效.
+6.	withWatermark 必须使用与聚合操作中的时间戳列是同一列.
+`df.withWatermark("time", "1 min").groupBy("time2").count()` 无效
+7.	withWatermark 必须在聚合之前调用.
+`df.groupBy("time").count().withWatermark("time", "1 min") `无效
 
 
 ## 4.流数据去重
-
+```scala
+val spark: SparkSession = SparkSession
+   .builder()
+   .master("local[2]")
+   .appName("Duplicate")
+   .getOrCreate()
+import spark.implicits._
+//确定数据源并加载数据
+val lines: DataFrame = spark
+   .readStream
+   .format("socket")
+   .option("host", "hadoop102")
+   .option("port", 9999)
+   .load
+//对加载的数据转成DS并处理(切割并返回信息)，
+val words: DataFrame = lines.as[String].map(lines => {
+   val arr: Array[String] = lines.split(",")
+   (arr(0), Timestamp.valueOf(arr(1)), arr(2))
+}).toDF("uid", "ts", "word") //转成DF
+val wordCounts: Dataset[Row] = words
+   .withWatermark("ts", "2 minutes")
+   .dropDuplicates("uid") //去除重复数据，可以传递多个字段
+wordCounts
+   .writeStream
+   .outputMode("append")
+   .format("console")
+   .trigger(Trigger.ProcessingTime(0))
+   .start()
+   .awaitTermination()
+   ```
 
 ## 5.join操作
 ### 5.1 Streaming-Static join
-
 #### 5.1.1 inner
-
+```scala
+val spark: SparkSession = SparkSession
+   .builder()
+   .master("local[2]")
+   .appName("StreamingStatic")
+   .getOrCreate()
+import spark.implicits._
+val arr: Array[(String, Int)] = Array(("ls", 20), ("ww", 10), ("zs", 15))
+//静态df
+val staticDF: DataFrame = spark.sparkContext.parallelize(arr).toDF("name", "age")
+//动态df
+val streamingDF: DataFrame = spark.readStream
+   .format("socket")
+   .option("host", "hadoop102")
+   .option("port", 9999)
+   .load
+   .as[String]
+   .map(line => {
+         val splits = line.split(",")
+         (splits(0), splits(1))
+   })
+   .toDF("name", "sex")
+//内连接
+val joinedDF: DataFrame = streamingDF.join(staticDF, Seq("name")) //两者的字段名不同会报异常
+val rightJoinedDF = streamingDF.join(staticDF, Seq("name")) //内连接
+joinedDF.writeStream //静态和流连接后为流数据
+   .format("console")
+   .outputMode("update")
+   .start()
+   .awaitTermination()
+```
 
 #### 5.1.2 outer
-
+```scala
+ val spark: SparkSession = SparkSession
+   .builder()
+   .master("local[2]")
+   .appName("StreamingStaticOuter")
+   .getOrCreate()
+import spark.implicits._
+val arr: Array[(String, Int)] = Array(("lis", 20), ("zs", 21), ("ww", 15))
+val staticDF = spark.sparkContext.parallelize(arr).toDF("name", "age")
+val streamingDF = spark
+   .readStream
+   .format("socket")
+   .option("host", "hadoop102")
+   .option("port", 9999)
+   .load
+   .as[String]
+   .map(line => {
+         val splits = line.split(",")
+         (splits(0), splits(1))
+   })
+   .toDF("name", "sex")
+//外连接，可传入连接类型，流式数据必须在左侧
+val joinedDF = streamingDF.join(staticDF, Seq("name"), "left")
+joinedDF
+   .writeStream
+   .outputMode("update")
+   .format("console")
+   .trigger(Trigger.ProcessingTime(0))
+   .start()
+   .awaitTermination()
+```
 
 ### 5.2 Streaming-Streaming join
+```scala
+def main(args: Array[String]): Unit = {
+val spark: SparkSession = SparkSession
+   .builder()
+   .master("local[2]")
+   .appName("StreamStreamJoin")
+   .getOrCreate()
+import spark.implicits._
+val ageDF = spark.readStream
+   .format("socket")
+   .option("host", "hadoop102")
+   .option("port", 8888)
+   .load
+   .as[String]
+   .map(line => {
+         val splits = line.split(",")
+         (splits(0), splits(1))
+   })
+   .toDF("name", "age")
+val sexDF = spark.readStream
+   .format("socket")
+   .option("host", "hadoop102")
+   .option("port", 9999)
+   .load
+   .as[String]
+   .map(line => {
+         val splits = line.split(",")
+         (splits(0), splits(1))
+   })
+   .toDF("name", "sex")
+val joinedDF: DataFrame = ageDF.join(sexDF, "name")
+joinedDF
+   .writeStream
+   .outputMode("append")
+   .format("console")
+   .trigger(Trigger.ProcessingTime(0))
+   .start()
+   .awaitTermination()
+```
 
 ## 6.Streaming DF/DS不支持的操作
 到目前, DF/DS 的有些操作 Streaming DF/DS 还不支持.
