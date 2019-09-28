@@ -216,9 +216,12 @@ spark.readStream
 # 查看topic
 kafka-topics.sh --zookeeper hadoop102:2181 --list
 # 创建topic
-kafka-topics.sh --zookeeper hadoop102:2181 --create --replication-factor 3 --partitions 1 --topic first
+kafka-topics.sh --zookeeper hadoop102:2181 --create --replication-factor 3 --partitions 1 --topic topic1
 # 生产消息
 kafka-console-producer.sh --broker-list hadoop102:9092 --topic topic1
+# 消费消息
+kafka-console-consumer.sh --bootstrap-server hadoop102:9092 --from-beginning --topic topic1
+kafka-console-consumer.sh --bootstrap-server hadoop202:9092 --topic topic1 # 从最新的消费
 ```
 
 ### 3.2 Batch Queries
