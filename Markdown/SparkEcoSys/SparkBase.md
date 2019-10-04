@@ -385,3 +385,7 @@ export SPARK_CLASSPATH=$SPARK_CLASSPATH:/opt/module/hadoop-2.7.2/share/hadoop/co
 
 ### 2.2 Idea本地测试
  * 需要本地搭建了Hadoop环境
+
+
+
+<!-- TOOD 提交任务时有多个jar包 -->

@@ -174,8 +174,9 @@ kafka-console-producer.sh --broker-list hadoop102:9092 --topic topic1
 >tian tian test
 
 # 消费消息
-kafka-console-consumer.sh --bootstrap-server hadoop101:9092 --from-beginning --topic first
-kafka-console-consumer.sh --bootstrap-server hadoop201:9092 --topic first # 从最新的消费
+kafka-console-consumer.sh --bootstrap-server hadoop102:9092 --from-beginning --topic first
+kafka-console-consumer.sh --bootstrap-server hadoop102:9092 --topic first # 从最新的消费
+kafka-console-consumer.sh --zookeeper hadoop102:2181 --topic first
 # --from-beginning 会把主题中以往所有的数据都读取出来
 
 # 查看某个Topic的详情

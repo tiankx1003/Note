@@ -27,13 +27,13 @@ vim /etc/profile #配置环境变量
 ```
 #### redis.conf
 ```properties
-bind 127.0.0.1 192.168.2.101
-protected-mode yes
+bind 192.168.2.102
+protected-mode no
 port 6379
 tcp-backlog 511
 timeout 0
 tcp-keepalive 300
-daemonize no
+daemonize yes
 supervised no
 pidfile /var/run/redis_6379.pid
 loglevel notice
@@ -51,7 +51,7 @@ redis-cli -h
 redis-cli -p
 ```
 
-### redis操作e
+### redis操作
 ```sql
 shutdown #关闭服务端
 exit #退出
