@@ -168,7 +168,7 @@ export HBASE_MANAGES_ZK=false
 
 	<property>   
 		<name>hbase.zookeeper.property.dataDir</name>
-	     <value>/opt/module/zookeeper-3.4.10/zkData</value>
+	     <value>/opt/module/zookeeper/zkData</value>
 	</property>
 </configuration>
 ```
