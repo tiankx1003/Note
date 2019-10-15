@@ -129,6 +129,8 @@ ls --help
 clear
 #tab键自动补全
 reset
+# 环境变量配置出错时使用
+export PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin:/root/bin
 ```
 
 #### 0.3 常用快捷键

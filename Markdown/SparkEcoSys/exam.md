@@ -86,4 +86,61 @@ OutputPaht
 <!-- TODO 手绘 + 讲解 -->
 
 ### 5.Spark中RDD血统概念的理解(笔试重点)
- * RDD在Lineage依赖方面分为两种窄依赖(Narrow Dependencies)和宽依赖
+ * RDD在Lineage依赖方面分为两种窄依赖(Narrow Dependencies)和宽依赖(Wide Dependencies)用来解决数据容错时的高效性以及划分任务时起到重要作用
+
+### 6.简述SPark的宽窄依赖，以及Spark如何划分stage，每个stage有根据什么决定task个数
+ * stage，根据RDD之间的依赖关系的不同将job划分成不同的Stage，遇到宽依赖则划分一个Stage
+ * Task，Stage是一个TaskSet，将Stage根据分区数划分成一个个的Task
+
+### 7.请列举Spark的transformation算子(不少于8个)，并简述功能
+ * `map(func)` 返回要给新的RDD，该RDD由每一个输入元素经过func函数转换后组成
+ * `mapPartitions(func)` 类似于map，但独立地在RDD的每一个分片上运行，因此在类型为T的RDD上运行时，func的函数u类型必须是`Iterator[T] => Iterator[U]`，假设有N个元素，有M个分区，那么map的函数将被调用N次，而mapPartitions被调用M次，一个函数一次处理所有分区
+ * `reduceByKey(func, [numTask])` 在一个(K, V)的RDD上调用，返回一个(K, V)的RDD，使用reduce函数，将相同key的值聚合到一起，reduce任务的个数可以通过第二个可选的参数来设置
+ * `aggregateByKey
+
+
+
+
+
+介绍Spark部署方式
+Spark提交作业的参数
+手绘Spark架构与作业提交流程(讲解各部分作用)
+Spark中血统概念的理解
+Spark的宽窄依赖
+Spark如何划分stage，每个stage如何决定task个数
+列举transformation算子并简述功能
+列举action算子并简述功能
+列举会引起Shuffle的算子并简述功能
+两种Shuffle的工作流程
+  包括未优化的HashShuffle、优化的HashShuffle、普通的SortShuffle与bypass的SortShuffle
+reduceByKey和groupByKey的区别，那种更有优势
+Repartition和Coalesce的关系和区别
+Spark缓存机制和checkpoint机制
+共享变量的原理和用途
+在Spark操作数据库时如何减少连接次数
+SparkSQL中RDD DF DS三者的区别和联系
+SparkSQL中join操作和left join操作的区别
+SparkStreaming消费Kafka的方式有那些，以及区别
+SparkStreaming窗口函数的原理
+手写WordCount的Spark代码实现
+如何使用Spark实现TopN的获取(思路及伪代码)
+调优前后性能的详细对比
+append和overwrite的区别
+coalesce和repartition的区别
+cache缓存级别
+释放缓存和缓存
+Spark Shuffle默认并行度
+kryo序列化
+创建临时表和全局临时表
+BroadCast Join
+控制Spark reduce缓存 调优shuffle
+注册UDF函数
+Spark Streaming第一次运行不丢数据
+Spark Streaming精准一次消费
+Spark Streaming控制每秒消费数据的速度
+Spark Streaming背压机制
+Spark Streaming一个stage耗时
+Spark Streaming优雅关闭
+Spark Streaming默认分区个数
+元数据管理(Atlas血缘系统)
+数据质量监控(Griffin)
