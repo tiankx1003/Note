@@ -121,7 +121,7 @@ Spark支持3种Cluster Manager，分别为
 ### 1.1 Yarn Cluster模式
 <!-- spark-yarn-cluster.png -->
 <!-- src -->
-
+![](img/spark-yarn-cluster.png)
 1. 执行脚本提交任务，实际是启动一个SparkSubmit的JVM进程
 2. SparkSubmit类中的main方法反射调用Client的main方法
 3. Client创建Yarn客户端，然后Yarn发送执行指令`bin/java ApplicationMaster`

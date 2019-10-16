@@ -100,7 +100,7 @@ OutputPaht
  * `combineByKey(createCombiner:V=>C, mergeValue:(C,V)=>C,mergeCombiners:(C,C)=>C)` 对相同K，把V合并成一个集合
    * `createCombiner:CombinerByKey()` 会遍历分区中的所有元素，因此每个元素的键要么还没有遇到过，要么和之前的某个元素的键相同，如果是一个新的元素，`combineByKey()`会使用`createCombiner()`的函数来创建那个键对应的累加器的初始值
    * `mergeValue` 如果这是一个在处理当前分区之前已经遇到的键，他会使用mergeValue()方法将该键的累加器对应的当前值与这个新的值进行合并
-   * mergeCombiners 由于每个分区都是独立处理的，因此对于同一个键可以有多个累加器，如果有两个后者更多的分区都有对应的同一个键的累加器，就需要使用用户提供的mergeCombiners()方法将哥哥分区的结果进行合并
+   * mergeCombiners 由于每个分区都是独立处理的，因此对于同一个键可以有多个累加器，如果有两个后者更多的分区都有对应的同一个键的累加器，就需要使用用户提供的mergeCombiners()方法将各个分区的结果进行合并
    <!-- 介绍自己熟悉的算子 -->
 
 ### 8.列举Spark的action算子(不少于6个)，并简述功能(重点)
@@ -175,7 +175,7 @@ OutputPaht
 <!-- TODO 消费Kafka的方式 -->
 
 ### 19.简述SparkStreaming窗口函数的原理(重点)
- 窗口函数就是在原来定义的SparkStreaming计算批次大小的基础上再次进行封装，每次计算多个批次的数据，同时还需要传递一个滑动步长的参数，用来设置当次计算任务完成之后下一次从什么地方开始计算
+窗口函数就是在原来定义的SparkStreaming计算批次大小的基础上再次进行封装，每次计算多个批次的数据，同时还需要传递一个滑动步长的参数，用来设置当次计算任务完成之后下一次从什么地方开始计算
 <!-- TODO 绘图表示窗口长度和滑动步长 -->
 
 ### 20.手写Wordcount的Spark代码
