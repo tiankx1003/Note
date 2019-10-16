@@ -70,6 +70,7 @@ RDD任务切分中间分为Application、Job、Stage和Task
  * 同一个进程的每一个task线程都有一个变量，数据冗余，占用内存
  * 广播变量不直接发给每个task线程，而是直接发到executor，task线程共享变量
  * 极大的优化了内存的占用
+<!-- TODO 原理和用途 -->
 
 #### 8.简述Spark的架构与作业提交流程(以yarn-cluster为例)，画图并注明各部分作用
 ![](img/spark-yarn-cluster.png)
@@ -99,28 +100,28 @@ sc.stop()
 
 #### 10.Spark优化
 **常规性能优化**
- * 最优资源配置，尽量将任务分配的资源调节到可以使用的资源的最大限度
- * RDD优化，使用RDD复用，持久化以及尽早使用filter增加效率
- * 并行度调节，调节各个Stage的task数量(并行度)和资源相匹配，task数量应为Spark作业总core数量的2~3倍
- * 广播大变量，对于每个executor都要使用的大变量使用广播变量，减少内存消耗
- * Kryo序列化，性能比Java序列化的性能高出十倍左右
- * 调节本地化等待时长，`val conf=new SparkConf().set("spark.locality.wait","6")`
+ * **最优资源配置**，尽量将任务分配的资源调节到可以使用的资源的最大限度
+ * **RDD优化**，使用RDD复用，持久化以及尽早使用filter增加效率
+ * **并行度调节**，调节各个Stage的task数量(并行度)和资源相匹配，task数量应为Spark作业总core数量的2~3倍
+ * **广播大变量**，对于每个executor都要使用的大变量使用广播变量，减少内存消耗
+ * **Kryo序列化**，性能比Java序列化的性能高出十倍左右
+ * **调节本地化等待时长**，`val conf=new SparkConf().set("spark.locality.wait","6")`
 
 **算子调优**
- * mapPartitions，在每个分区数据量不是特别大时(不会发生OOM)，使用mapPartitions()能够增大效率
- * foreachPartition优化数据库操作，一分区为单位进行操作能够减少连接次数
- * filter和coalesce的配合使用，压缩partition数量，而且让每个Partition的数据量均匀紧凑
- * repartition解决SparkSQL低并行度问题
- * reduceByKey预聚合，在map端使用预聚合能够减小reduce端的压力，提升性能
+ * **mapPartitions**，在每个分区数据量不是特别大时(不会发生OOM)，使用mapPartitions()能够增大效率
+ * **foreachPartition优化数据库操作**，一分区为单位进行操作能够减少连接次数
+ * **filter和coalesce的配合使用**，压缩partition数量，而且让每个Partition的数据量均匀紧凑
+ * **repartition解决SparkSQL低并行度问题**
+ * **reduceByKey预聚合**，在map端使用预聚合能够减小reduce端的压力，提升性能
 
 **Shuffle调优**
- * 调节map端缓冲区大小，避免频繁的磁盘IO
- * 调节reduce端拉取数据缓冲区大小，适当增加可以减少拉取数据次数，从而减少网络传输次数，提升性能
- * 调节reduce端拉取数据重试次数，对于包含特别耗时的shuffle操作的job，增加重试次数可以防止full gc和网络不稳定导致的数据拉取失败问题
- * 调节reduce端拉取数据等待间隔，适当增大间隔可以增加shuffle的稳定性
- * 调节SortShuffle排序操作阈值，使用SortShuffleManager时，且不需要排序操作可调大`spark.shuffle.sort.bypassMergeThreshold` 减少排序的性能开销
+ * **调节map端缓冲区大小**，避免频繁的磁盘IO
+ * **调节reduce端拉取数据缓冲区大小**，适当增加可以减少拉取数据次数，从而减少网络传输次数，提升性能
+ * **调节reduce端拉取数据重试次数**，对于包含特别耗时的shuffle操作的job，增加重试次数可以防止full gc和网络不稳定导致的数据拉取失败问题
+ * **调节reduce端拉取数据等待间隔**，适当增大间隔可以增加shuffle的稳定性
+ * **调节SortShuffle排序操作阈值**，使用SortShuffleManager时，且不需要排序操作可调大`spark.shuffle.sort.bypassMergeThreshold` 减少排序的性能开销
 
 **JVM调优**
- * 降低cache操作的内存占比，为task执行算子腾出更多的内存
- * 调节Executor堆外内存，防止OOM
- * 调节连接等待时长，防止文件拉取失败和文件lost等问题
+ * **降低cache操作的内存占比**，为task执行算子腾出更多的内存
+ * **调节Executor堆外内存**，防止OOM
+ * **调节连接等待时长**，防止文件拉取失败和文件lost等问题
