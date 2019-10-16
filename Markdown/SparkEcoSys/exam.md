@@ -190,7 +190,7 @@ sc.textFile("/input")
 sc.stop()
 ```
 
-### 21.如何使用Spark实现TopN的获取(描述西路或使用伪代码)
+### 21.如何使用Spark实现TopN的获取(描述思路或使用伪代码)
 **方法1**
  * 按照key对数据进行聚合(groupByKey)
  * 将value转换为数组，利用scala的sortBy或者sortWith进行排序(mapValues)数据量太小，，会OOM
@@ -204,7 +204,8 @@ sc.stop()
  * 对每个分区运用spark的排序算子进行排序
 
 ### 22.京东，调优之前和调优之后性能的详细对比(例如调整map个数，map个数之前多少，之后多少，有什么提升)
-若是有几百个文件，会有几百个map出现，读取之后进行join操作，会非常的慢，这个时候我们可以进行coalesce操作，比如240个map，我们合成60个map，也就是窄依赖，这样再shuffle，过程产生额文件会大大减少，提高join的时间性能
+若是有几百个文件，会有几百个map出现，读取之后进行join操作，会非常的慢，这个时候我们可以进行coalesce操作，
+比如240个map，我们合成60个map，也就是窄依赖，这样再shuffle，过程产生额文件会大大减少，提高join的时间性能
 
 ### 23.append和overwrite的区别
 append在原有分区上进行追加，overwrite在原有的分区上进行全量刷新
