@@ -62,6 +62,12 @@ endif
 " Don't wake up system with blinking cursor:
 " http://www.linuxpowertop.org/known.php
 let &guicursor = &guicursor . ",a:blinkon0"
+
+
+" mkdir -p ~/.vim/bundle
+" git clone https://github.com/gmarik/Vundle.vim.git ~/.vim/bundle/Vundle.vim
+" :VundleInstall
+""""""""基本配置""""""""
 colorscheme darkblue
 syntax on
 set showmode
@@ -94,3 +100,17 @@ set encoding=utf-8
 au FileType c,cpp setlocal comments-=:// comments+=f://
 set paste
 " set number
+
+""""""""插件配置""""""""
+set nocompatible              " 这是必需的
+filetype off                  " 这是必需的
+"你在此设置运行时路径
+set rtp+=~/.vim/bundle/Vundle.vim  
+" vundle初始化
+call vundle#begin()  
+"这应该始终是第一个
+Plugin 'gmarik/Vundle.vim'
+Plugin 'vim-airline/vim-airline'
+Plugin 'vim-airline/vim-airline-themes'
+"每个插件都应该在这一行之前  
+call vundle#end()            " required

@@ -18,7 +18,7 @@ RDD任务切分中间分为Application、Job、Stage和Task
  * `mapPartitions(func)` 类似于map，但独立地在RDD的每一个分片上运行，`Iterator[T] => Iterator[U]`，每个分区执行一次func操作
  * `mapPartitionsWithIndex(func)` 和mapPartitions(func)类似. 但是会给func多提供一个Int值来表示分区的索引
  * `flatMap(fun)` 类似于map，但是每一个输入元素可以被映射为0或多个输出元素，func返回一个序列
- * `glom()` 将每一个分区的元素合并成一个数组，形成新的 RDD 类型是`RDD[Array[T]`
+ * `glom()` 将每一个分区的元素合并成一个数组，形成新的 RDD 类型是`RDD[Array[T]]`
  * `groupBy(func)` 按照func的返回值进行分组
  * `filter(func)` 过滤，返回func返回值为true的元素组成的RDD
  * `coalesce(numPartitions)` 缩减分区数到指定数量
@@ -30,7 +30,7 @@ RDD任务切分中间分为Application、Job、Stage和Task
 #### 3.请列举Spark的action算子(不少于6个)，简述功能
  * `reduce(func)` 通过func函数聚集RDD中的所有元素，先聚合分区内数据，再聚合分区间数据
  * `collect` 以数组的形式返回RDD中的所有元素，所有的的数据都会被拉到driver端，慎用(OOM)
- * `first` 返回RDD中前n个元素组成的数组
+ * `first` 返回RDD中的第一个元素
  * `take(n)` 返回RDD中前n个元素组成的数组
  * `count` 返回RDD中元素的个数
  * `foreach(func)` 对每个RDD执行一次func
