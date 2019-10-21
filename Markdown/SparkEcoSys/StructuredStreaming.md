@@ -512,7 +512,7 @@ result
 为了实现这个需求, 从 spark2.1, 引入了 watermark(水印), 使用引擎可以自动的跟踪当前的事件时间, 并据此尝试删除旧状态.
 通过指定 event-time 列和预估事件的延迟时间上限来定义一个查询的 watermark. 针对一个以时间 T 结束的窗口, 引擎会保留状态和允许延迟时间直到(max event time seen by the engine - late threshold > T). 换句话说, 延迟时间在上限内的被聚合, 延迟时间超出上限的开始被丢弃.
 可以通过withWatermark() 来定义watermark
-watermark 计算: watermark = MaxEventTime - Threshhod
+watermark 计算: watermark = MaxEventTime - Threshhold
 而且, watermark只能逐渐增加, 不能减少
 总结:
 Structured Streaming 引入 Watermark 机制, 主要是为了解决以下两个问题:
