@@ -131,14 +131,26 @@ val env = ExecutionEnvironment.createRemoteEnvironment("jobmanage-hostname", 612
 ## 2.Source
 
 ### 2.1 从集合读取数据
+```scala
+
+```
 
 ### 2.2 从文件读取数据
+```scala
+
+```
+
 
 ### 2.3 以kafka消息队列的数据作为来源
+
+```scala
+
+```
 
 ### 2.4 自定义source
 ```scala
 
+```
 
 ## 3.Transform
 
@@ -147,4 +159,170 @@ val env = ExecutionEnvironment.createRemoteEnvironment("jobmanage-hostname", 612
 
 # 六、Flink中的Window
 
-## 1.
+## 1.TimeWindow
+ * TimeWindow是将指定时间范围内的所有数据组成一个window，一次对一个window里面的所有数据进行计算
+
+### 1.1 滚动窗口
+Flink默认的时间窗口根据Processing Time进行窗口的划分，将Flink获取到的数据根据进入Flink的时间按划分到不同的窗口中
+
+```scala
+val minTempPerWindow = dataStream
+    .map(r => (r.id, r.temperature))
+    .keyBy(_._1)
+    .timeWindow(Time.seconds(15))
+    .reduce((r1,r2) => (r1._1,r1._2.min(r2._2)))
+```
+时间间隔可以通过Time.milliseconds(x), Time.seconds(x), Time.minutes(x)等其中的一个来指定。
+
+### 1.2 滑动窗口
+滑动窗口和滚动窗口函数名一致，需要传入window_size和sliding_size
+```scala
+val minTempPerWindow: DataStream[(String, Double)] = dataStream
+    .map(r => (r.id, r.temperature))
+    .keyBy(_._1)
+    .timeWindow(Time.seconds(15), Time.seconds(5))
+    .reduce((r1,r2) => (r1._1,r1._2.min(r2._2)))
+    .window(EventTimeSessionWindows.withGap(Time.minutes(10)))
+```
+每5s计算一次15s之内的所有元素
+ * 时间间隔可以通过`Time.milliseconds(x)`, `Time.seconds(x)`, `Time.minutes(x)`来设置
+
+## 2.CountWindow
+ * CountWindow根据窗口中相同key元素的数量来触发执行，执行时值计算元素数量达到窗口大小的key对应的结果
+ * CountWindow的window_size指的是相同key的元素的个数，不是输入的所有元素的总数
+
+### 2.1 滚动窗口
+默认的CountWindow是一个滚动窗口，只需要指定窗口大小，当元素数量达到窗口大小时，会触发窗口的执行
+```scala
+val minTempPerWindow: DataStream[(String, Double)] = dataStream
+    .map(r => (r.id, r.temperature))
+    .keyBy(_._1)
+    .countWindow(5)
+    .reduce((r1,r2) => (r1._1,r1._2.min(r2._2)))
+```
+
+### 2.2 滑动窗口
+countWindow同时传入window_size和sliding_size
+```scala
+val keyedStream: KeyedStream[(String, Int), Tuple] = dataStream
+    .map(r => (r.id, r.temperature))
+    .keyBy(0)
+//当某个key个数达到2时触发计算，计算该key最近10个元素的内容
+val windowedStream: WindowedStream[(String,Int),Tuple,GlobleWindow] =
+    keyedStream.countWindow(10, 2)
+val sumDstream: DataStream[(String, Int)] = windowedStream.sum(1)
+```
+
+## 3.window function
+
+## 4.其他可选API
+
+
+
+# 七、时间语义和Watermark
+## 1.Flink中的时间语义
+<!-- TODO 配图 -->
+
+**Event Time** 事件创建的时间，通常由时间中的事件戳描述，例如采集的日志数据中，每一条日志都会记录自己的生成时间，Flink通过时间戳分配器访问事件时间戳
+**Ingestion Time** 是数据进入Flink的时间
+**Processing Time** 是每一个执行基于时间操作的算子的本地系统时间，与机器相关，默认的时间属性就是Processing Time
+
+## 2.Event Time的引入
+在Flink的流式处理中，绝大部分的业务都会使用eventTime，一般只在eventTime无法使用时，才会被迫使用ProcessingTime或者IngestionTime
+```scala
+//引入EventTime时间属性
+val env = StreamExecutionEnvironment.getExecutionEnvironment
+//从调用时刻开始给env创建额每一个stream追加时间特征
+env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
+```
+
+## 3.Watermark
+### 3.1 基本概念
+
+### 3.2 Watermark引入
+
+### 3.3 EventTime在window中的使用
+
+# 八、ProcessFunction API(底层API)
+
+
+# 九、状态编程和容错机制
+ * 由一个任务维护，并且用来计算某个结果的所有数据，都属于这个任务的转台
+ * 可以认为转台就是一个本地变量，可以被任务的业务逻辑访问
+ * 无状态计算观察每个独立事件
+ * 有状态计算基于多个事件输出结果
+下图展示了无状态流处理和有状态流处理的主要区别。无状态流处理分别接收每条数据记录(图中的黑条)，然后根据最新输入的数据生成输出数据(白条)。有状态流处理会维护状态(根据每条输入记录进行更新)，并基于最新输入的记录和当前的状态值生成输出记录(灰条)。
+<!-- TODO 配图 -->
+上图中输入数据由黑条表示。无状态流处理每次只转换一条输入记录，并且仅根据最新的输入记录输出结果(白条)。有状态 流处理维护所有已处理记录的状态值，并根据每条新输入的记录更新状态，因此输出记录(灰条)反映的是综合考虑多个事件之后的结果。
+
+## 1.有状态的算子和应用程序
+### 1.1 算子状态(operator state)
+ * 算子状态的作用范围限定为算子任务
+ * 同一并行任务所处理的所有数据都可以访问到相同的状态，状态对于同一任务而言是共享的
+ * 算子状态不能由相同或不同算子的另一个任务访问
+
+<!-- TODO 配图 -->
+
+Flink为算子状态提供了三种基本数据结构
+**列表状态List state**
+将状态表示为一组数据的列表
+
+**联合列表状态Union list state**
+将状态表示为数据的列表，与常规列表状态的区别在于，在发生故障时，或者从保存点(savepoint)启动应用程序时如何恢复
+
+**广播状态Broadcast state**
+如果一个算子有多项任务，而他的每项任务状态又都相同，那么这种特殊情况最适合应用广播状态
+
+### 1.2 键控状态(keyed state)
+键控状态是根据输入数据流中定义的键(key)来维护和访问。Flink为每个键值维护一个状态实例，并将具有相同键的所有数据，都分区到同一个算子任务中，这个任务会维护和处理这个key对应的状态。当任务处理一条数据时，它会自动将状态的访问范围限定为当前数据的key。因此，具有相同key的所有数据都会访问相同的状态。Keyed State很类似于一个分布式的key-value map数据结构，只能用于KeyedStream（keyBy算子处理之后）。
+
+Flink中Keyed State支持一下数据类型(结构)
+**值状态Value State**
+将状态表示为单个的值
+
+**列表状态List state**
+将状态表示为一组数据的列表
+
+**映射状态Map state**
+将状态表示为一组Key-Value对
+
+**聚合状态Reducing state & Aggregating state**
+将状态表示为一个用于聚合操作的列表
+
+#### 状态后端State Backends
+ * 每传入一条数据，有状态的算子任务都会读取和更新状态
+ * 由于有效的状态访问对于处理数据的低延迟至关重要，因此每个并行任务都会在本地维护其状态，以确保快速的状态访问
+ * 状态的存储、访问以及维护，有一个可插入的组建决定，这个组建叫做**状态后端**
+ * 状态后端主要负责:本地的状态管理，以及将检查点checkpoint状态吸入远程存储
+
+状态后端有以下几种:
+**MemoryStateBacked**
+内存级的状态后端，会将键控状态桌位内存中的对象就行管理，将他们存储在TaskManager的JVM堆，而将checkpoint存储在JobManager的内存中
+快速、低延迟、不稳定
+
+**FsStateBackend**
+将checkpoint存到远程的持久化文件系统上，而对于本地状态，更MemoryStateBackend一样，也会存在TaskManager的JVM堆上
+同时拥有内存级的本地访问速度，和更好的容错保证
+
+**RocksDBStateBackend**
+将所有状态序列化后，存入本地的RocksDB中存储
+
+## 2.状态一致性
+当在分布式系统中引入状态时，自然也引入了一致性问题。一致性实际上是"正确性级别"的另一种说法，也就是说在成功处理故障并恢复之后得到的结果，与没有发生任何故障时得到的结果相比，前者到底有多正确。
+
+### 2.1 一致性级别
+**at-most-once** 这其实是没有正确性保障的委婉说法--故障发生后，计数结果可能丢失，童谣的还有个udp
+**at-least-once** 这表示计数结果可能大于正确值，当绝对不会小于正确值。也就是说，计数程序在发生故障后可能多算，但绝不会少算
+**exactly-once** 系统保证在发色和功能故障后得到的计数结果与正确值一致
+
+
+
+### 2.2 端到端(end-to-end)状态一致性
+
+
+
+
+# 十、Table API与SQL
+
+
+# Flink CEP简介
