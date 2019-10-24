@@ -154,15 +154,129 @@ val env = ExecutionEnvironment.createRemoteEnvironment("jobmanage-hostname", 612
 
 ## 3.Transform
 
-## 4.Sink
+## 4.UDF
 
+## 5.sink
+### 5.1 Kafka Sink
+```xml
+<dependency>
+    <groupId>org.apache.flink</groupId>
+    <artifactId>flink-connector-kafka-0.11_2.11</artifactId>
+    <version>1.7.2</version>
+</dependency>
+```
+```scala
+resultDataStream.addSink(new FlinkKafkaProducer011[String](
+    "localhost:9092", 
+    "test", 
+    new SimpleStringSchema())
+)
+```
+
+### 5.2 Redis Sink
+```xml
+<dependency>
+    <groupId>org.apache.bahir</groupId>
+    <artifactId>flink-connector-redis_2.11</artifactId>
+    <version>1.0</version>
+</dependency>
+```
+```scala
+// 定义一个redis的mapper类，用于定义保存到redis时调用的命令
+class MyRedisMapper extends RedisMapper[SensorReading]{
+  override def getCommandDescription: RedisCommandDescription = {
+    new RedisCommandDescription(RedisCommand.HSET, "sensor_temperature")
+  }
+  override def getValueFromData(t: SensorReading): String = t.temperature.toString
+
+  override def getKeyFromData(t: SensorReading): String = t.id
+}
+```
+```scala
+val conf = new FlinkJedisPoolConfig.Builder().setHost("localhost").setPort(6379).build()
+dataStream.addSink( new RedisSink[SensorReading](conf, new MyRedisMapper) )
+```
+
+### 5.3 ElasticSearch Sink
+```xml
+<dependency>
+    <groupId>org.apache.flink</groupId>
+    <artifactId>flink-connector-elasticsearch6_2.11</artifactId>
+    <version>1.7.2</version>
+</dependency>
+```
+```scala
+val httpHosts = new util.ArrayList[HttpHost]()
+httpHosts.add(new HttpHost("localhost", 9200))
+
+val esSinkBuilder = new ElasticsearchSink.Builder[SensorReading]( httpHosts, new ElasticsearchSinkFunction[SensorReading] {
+  override def process(t: SensorReading, runtimeContext: RuntimeContext, requestIndexer: RequestIndexer): Unit = {
+    println("saving data: " + t)
+    val json = new util.HashMap[String, String]()
+    json.put("data", t.toString)
+    val indexRequest = Requests.indexRequest().index("sensor").`type`("readingData").source(json)
+    requestIndexer.add(indexRequest)
+    println("saved successfully")
+  }
+} )
+dataStream.addSink( esSinkBuilder.build() )
+```
+
+### 5.4 JDBC自定义Sink
+```xml
+<dependency>
+    <groupId>mysql</groupId>
+    <artifactId>mysql-connector-java</artifactId>
+    <version>5.1.44</version>
+</dependency>
+```
+```scala
+class MyJdbcSink() extends RichSinkFunction[SensorReading]{
+  var conn: Connection = _
+  var insertStmt: PreparedStatement = _
+  var updateStmt: PreparedStatement = _
+
+  // open 主要是创建连接
+  override def open(parameters: Configuration): Unit = {
+    super.open(parameters)
+
+    conn = DriverManager.getConnection("jdbc:mysql://localhost:3306/test", "root", "123456")
+    insertStmt = conn.prepareStatement("INSERT INTO temperatures (sensor, temp) VALUES (?, ?)")
+    updateStmt = conn.prepareStatement("UPDATE temperatures SET temp = ? WHERE sensor = ?")
+  }
+  // 调用连接，执行sql
+  override def invoke(value: SensorReading, context: SinkFunction.Context[_]): Unit = {
+    
+updateStmt.setDouble(1, value.temperature)
+    updateStmt.setString(2, value.id)
+    updateStmt.execute()
+
+    if (updateStmt.getUpdateCount == 0) {
+      insertStmt.setString(1, value.id)
+      insertStmt.setDouble(2, value.temperature)
+      insertStmt.execute()
+    }
+  }
+
+  override def close(): Unit = {
+    insertStmt.close()
+    updateStmt.close()
+    conn.close()
+  }
+}
+```
+```scala
+dataStream.addSink(new MyJdbcSink())
+```
 
 # 六、Flink中的Window
+streaming流式计算是一种被设计用于处理无限数据集的数据处理引擎，而无限数据集是指一种不断增长的本质上无限的数据集，而window是一种切割无限数据为有限块进行处理的手段。
 
 ## 1.TimeWindow
  * TimeWindow是将指定时间范围内的所有数据组成一个window，一次对一个window里面的所有数据进行计算
 
 ### 1.1 滚动窗口
+ * 时间对齐，窗口长度固定，没有重叠
 Flink默认的时间窗口根据Processing Time进行窗口的划分，将Flink获取到的数据根据进入Flink的时间按划分到不同的窗口中
 
 ```scala
@@ -175,6 +289,7 @@ val minTempPerWindow = dataStream
 时间间隔可以通过Time.milliseconds(x), Time.seconds(x), Time.minutes(x)等其中的一个来指定。
 
 ### 1.2 滑动窗口
+ * 时间对齐，窗口长度固定，可以有重叠
 滑动窗口和滚动窗口函数名一致，需要传入window_size和sliding_size
 ```scala
 val minTempPerWindow: DataStream[(String, Double)] = dataStream
@@ -214,9 +329,20 @@ val sumDstream: DataStream[(String, Int)] = windowedStream.sum(1)
 ```
 
 ## 3.window function
+window function 定义了要对窗口中收集的数据做的计算操作，主要可以分为两类：
+**增量聚合函数**(incremental aggregation functions)
+每条数据到来就进行计算，保持一个简单的状态。典型的增量聚合函数有ReduceFunction, AggregateFunction。
+**全窗口函数**(full window functions)
+先把窗口所有数据收集起来，等到计算的时候会遍历所有数据。ProcessWindowFunction就是一个全窗口函数。
 
 ## 4.其他可选API
-
+|         API          | 作用                                               |
+| :------------------: | :------------------------------------------------- |
+|      trigger()       | 触发器，定义window什么时候关闭，触发计算并输出结果 |
+|       evitor()       | 移除器，定义移除某些数据的逻辑                     |
+|  allowedLateness()   | 允许处理迟到的数据                                 |
+| sideOutputLateData() | 将迟到的数据放入侧输出流                           |
+|   getSideOutPut()    | 获取输出流                                         |
 
 
 # 七、时间语义和Watermark
@@ -232,7 +358,7 @@ val sumDstream: DataStream[(String, Int)] = windowedStream.sum(1)
 ```scala
 //引入EventTime时间属性
 val env = StreamExecutionEnvironment.getExecutionEnvironment
-//从调用时刻开始给env创建额每一个stream追加时间特征
+//从调用时刻开始给env创建的每一个stream追加时间特征
 env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 ```
 
@@ -241,9 +367,17 @@ env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 
 ### 3.2 Watermark引入
 
-### 3.3 EventTime在window中的使用
+## 4.EventTime在window中的使用
 
 # 八、ProcessFunction API(底层API)
+## 1. KeyedProcessFunction
+
+## 2. TimerService和定时器(Timers)
+
+## 3. 侧输出流(SideOutput)
+
+## 4. CoProcessFunction
+
 
 
 # 九、状态编程和容错机制
@@ -289,7 +423,7 @@ Flink中Keyed State支持一下数据类型(结构)
 **聚合状态Reducing state & Aggregating state**
 将状态表示为一个用于聚合操作的列表
 
-#### 状态后端State Backends
+### 1.3 状态后端State Backends
  * 每传入一条数据，有状态的算子任务都会读取和更新状态
  * 由于有效的状态访问对于处理数据的低延迟至关重要，因此每个并行任务都会在本地维护其状态，以确保快速的状态访问
  * 状态的存储、访问以及维护，有一个可插入的组建决定，这个组建叫做**状态后端**
@@ -306,6 +440,29 @@ Flink中Keyed State支持一下数据类型(结构)
 
 **RocksDBStateBackend**
 将所有状态序列化后，存入本地的RocksDB中存储
+
+>**代码实现**
+
+RocksDB的支持并不直接包含在flink中，需要引入依赖
+```xml
+<dependency>
+    <groupId>org.apache.flink</groupId>
+    <artifactId>flink-statebackend-rocksdb_2.11</artifactId>
+    <version>1.7.2</version>
+</dependency>
+```
+```scala
+val env = StreamExecutionEnvironment.getExecutionEnvironment
+val checkpointPath: String = ???
+val backend = new RocksDBStateBackend(checkpointPath)
+env.setStateBackend(backend)
+env.setStateBackend(new FsStateBackend("file:///tmp/checkpoints"))
+env.enableCheckpointing(1000)
+// 配置重启策略
+env.setRestartStrategy(RestartStrategies.fixedDelayRestart(60, Time.of(10, TimeUnit.SECONDS)))
+```
+
+
 
 ## 2.状态一致性
  * 状态一致性，就是计算结果正确性的另一种说法，即发生故障并恢复后得到的计算结果和没有发生故障相比的正确性。
@@ -381,8 +538,51 @@ Flink中Keyed State支持一下数据类型(结构)
  * sink任务收到jobmanager的确认信息，正式提交这段时间的数据
  * 外部kafka关闭事务，提交的数据可以正常消费了
 
-<!-- TODO 代码实现 -->
+```scala
+val env: StreamExecutionEnvironment = StreamExecutionEnvironment.getExecutionEnvironment
+env.setParallelism(1)
+env.enableCheckpointing(60000L) //打开检查点支持
 
+val properties: Properties = new Properties()
+properties.setProperty("bootstrap.servers", "localhost:9092")
+properties.setProperty("group.id", "consumer-group")
+properties.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
+properties.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer")
+properties.setProperty("auto.offset.reset", "latest")
+val inputStream: DataStream[String] =
+    env.addSource(new FlinkKafkaConsumer011[String]("sensor", new SimpleStringSchema(), properties))
+val dataStream: DataStream[String] = inputStream
+    .map(data => {
+        val dataArr: Array[String] = data.split(",")
+        SensorReading(dataArr(0).trim, dataArr(1).trim.toLong, dataArr(2).trim.toDouble).toString
+    })
+dataStream.addSink(new FlinkKafkaProducer011[String](
+    "exactly-once test",
+    new KeyedSerializationSchemaWrapper(new SimpleStringSchema()),
+    properties,
+    Semantic.EXACTLY_ONCE //默认状态一致性为AT_LEAST_ONCE
+))
+dataStream.print()
+env.execute("exactly-once test")
+/*
+kafka consumer 配置isolation.level 改为read_committed，默认为read_uncommitted，
+否则未提交(包括预提交)的消息会被消费走，同样无法实现状态一致性
+*/
+```
+
+## 3.检查点
+
+>**代码开启检查点并配置**
+
+```scala
+env.enableCheckpointing(60000L)
+env.getCheckpointConfig.setCheckpointingMode(CheckpointingMode.EXACTLY_ONCE)
+env.getCheckpointConfig.setCheckpointTimeout(90000L)
+env.getCheckpointConfig.setMaxConcurrentCheckpoints(2)
+env.getCheckpointConfig.setMinPauseBetweenCheckpoints(10000L)
+env.getCheckpointConfig.setFailOnCheckpointingErrors(false)
+env.getCheckpointConfig.enableExternalizedCheckpoints(ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION)
+```
 
 
 
