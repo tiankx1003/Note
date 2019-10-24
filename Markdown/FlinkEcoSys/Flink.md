@@ -364,10 +364,48 @@ env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
 
 ## 3.Watermark
 ### 3.1 基本概念
+Flink接受到的事件的先后顺序不是严格按照事件的Event Time顺序排列的，这就是**乱序**。
+ * Watermark是一种衡量Event Time进展的机制。
+ * Watermark是用于处理乱序事件的，而正确的处理乱序事件，通常用Watermark机制结合window来实现
+ * 数据流中的watermark用于表示timestamp小于watermark的数据，都已经到达，因此，window的执行也是由watermark触发的
+ * watermark可以理解成一个延迟触发机制，我们可以设置watermark的延时时长t，每次系统会检验已经到达的数据中最大的maxEventTime，然后认定eventTime小于maxEventTime-t的所有数据都已经到达，如果有窗口的停止时间等于maxEventTime-t，那么这个窗口被触发执行。
+
+当Flink接收到数据时，会按照一定的规则去生成Watermark，这条Watermark就等于当前所有到达数据中的maxEventTime - 延迟时长，也就是说，Watermark是由数据携带的，一旦数据携带的Watermark比当前未触发的窗口的停止时间要晚，那么就会触发相应窗口的执行。
 
 ### 3.2 Watermark引入
+```scala
+dataStream.assignTimestampsAndWatermarks(new BoundedOutOfOrdernessTimestampExtractor[SensorReading](Time.milliseconds(1000)) {
+  override def extractTimestamp(element: SensorReading): Long = {
+    element.timestamp * 1000
+  }
+})
+```
+Event Time的使用一定要指定数据源中的时间戳
+通过Flink的TimestampAssigner接口自定义如何从事件数据中抽取时间戳r
+```scala
+val env = StreamExecutionEnvironment.getExecutionEnvironment
+// 从调用时刻开始给env创建的每一个stream追加时间特性
+env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime)
+val readings: DataStream[SensorReading] = env
+  .addSource(new SensorSource)
+  .assignTimestampsAndWatermarks(new MyAssigner())
+```
+MyAssigner有两种类型`AssignerWithPeriodicWatermarks`和`AssignerWithPunctuatedWatermarks`，二者都继承自`TimestampAssigner`
+
+#### 3.2.1 Assigner with periodic watermarks
+
+
+#### 3.2.2 Assigner with punctuated watermarks
+
 
 ## 4.EventTime在window中的使用
+### 4.1 滚动窗口
+
+### 4.2 滑动窗口
+
+
+### 4.3 会话窗口
+
 
 # 八、ProcessFunction API(底层API)
 ## 1. KeyedProcessFunction
