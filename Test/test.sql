@@ -1,3 +1,21 @@
+create table score_tab(
+	uid varchar(10),
+	subject_id varchar(10),
+	score int
+);
+insert into  `score_tab` values ('001','a',70);
+insert into  `score_tab` values ('001','b',60);
+insert into  `score_tab` values ('003','a',72);
+insert into  `score_tab` values ('004','a',77);
+insert into  `score_tab` values ('002','a',72);
+insert into  `score_tab` values ('003','b',66);
+insert into  `score_tab` values ('001','c',11);
+insert into `score_tab` values ('003','c',89);
+
+select subject_id, avg(score),uid
+from score_tab
+group by subject_id,uid
+
 -- 1
 drop table if exists `user_table`;
 CREATE EXTERNAL TABLE `user_table`(
