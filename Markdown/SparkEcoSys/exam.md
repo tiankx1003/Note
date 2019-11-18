@@ -8,7 +8,7 @@ RDD任务切分中间分为Application、Job、Stage和Task
 1. Application: 初始化一个SparkContext即生成一个Application
 2. Job: 一个Action算子就会生成一个Job
 3. Stage: 根据RDD之间的依赖关系的不同将Job划分成不同的Stage，遇到一个宽依赖划分一个Stage
-4. Task: Stage是一个TaskSet，将Stage划分的结果发送到不同的Executor执行即为一个Task
+4. Task: Stage是一个TaskSet，Stage根据分区数决定Task个数将Stage划分的结果发送到不同的Executor执行即为一个Task
  * 注意: Application -> Job -> Stage -> Task 每一层都是1对n的关系
 
 ![](img/spark-job-devide.png)

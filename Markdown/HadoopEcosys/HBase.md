@@ -350,19 +350,19 @@ Major Compaction会合并所有的HFile并删除数据，并对整体HFile中的
 # 四、HBase API
 ## 1.环境准备
 ```xml
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-server</artifactId>
-            <version>1.3.1</version>
-        </dependency>
+<dependencies>
+    <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-server</artifactId>
+        <version>1.3.1</version>
+    </dependency>
 
-        <dependency>
-            <groupId>org.apache.hbase</groupId>
-            <artifactId>hbase-client</artifactId>
-            <version>1.3.1</version>
-        </dependency>
-    </dependencies>
+    <dependency>
+        <groupId>org.apache.hbase</groupId>
+        <artifactId>hbase-client</artifactId>
+        <version>1.3.1</version>
+    </dependency>
+</dependencies>
 ```
 
 ## 2.HBase API
