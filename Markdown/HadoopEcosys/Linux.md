@@ -451,6 +451,18 @@ mkfs -t ext4 /dev/sdb1 #格式化分区
 
 ```
 
+```bash
+# 磁盘挂载
+fdisk -l
+fdisk /dev/sda # n, p, 3, w
+reboot
+pvcreate /dev/sda3
+vgextend centos /dev/sda3
+vgdisplay
+lvextend -L +10G /dev/centos/root
+xfs_growfs /dev/centos/root
+```
+
 
 ### 10.进程线程
 
